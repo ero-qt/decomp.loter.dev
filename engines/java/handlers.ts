@@ -1,6 +1,8 @@
 import { failed, ok, type Reply } from '../../contract/reply';
 import type { EngineHandlers } from '../../contract/serve';
 import { writeRows } from '../../contract/rows';
+import { modifiersOf } from '../../contract/symbols';
+import { writeJava } from './decompile';
 import { describeTarget, resolveTarget } from './describe';
 import { type JavaFile, readFile } from './files';
 import { type JavaRows, listRows } from './rows';
@@ -10,7 +12,7 @@ import { findClassEntry } from './zip';
 export type OpenFile = JavaFile & JavaRows;
 
 /** The handlers that the Java engine has so far. */
-export type JavaHandlers = Pick<EngineHandlers, 'claims' | 'open' | 'close' | 'list' | 'describe' | 'resolve'>;
+export type JavaHandlers = Pick<EngineHandlers, 'claims' | 'open' | 'close' | 'list' | 'read' | 'describe' | 'resolve'>;
 
 // the first 4 bytes of a zip file's local header, end record and spanned archive
 const zipStarts = ['504b0304', '504b0506', '504b0708'];
@@ -97,6 +99,24 @@ export function createJavaHandlers(): JavaHandlers {
         },
         list(fileId) {
             return handleFile(fileId, ({ rows, note }) => ok({ ...writeRows(rows), note, missingFiles: [] }));
+        },
+        async read(fileId, key, view, signal) {
+            const file = files.get(fileId);
+            const row = file?.rows[key];
+            if (!file) {
+                return refuseFile(fileId);
+            }
+            if (view !== javaView) {
+                return refuseView(view);
+            }
+            if (!row) {
+                return failed(`${file.name} doesn't have a symbol with the key ${key}.`);
+            }
+            if (!modifiersOf(row.flags).includes('document')) {
+                return failed(`${row.name} doesn't have its own document.`);
+            }
+
+            return writeJava(files, fileId, file.rowKeys[key], signal);
         },
         describe(target, view) {
             return view === javaView ? ok(describeTarget(files, target)) : refuseView(view);

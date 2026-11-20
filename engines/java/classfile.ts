@@ -2,9 +2,11 @@ import { read, type Node } from '@katana-project/asm';
 import type {
     Attributable,
     Attribute,
+    CodeAttribute,
     EnclosingMethodAttribute,
     InnerClass,
     InnerClassesAttribute,
+    LocalVariableTableAttribute,
     RecordAttribute,
     SignatureAttribute,
 } from '@katana-project/asm/attr';
@@ -38,6 +40,8 @@ export interface ClassSymbols {
     flags: number;
     /** The class's declaration in Java code, like `public record Circle(double radius)`. */
     signature: string;
+    /** The descriptor of a record's canonical constructor, which takes the components in their order. */
+    recordConstructor?: string;
 }
 
 // keyword -> the kind of the class's row
@@ -143,6 +147,12 @@ function writeClassSignature(node: Node, keyword: ClassKeyword, flags: number, s
     return `${modifiers}${keyword} ${shortName}${writeTypeParameters(parseSignature(node, ''))}${writeComponents(node)}`;
 }
 
+function readRecordConstructor(node: Node): string | undefined {
+    const components = findAttribute<RecordAttribute>(node, 'Record')?.components;
+
+    return components && `(${components.map(component => component.descriptorEntry?.string ?? '').join('')})V`;
+}
+
 /** Reads what the engine needs of a class file to list and open it. */
 export function readSymbols(node: Node): ClassSymbols {
     const name = node.thisClass.nameEntry!.string;
@@ -165,5 +175,29 @@ export function readSymbols(node: Node): ClassSymbols {
         kind: classKinds[keyword],
         flags: rowFlags,
         signature: writeClassSignature(node, keyword, rowFlags, shortName),
+        recordConstructor: readRecordConstructor(node),
     };
+}
+
+/**
+ * Finds the declared type of a method's parameter or local in the method's tables of locals, which javac writes with
+ * debug information, the generic type first. Takes the type of the name alone when Vineflower's index differs from the
+ * table's index and every local with the name has that type. Returns `null` for a local without debug information.
+ */
+export function findLocalType(node: Node, method: string, descriptor: string, index: number, name: string): string | null {
+    const found = node.methods.find(member => member.name.string === method && member.type.string === descriptor);
+    const code = found && findAttribute<CodeAttribute>(found, 'Code');
+
+    for (const tableName of ['LocalVariableTypeTable', 'LocalVariableTable']) {
+        const table = code && findAttribute<LocalVariableTableAttribute>(code, tableName);
+        const named = table?.entries.filter(entry => entry.nameEntry?.string === name && entry.descriptorEntry) ?? [];
+        const hasOneType = new Set(named.map(entry => entry.descriptorEntry!.string)).size === 1;
+        const local = named.find(entry => entry.index === index) ?? (hasOneType ? named[0] : undefined);
+        const type = local && tryParseType(local.descriptorEntry!.string);
+        if (type) {
+            return writeType(type);
+        }
+    }
+
+    return null;
 }

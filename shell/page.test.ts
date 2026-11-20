@@ -153,3 +153,30 @@ test('files that the workbench loads to start are at most 2.3 MB with brotli', a
 
     expect(size).toBeLessThanOrEqual(2_300_000);
 }, testTimeoutMs);
+
+test("page has a description, the canonical link and Open Graph tags with the site's URL for search engines", async () => {
+    const { page } = await openWorkbench();
+    const readContent = (selector: string) => page.locator(selector).getAttribute('content');
+    const description = 'decomp.loter.dev is a decompiler by loter that runs entirely in your browser.';
+
+    expect(await readContent('meta[name=description]')).toBe(description);
+    expect(await page.locator('link[rel=canonical]').getAttribute('href')).toBe('https://decomp.loter.dev/');
+    expect(await readContent('meta[property="og:title"]')).toBe('decomp.loter.dev');
+    expect(await readContent('meta[property="og:description"]')).toBe(description);
+    expect(await readContent('meta[property="og:url"]')).toBe('https://decomp.loter.dev/');
+    expect(await readContent('meta[property="og:type"]')).toBe('website');
+}, testTimeoutMs);
+
+test('robots.txt keeps crawlers out of the files besides the page and points to the sitemap, which lists the page', async () => {
+    expect((await findSiteFile('/robots.txt').text()).split('\n')).toEqual([
+        'User-agent: *',
+        'Allow: /',
+        'Disallow: /assets/',
+        'Disallow: /engines/',
+        'Disallow: /balance.json',
+        '',
+        'Sitemap: https://decomp.loter.dev/sitemap.xml',
+        '',
+    ]);
+    expect(await findSiteFile('/sitemap.xml').text()).toContain('<url><loc>https://decomp.loter.dev/</loc></url>');
+});

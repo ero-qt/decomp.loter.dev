@@ -1,0 +1,12 @@
+html,
+body,
+#workbench {
+    height: 100%;
+    margin: 0;
+}
+
+/* clips what reaches past the window because the page otherwise scrolls by the few pixels of a slider or a sash */
+#workbench {
+    position: relative;
+    overflow: clip;
+}

@@ -2,11 +2,21 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "vite build --config shell/vite.config.ts",
     "check": "tsc",
-    "test": "bun test"
+    "test": "bun shell/run-tests.ts",
+    "perf": "bun shell/run-tests.ts perf"
+  },
+  "dependencies": {
+    "@codingame/monaco-vscode-api": "39.0.4",
+    "@codingame/monaco-vscode-configuration-service-override": "39.0.4",
+    "@codingame/monaco-vscode-theme-service-override": "39.0.4",
+    "@codingame/monaco-vscode-workbench-service-override": "39.0.4"
   },
   "devDependencies": {
     "@types/bun": "1.4.4",
-    "typescript": "6.0.3"
+    "playwright": "1.64.1",
+    "typescript": "6.0.3",
+    "vite": "8.3.8"
   }
 }

@@ -14,6 +14,7 @@
     "@codingame/monaco-vscode-model-service-override": "39.0.4",
     "@codingame/monaco-vscode-notifications-service-override": "39.0.4",
     "@codingame/monaco-vscode-outline-service-override": "39.0.4",
+    "@codingame/monaco-vscode-preferences-service-override": "39.0.4",
     "@codingame/monaco-vscode-textmate-service-override": "39.0.4",
     "@codingame/monaco-vscode-theme-service-override": "39.0.4",
     "@codingame/monaco-vscode-workbench-service-override": "39.0.4",

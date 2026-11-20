@@ -8,6 +8,7 @@ import languagesOverride from '@codingame/monaco-vscode-languages-service-overri
 import modelOverride from '@codingame/monaco-vscode-model-service-override';
 import notificationsOverride from '@codingame/monaco-vscode-notifications-service-override';
 import outlineOverride from '@codingame/monaco-vscode-outline-service-override';
+import preferencesOverride from '@codingame/monaco-vscode-preferences-service-override';
 import textmateOverride from '@codingame/monaco-vscode-textmate-service-override';
 import textMateWorkerUrl from '@codingame/monaco-vscode-textmate-service-override/worker?worker&url';
 import themeOverride from '@codingame/monaco-vscode-theme-service-override';
@@ -56,6 +57,7 @@ await initialize(
         ...modelOverride(),
         ...notificationsOverride(),
         ...outlineOverride(),
+        ...preferencesOverride(),
         ...textmateOverride(),
         ...workbenchOverride(),
         // drops the colors that the workbench saves for a splash screen because the page doesn't have a splash screen

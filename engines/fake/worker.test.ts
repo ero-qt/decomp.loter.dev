@@ -6,7 +6,7 @@ import { findSiteFile, startWorkbench, testTimeoutMs } from '../../shell/page-te
 const openWorkbench = startWorkbench();
 
 test("site lists the fake engine and has the fake engine's manifest", async () => {
-    expect(await findSiteFile('/engines/index.json').json()).toEqual(['fake']);
+    expect(await findSiteFile('/engines/index.json').json()).toEqual(['fake', 'java']);
     expect(readManifest(await findSiteFile('/engines/fake/manifest.json').json())).toEqual(fakeManifest);
 });
 

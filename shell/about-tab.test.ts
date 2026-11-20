@@ -19,6 +19,7 @@ const pageLines = [
 const formatRows = [
     ['Format', 'Files', 'Views'],
     ['Fake test files', '.fake', 'Code, Ops'],
+    ['Java classes and archives', '.class, .jar, .war', 'Java'],
 ];
 const shortcutRows = [
     ['Go to definition', 'F12 or Ctrl+click'],

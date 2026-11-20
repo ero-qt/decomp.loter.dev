@@ -2,6 +2,22 @@
 
 The site ships these parts of other projects. Each keeps its own license.
 
+## Vineflower
+
+The Java engine decompiles classes with [Vineflower](https://github.com/Vineflower/vineflower) 1.12.0, which grew out of JetBrains' Fernflower. It's under the Apache License 2.0, whose text is at the end of this file.
+
+## @run-slicer/vf
+
+[@run-slicer/vf](https://github.com/run-slicer/vf) 0.6.4-1.12.0 builds Vineflower for JavaScript. Its copyright line is "Copyright (c) 2024 Matouš Kučera". Its own code is under the MIT License, whose text is at the end of this file.
+
+## TeaVM
+
+`vf.runtime.js` has the runtime and class library of [TeaVM](https://github.com/konsoletyper/teavm), which turns Vineflower's Java code into JavaScript. TeaVM is under the Apache License 2.0, whose text is at the end of this file.
+
+## @katana-project/asm
+
+The Java engine reads class files with [@katana-project/asm](https://github.com/katana-project/asm) 0.25.4. Its copyright line is "Copyright (c) 2024 Matouš Kučera". It's under the MIT License, whose text is at the end of this file.
+
 ## VS Code
 
 The site's workbench and editor are VS Code's, built for the browser by [@codingame/monaco-vscode-api](https://github.com/CodinGame/monaco-vscode-api) 39.0.4 and its service override packages. These packages bundle VS Code's [vscode-textmate](https://github.com/microsoft/vscode-textmate) and [vscode-oniguruma](https://github.com/microsoft/vscode-oniguruma), which color code with TextMate grammars. Their package files list the MIT License, whose text is at the end of this file. VS Code's files start with this copyright line, "Copyright (c) Microsoft Corporation. All rights reserved."
@@ -9,6 +25,10 @@ The site's workbench and editor are VS Code's, built for the browser by [@coding
 ## Oniguruma
 
 vscode-oniguruma's `onig.wasm` is [Oniguruma](https://github.com/kkos/oniguruma), the regular expression library that the grammars run on. Its copyright line is "Copyright (C) 2002-2018 K.Kosako". Oniguruma is under the BSD 2-Clause License.
+
+## Java grammar
+
+Java code gets its colors from the Java grammar of VS Code's Java extension, which the site takes from [@codingame/monaco-vscode-java-default-extension](https://github.com/CodinGame/monaco-vscode-api) 39.0.4. The extension's package file lists the MIT License under VS Code's copyright above. VS Code converted the grammar from the grammar of [redhat-developer/vscode-java](https://github.com/redhat-developer/vscode-java), as a note in the grammar's file tells.
 
 ## Codicons
 

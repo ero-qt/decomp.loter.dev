@@ -7,6 +7,7 @@
         "@codingame/monaco-vscode-api": "39.0.4",
         "@codingame/monaco-vscode-configuration-service-override": "39.0.4",
         "@codingame/monaco-vscode-files-service-override": "39.0.4",
+        "@codingame/monaco-vscode-java-default-extension": "39.0.4",
         "@codingame/monaco-vscode-languages-service-override": "39.0.4",
         "@codingame/monaco-vscode-model-service-override": "39.0.4",
         "@codingame/monaco-vscode-notifications-service-override": "39.0.4",
@@ -15,6 +16,8 @@
         "@codingame/monaco-vscode-textmate-service-override": "39.0.4",
         "@codingame/monaco-vscode-theme-service-override": "39.0.4",
         "@codingame/monaco-vscode-workbench-service-override": "39.0.4",
+        "@katana-project/asm": "0.25.4",
+        "@run-slicer/vf": "0.6.4-1.12.0",
         "vscode": "npm:@codingame/monaco-vscode-extension-api@39.0.4",
       },
       "devDependencies": {
@@ -44,6 +47,8 @@
     "@codingame/monaco-vscode-files-service-override": ["@codingame/monaco-vscode-files-service-override@39.0.4", "", { "dependencies": { "@codingame/monaco-vscode-api": "39.0.4" } }, "sha512-ocAjsIm9l3/2ruEA8a8a6FUilOpnHPNTT2scizzdyYN6/wXHgk1LQrght/Bkpf3nEhu7H35uZThA+wXICF98ew=="],
 
     "@codingame/monaco-vscode-host-service-override": ["@codingame/monaco-vscode-host-service-override@39.0.4", "", { "dependencies": { "@codingame/monaco-vscode-api": "39.0.4" } }, "sha512-YQk4h9vEgWX3XmYCyj10lwbPW/TQHp57Ih6770BFknRrgk4TrV85jdik4K7+VTBBMq/Z8f4trYHb6Kik14pI4w=="],
+
+    "@codingame/monaco-vscode-java-default-extension": ["@codingame/monaco-vscode-java-default-extension@39.0.4", "", { "dependencies": { "@codingame/monaco-vscode-api": "39.0.4" } }, "sha512-llTw2ybKle3/t8R+3/r7tnmyXnUS/hmwxbIKHEdR84jjE3KzZN1/Z8zEDOWGMoD1ylfv8GIoZdy9o3+3sbUVOw=="],
 
     "@codingame/monaco-vscode-katex-common": ["@codingame/monaco-vscode-katex-common@39.0.4", "", { "dependencies": { "@codingame/monaco-vscode-api": "39.0.4", "katex": "0.16.47" } }, "sha512-I2Ir1famxllAqfo9JyIhugau/V7JX4YtR5xxBrTvPEunpvgxsZ3eczsAD9mcwGgKpqmqK+F08hPGOL+Reh/4zw=="],
 
@@ -83,6 +88,8 @@
 
     "@emnapi/wasi-threads": ["@emnapi/wasi-threads@2.2.0", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-JP7OYH38Q7+pyTAe14raZHLQIK7BDKbdwji+Xi3pcd/6QkJYQH3SX4wu6EplGrGJWRepoNzedfm0G3B9Z4e9Rw=="],
 
+    "@katana-project/asm": ["@katana-project/asm@0.25.4", "", {}, "sha512-dbsayR3GT2IfGHk1xpmWaBZs51vl4a7ADAzevWzolsCpp9JzMOlIV7vqDm688LxRs6Ktn7QZBQIJ1tcdnbU5nA=="],
+
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.2.6", "", { "dependencies": { "@tybys/wasm-util": "^0.10.3" }, "peerDependencies": { "@emnapi/core": "^1.7.1 || 2.0.0-beta.2", "@emnapi/runtime": "^1.7.1 || 2.0.0-beta.2" } }, "sha512-mRyDmEw9/fCDXCGfL1sbgIw/GUK0PVxRW4YwgPN61F3LQ+fSyoBFarJVzgGyhF6kRzEQZ0FejDqm4WLXSeqQmw=="],
 
     "@oxc-project/types": ["@oxc-project/types@0.156.0", "", {}, "sha512-1Duyg48TdJNdyhEB8Xn1L36bT9Pv6GUtlKjHxOys8xkaF/rQq3XJE+bAurSK/AgIz5mGFsb77cn9Pb20+WCScw=="],
@@ -120,6 +127,8 @@
     "@rolldown/binding-win32-x64-msvc": ["@rolldown/binding-win32-x64-msvc@1.2.19", "", { "os": "win32", "cpu": "x64" }, "sha512-y/sqRRc6d7hECzOFc5n3LSeqctmIp9mMjY1Kq4s14uLPd/LZ4z7i1zrW6fMtp2mPeuQIC4e6ULMcwQzMomqQag=="],
 
     "@rolldown/pluginutils": ["@rolldown/pluginutils@1.1.1", "", {}, "sha512-glFIJDvLNDtJhT9qrMFWLPbvS+skxgt4L0K8Ei2YtnhPysAJnsI7nyxSJxKj4ADeKX0OLjC4ntRkwpLOoS3rwA=="],
+
+    "@run-slicer/vf": ["@run-slicer/vf@0.6.4-1.12.0", "", {}, "sha512-fKKqDHVCOKed3jcbrX4aA9Za7YY+/7tq2tVlkbSPQ9NVMaGeBhqyRE/gnLc30ZJ3zKP/UYIh69FaUkrF/dmLuQ=="],
 
     "@tybys/wasm-util": ["@tybys/wasm-util@0.10.4", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-W3c4gRigFS0T/Ma4qIYF3GDAc5AQdHb1yL5znJT1Zv1YaD9Kitx656wBjvr19qbiosmZT8lWDM5BEMynUqX65A=="],
 

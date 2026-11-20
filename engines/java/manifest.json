@@ -1,0 +1,9 @@
+{
+  "id": "java",
+  "name": "Java",
+  "extensions": [".jar", ".war", ".class"],
+  "magics": ["cafebabe", "504b0304"],
+  "views": [{ "id": "java", "title": "Java", "extension": ".java", "language": "java" }],
+  "hasLinkedFiles": true,
+  "cancelLimitMs": 10000
+}

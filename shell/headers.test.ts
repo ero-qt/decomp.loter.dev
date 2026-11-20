@@ -33,8 +33,9 @@ test("content security policy allows the site's own files only as scripts, style
     ]);
 });
 
-test("content security policy allows only inline styles and data images besides the site's own files and requires trusted types", () => {
+test("content security policy allows only wasm, inline styles and data images besides the site's own files and requires trusted types", () => {
     expect(policySources.filter(source => !/ '(self|none)'$/.test(source))).toEqual([
+        "script-src 'wasm-unsafe-eval'",
         "style-src 'unsafe-inline'",
         'img-src data:',
         "require-trusted-types-for 'script'",

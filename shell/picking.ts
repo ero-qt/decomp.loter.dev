@@ -5,12 +5,12 @@ export interface PickedFile {
     file: File;
 }
 
-/** Opens the file dialog for files with the extensions, or for a folder. */
-export function pickFiles(extensions: string[], isFolder = false): Promise<PickedFile[]> {
+/** Opens the file dialog for 1 file or for files with the extensions, or for a folder. */
+export function pickFiles(extensions: string[], mode: 'file' | 'files' | 'folder' = 'files'): Promise<PickedFile[]> {
     const input = document.createElement('input');
     input.type = 'file';
-    input.multiple = true;
-    input.webkitdirectory = isFolder;
+    input.multiple = mode !== 'file';
+    input.webkitdirectory = mode === 'folder';
     input.accept = extensions.join(',');
 
     return new Promise(resolve => {

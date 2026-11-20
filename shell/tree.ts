@@ -3,6 +3,7 @@ import { findDocumentRow, type Row } from '../contract/rows';
 import { vscode } from './api';
 import { type OpenFile, type OpenFiles, readErrorText } from './files';
 import { drawIcon } from './icons';
+import { loadMissingFileCommand } from './missing-files';
 import { compareRows, nameCollator, writeTooltip } from './rows';
 
 /** A row of the Symbols view: a file's row, a missing file's row or a symbol's row. */
@@ -81,8 +82,9 @@ export class SymbolsTree implements TreeDataProvider<ViewRow> {
     private async listBelowFile(fileRow: ViewRow, file: OpenFile): Promise<ViewRow[]> {
         try {
             const { rows, note, missingFiles } = await this.openFiles.list(file);
-            if ((fileRow.description || '') !== note) {
-                fileRow.description = note;
+            const description = file.errorText ?? note;
+            if ((fileRow.description || '') !== description) {
+                fileRow.description = description;
                 this.changed.fire(fileRow);
             }
 
@@ -90,7 +92,9 @@ export class SymbolsTree implements TreeDataProvider<ViewRow> {
             const shownIndexes = [...rows.keys()].filter(index => !(rows[index].hiddenViews & 1));
             const rowsBelow = Map.groupBy(shownIndexes, index => rows[index].parent);
             const missingFileRows = missingFiles.map(({ name, reason }) => {
-                return new ViewRow(name, { file, description: reason, iconPath: new vscode.ThemeIcon('library') });
+                const command = { command: loadMissingFileCommand, title: 'Load', arguments: [name, file.picked.path] };
+
+                return new ViewRow(name, { file, description: reason, iconPath: new vscode.ThemeIcon('library'), command });
             });
 
             return [...missingFileRows, ...createViewRows(file, rows, rowsBelow, -1)];

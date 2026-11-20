@@ -22,6 +22,7 @@ import type { RowDocuments } from './documents';
 import type { SiteEngine } from './engines';
 import { type OpenFiles, type ReadDocument, readErrorText } from './files';
 import { createPositionFinder } from './lines';
+import { appendLoadLink } from './missing-files';
 import { symbolKinds } from './rows';
 import { findDeclarations, findToken } from './tokens';
 
@@ -125,8 +126,9 @@ export class SymbolFeatures implements HoverProvider, DefinitionProvider, Refere
             ...facts.map(([label, value]) => `${label} ${value}`),
             ...(missingFile === null ? [] : [`${missingFile} isn't loaded.`]),
         ];
+        appendCode(markdown, text, language).appendText(lines.join('\n'));
 
-        return new vscode.Hover(appendCode(markdown, text, language).appendText(lines.join('\n')), found.range);
+        return new vscode.Hover(missingFile === null ? markdown : appendLoadLink(markdown, missingFile, found.file.picked.path), found.range);
     }
 
     async provideDefinition(document: TextDocument, position: Position, cancellation: CancellationToken) {

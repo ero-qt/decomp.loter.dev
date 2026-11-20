@@ -127,7 +127,7 @@ test("hover on a symbol of a file that isn't open shows that the file isn't load
 
     expect(await readHover(page, 'uses Shapes.Shape.Area', 'Shapes.Shape.Area')).toEqual([
         'Shapes.Shape.Area',
-        "shapes.fake isn't loaded.",
+        "shapes.fake isn't loaded. Click here to load.",
     ]);
 }, testTimeoutMs);
 
@@ -144,7 +144,7 @@ test('hover shows markdown and HTML in names as plain text', async () => {
         'file crafted.fake',
         'key 3',
     ]);
-    expect(await readHover(page, 'uses X.Y', 'X.Y')).toEqual(['X.Y', "<b>w</b>.fake isn't loaded."]);
+    expect(await readHover(page, 'uses X.Y', 'X.Y')).toEqual(['X.Y', "<b>w</b>.fake isn't loaded. Click here to load."]);
 }, testTimeoutMs);
 
 test('hover shows a description with an indented fence in the text as plain text', async () => {

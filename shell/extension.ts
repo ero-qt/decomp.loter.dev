@@ -6,6 +6,7 @@ import { parseDocumentPath } from './document-paths';
 import { RowDocuments } from './documents';
 import { listExtensions, loadEngines } from './engines';
 import { OpenFiles } from './files';
+import { findMissingFileExtensions, loadMissingFileCommand } from './missing-files';
 import { listenForDrops, type PickedFile, pickFiles } from './picking';
 import { addSymbolsWelcome, registerViews } from './registration';
 import { SymbolSearch } from './search';
@@ -37,7 +38,14 @@ function open(pickedFiles: PickedFile[]) {
 }
 
 vscode.commands.registerCommand('decomp.openFiles', async () => open(await pickFiles(listExtensions(engines))));
-vscode.commands.registerCommand('decomp.openFolder', async () => open(await pickFiles([], true)));
+vscode.commands.registerCommand('decomp.openFolder', async () => open(await pickFiles([], 'folder')));
+// takes the open file's path because a command link in a hover takes only JSON arguments
+vscode.commands.registerCommand(loadMissingFileCommand, async (name: string, path: string) => {
+    const [picked] = await pickFiles(findMissingFileExtensions(name), 'file');
+    const file = openFiles.files.find(file => file.picked.path === path);
+
+    return picked && file && vscode.window.withProgress({ location: { viewId: symbolsViewId } }, () => openFiles.load(file, name, picked));
+});
 // closes the selected row when the command doesn't get a row because the Delete key runs the command without arguments
 vscode.commands.registerCommand('decomp.close', (viewRow: ViewRow | undefined = view.selection[0]) => {
     return viewRow?.contextValue === 'file' && openFiles.close(viewRow.file);

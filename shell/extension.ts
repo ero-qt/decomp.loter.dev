@@ -5,6 +5,7 @@ import { listExtensions, loadEngines } from './engines';
 import { OpenFiles } from './files';
 import { listenForDrops, type PickedFile, pickFiles } from './picking';
 import { addSymbolsWelcome, registerViewLanguages } from './registration';
+import { SymbolSearch } from './search';
 import { SymbolFeatures } from './symbol-features';
 import { tokenLegend } from './tokens';
 import { SymbolsTree, type ViewRow } from './tree';
@@ -31,6 +32,7 @@ vscode.languages.registerDocumentSemanticTokensProvider({ scheme: documentScheme
 vscode.languages.registerHoverProvider({ scheme: documentScheme }, features);
 vscode.languages.registerDefinitionProvider({ scheme: documentScheme }, features);
 vscode.languages.registerDocumentSymbolProvider({ scheme: documentScheme }, features);
+vscode.languages.registerWorkspaceSymbolProvider(new SymbolSearch(openFiles, documents));
 registerViewLanguages(engines.flatMap(({ manifest }) => manifest.views));
 listenForDrops(pickedFiles => void open(pickedFiles));
 addSymbolsWelcome(errorTexts);

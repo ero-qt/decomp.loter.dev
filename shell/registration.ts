@@ -31,7 +31,12 @@ const manifest: IExtensionManifest = {
             'view/item/context': [{ command: 'decomp.close', when: `view == ${symbolsViewId} && viewItem == file` }],
             commandPalette: [{ command: 'decomp.close', when: 'false' }],
         },
-        keybindings: [{ command: 'decomp.close', key: 'delete', when: `focusedView == ${symbolsViewId}` }],
+        keybindings: [
+            { command: 'decomp.close', key: 'delete', when: `focusedView == ${symbolsViewId}` },
+            // casts the query that finds the strings because the command takes a text while the manifest's type takes
+            // an object
+            { command: 'workbench.action.quickOpen', args: '#"' as never, key: 'ctrl+shift+f', mac: 'cmd+shift+f' },
+        ],
         themes: [
             { id: darkThemeName, label: darkThemeName, uiTheme: 'vs-dark', path: './themes/dark.json' },
             { id: lightThemeName, label: lightThemeName, uiTheme: 'vs', path: './themes/light.json' },

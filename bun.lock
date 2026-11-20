@@ -8,6 +8,7 @@
         "@codingame/monaco-vscode-configuration-service-override": "39.0.4",
         "@codingame/monaco-vscode-languages-service-override": "39.0.4",
         "@codingame/monaco-vscode-model-service-override": "39.0.4",
+        "@codingame/monaco-vscode-outline-service-override": "39.0.4",
         "@codingame/monaco-vscode-textmate-service-override": "39.0.4",
         "@codingame/monaco-vscode-theme-service-override": "39.0.4",
         "@codingame/monaco-vscode-workbench-service-override": "39.0.4",
@@ -49,6 +50,8 @@
     "@codingame/monaco-vscode-layout-service-override": ["@codingame/monaco-vscode-layout-service-override@39.0.4", "", { "dependencies": { "@codingame/monaco-vscode-api": "39.0.4" } }, "sha512-uThWXsoI/1NSrZXFXiJkwrxjm3NgH9JJ7g7/184QO/bVx83VlupFdr25godSCOaufHliPN8idgoCjpR04igqAQ=="],
 
     "@codingame/monaco-vscode-model-service-override": ["@codingame/monaco-vscode-model-service-override@39.0.4", "", { "dependencies": { "@codingame/monaco-vscode-api": "39.0.4" } }, "sha512-CXexq2uv2qhhoEw2oRY5McUtPIRi5QLSAcgadLZYXG6qebfv4airFvSdkv6wQuQqqa1ykzj0EPpWTfrs6sUFYg=="],
+
+    "@codingame/monaco-vscode-outline-service-override": ["@codingame/monaco-vscode-outline-service-override@39.0.4", "", { "dependencies": { "@codingame/monaco-vscode-api": "39.0.4" } }, "sha512-6hGXkrt+WcziPNJUfRgDE0YISggRT9EqZUOlyCdggsKLFQwJ8ZlVgSCmiTMqqLqc3PARm7zBxMObm/ycSRZNTg=="],
 
     "@codingame/monaco-vscode-quickaccess-service-override": ["@codingame/monaco-vscode-quickaccess-service-override@39.0.4", "", { "dependencies": { "@codingame/monaco-vscode-api": "39.0.4" } }, "sha512-ALRaGIWPPqt8Kud999kJyJTTS0kPdOprpGDUqbRMx4RxOTcOze6g/5/Beb8GzUWNhnlOXMeVbLr121eJqARAXg=="],
 

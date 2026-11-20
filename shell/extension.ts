@@ -5,12 +5,14 @@ import { listExtensions, loadEngines } from './engines';
 import { OpenFiles } from './files';
 import { listenForDrops, type PickedFile, pickFiles } from './picking';
 import { addSymbolsWelcome, registerViewLanguages } from './registration';
+import { SymbolFeatures } from './symbol-features';
 import { tokenLegend } from './tokens';
 import { SymbolsTree, type ViewRow } from './tree';
 
 const { engines, errorTexts } = await loadEngines(document.baseURI);
 const openFiles = new OpenFiles(engines);
 const documents = new RowDocuments(openFiles);
+const features = new SymbolFeatures(openFiles, documents);
 const view = vscode.window.createTreeView(symbolsViewId, { treeDataProvider: new SymbolsTree(openFiles), showCollapseAll: true });
 
 function open(pickedFiles: PickedFile[]) {
@@ -26,6 +28,9 @@ vscode.commands.registerCommand('decomp.close', (viewRow: ViewRow | undefined = 
 vscode.commands.registerCommand('decomp.showRow', documents.show, documents);
 vscode.workspace.registerTextDocumentContentProvider(documentScheme, documents);
 vscode.languages.registerDocumentSemanticTokensProvider({ scheme: documentScheme }, documents, tokenLegend);
+vscode.languages.registerHoverProvider({ scheme: documentScheme }, features);
+vscode.languages.registerDefinitionProvider({ scheme: documentScheme }, features);
+vscode.languages.registerDocumentSymbolProvider({ scheme: documentScheme }, features);
 registerViewLanguages(engines.flatMap(({ manifest }) => manifest.views));
 listenForDrops(pickedFiles => void open(pickedFiles));
 addSymbolsWelcome(errorTexts);

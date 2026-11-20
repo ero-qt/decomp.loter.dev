@@ -1,8 +1,5 @@
 /// <reference types="vite/client" />
 import { ExtensionHostKind, type IExtensionManifest, registerExtension } from '@codingame/monaco-vscode-api/extensions';
-// registers the Explorer view container because only the Outline view's package, which the site doesn't load, imports
-// this module
-import '@codingame/monaco-vscode-api/vscode/vs/workbench/contrib/files/browser/explorerViewlet';
 import { Registry } from '@codingame/monaco-vscode-api/vscode/vs/platform/registry/common/platform';
 import { Extensions, type IViewsRegistry } from '@codingame/monaco-vscode-api/vscode/vs/workbench/common/views';
 import type { View } from '../contract/manifest';
@@ -46,6 +43,17 @@ export const registration = registerExtension(manifest, ExtensionHostKind.LocalP
 registration.registerFileUrl('/themes/dark.json', darkThemeUrl);
 registration.registerFileUrl('/themes/light.json', lightThemeUrl);
 
+const viewsRegistry = Registry.as<IViewsRegistry>(Extensions.ViewsRegistry);
+
+// gives the Symbols view the order 1 because the workbench puts a view without an order below the Outline view, whose
+// order is 2
+viewsRegistry.onViewsRegistered(registered => {
+    const symbolsView = registered.flatMap(({ views }) => views).find(view => view.id === symbolsViewId);
+    if (symbolsView) {
+        (symbolsView as { order?: number }).order = 1;
+    }
+});
+
 /**
  * Adds the empty Symbols view's text through the views registry, because the workbench doesn't read an extension's
  * `viewsWelcome` contribution. The buttons work only after the commands that open files are registered. Each error text
@@ -58,7 +66,7 @@ export function addSymbolsWelcome(errorTexts: string[]) {
         '[Open Folder](command:decomp.openFolder)',
         ...errorTexts,
     ];
-    Registry.as<IViewsRegistry>(Extensions.ViewsRegistry).registerViewWelcomeContent(symbolsViewId, { content: lines.join('\n') });
+    viewsRegistry.registerViewWelcomeContent(symbolsViewId, { content: lines.join('\n') });
 }
 
 /** Registers each view's language with the view's extension, so a document's language is the language of the document's view. */

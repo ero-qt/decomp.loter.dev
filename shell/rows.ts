@@ -1,3 +1,4 @@
+import type { SymbolKind } from 'vscode';
 import type { Row } from '../contract/rows';
 import { accessibilityOf, type Kind, modifiersOf } from '../contract/symbols';
 
@@ -27,6 +28,37 @@ const places: Record<Kind, number> = {
     section: -1,
     reference: 0,
     resource: 0,
+};
+
+/**
+ * The outline's symbol kind of each kind. A kind that the outline doesn't have gets the nearest symbol kind, like
+ * `Class` for a delegate or a record.
+ */
+export const symbolKinds: Record<Kind, keyof typeof SymbolKind> = {
+    namespace: 'Namespace',
+    class: 'Class',
+    struct: 'Struct',
+    interface: 'Interface',
+    enum: 'Enum',
+    delegate: 'Class',
+    method: 'Method',
+    constructor: 'Constructor',
+    operator: 'Operator',
+    property: 'Property',
+    indexer: 'Property',
+    field: 'Field',
+    enum_member: 'EnumMember',
+    event: 'Event',
+    parameter: 'Variable',
+    local: 'Variable',
+    type_parameter: 'TypeParameter',
+    label: 'Key',
+    opcode: 'Operator',
+    record: 'Class',
+    annotation: 'Interface',
+    section: 'Package',
+    reference: 'Module',
+    resource: 'File',
 };
 
 // compares names without case and numbers by value because a file manager sorts files that way

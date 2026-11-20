@@ -71,3 +71,31 @@ test("token legend has the contract's modifiers, which readTokenModifiers reads 
         (1 << modifiers.indexOf('static')) | (1 << modifiers.indexOf('declaration')),
     );
 });
+
+// `Draw(area)` with the method `Draw` at 0 to 4 and the local `area` at 5 to 9
+const tokens: Token[] = [
+    { start: 0, length: 4, kind: 'method', flags: 0, target: '1:4' },
+    { start: 5, length: 4, kind: 'local', flags: 0, target: 'L:0' },
+];
+
+test("findToken finds the token at an offset from the token's start to the offset right after the token's end", () => {
+    expect([0, 2, 4].map(offset => findToken(tokens, offset)?.target)).toEqual(['1:4', '1:4', '1:4']);
+    expect(findToken(tokens, 9)?.target).toBe('L:0');
+});
+
+test('findToken returns undefined for an offset outside the tokens', () => {
+    expect(findToken(tokens, 10)).toBeUndefined();
+    expect(findToken([], 0)).toBeUndefined();
+});
+
+test('findToken takes the later of 2 tokens that touch at the offset', () => {
+    const touching = [tokens[0], { ...tokens[1], start: 4 }];
+
+    expect(findToken(touching, 4)?.target).toBe('L:0');
+});
+
+test('findToken takes the token with a target when 2 tokens touch at the offset', () => {
+    const untargeted = { ...tokens[1], start: 4, target: null };
+
+    expect(findToken([tokens[0], untargeted], 4)?.target).toBe('1:4');
+});

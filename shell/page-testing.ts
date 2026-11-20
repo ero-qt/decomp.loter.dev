@@ -42,6 +42,15 @@ export function listOtherHostRequests(page: Page, requests: string[]): string[] 
     return requests.filter(url => new URL(url).host !== new URL(page.url()).host);
 }
 
+/** Collects the text of each console error and each uncaught error in the page. */
+export function collectErrors(page: Page): string[] {
+    const errors: string[] = [];
+    page.on('console', message => message.type() === 'error' && errors.push(message.text()));
+    page.on('pageerror', error => errors.push(error.message));
+
+    return errors;
+}
+
 // writes each violation to the console because Chromium's own message for a trusted types violation doesn't have the
 // policy's name
 function reportViolations() {

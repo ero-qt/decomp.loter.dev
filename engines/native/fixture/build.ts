@@ -7,6 +7,7 @@ const sourceFolder = fileURLToPath(new URL('src/', import.meta.url));
 const source = join(sourceFolder, 'shapes.cpp');
 const extrasSource = join(sourceFolder, 'extras.cpp');
 const stubSource = join(sourceFolder, 'managed-stub.c');
+const bigSource = join(sourceFolder, 'big.c');
 const script = fileURLToPath(import.meta.url);
 const outputRoot = fileURLToPath(new URL('../../../artifacts/native-fixture/', import.meta.url));
 
@@ -55,6 +56,8 @@ const commands: Command[] = [
     ...buildMacho('arm64', 'shapes-arm64'),
     ...buildMacho('x86_64', 'shapes-x86_64'),
     ['llvm-lipo', '-create', 'shapes-arm64.dylib', 'shapes-x86_64.dylib', '-output', 'shapes-fat.dylib'],
+    ['clang', '--target=x86_64-linux-gnu', ...elfFlags, '-o', 'big-x64.o', bigSource],
+    ['ld.lld', '-shared', '-o', 'big-x64.so', 'big-x64.o'],
     ['llvm-dlltool', '-m', 'i386:x86-64', '-d', join(sourceFolder, 'mscoree.def'), '-l', 'mscoree.lib'],
     ['clang', '--target=x86_64-pc-windows-msvc', ...compileFlags, '-o', 'managed-stub.obj', stubSource],
     ['lld-link', '/entry:start', '/subsystem:console', '/nodefaultlib', '/Brepro', '/out:managed-stub.exe', 'managed-stub.obj', 'mscoree.lib'],

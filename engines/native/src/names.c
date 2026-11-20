@@ -84,3 +84,72 @@ char *names_of_symbol(RzBinObject *object, const RzBinSymbol *symbol) {
 	bool is_underscored = object->plugin && rz_str_startswith(object->plugin->name, "mach0");
 	return names_clean(symbol->name + (is_underscored && symbol->name[0] == '_' && symbol->name[1]));
 }
+
+/**
+ * \brief Cuts the parameter list from a demangled name, so `geometry::Rect::area(int) const` becomes
+ * `geometry::Rect::area`.
+ *
+ * The list is the last group of parentheses, which keeps the parentheses in a name like `operator()`.
+ */
+static void cut_parameters(char *name) {
+	char *close = strrchr(name, ')');
+	int depth = 0;
+	for (char *at = close; at && at >= name; at--) {
+		if (*at == ')') {
+			depth++;
+		} else if (*at == '(') {
+			depth--;
+		}
+		if (!depth) {
+			*at = '\0';
+			return;
+		}
+	}
+}
+
+/**
+ * \brief Returns the clean name of the symbol or the entry point at an address, or NULL.
+ *
+ * The caller frees the result with free().
+ */
+static char *name_at(RzCore *core, ut64 addr) {
+	RzBinObject *object = rz_bin_cur_object(core->bin);
+	if (!object) {
+		return NULL;
+	}
+
+	RzBinSymbol *symbol = rz_bin_object_get_symbol_at(object, addr, true);
+	char *name = symbol ? names_of_symbol(object, symbol) : NULL;
+	if (name) {
+		return name;
+	}
+
+	const RzPVector *entries = rz_bin_object_get_entries(object);
+	void **it;
+	if (entries) {
+		rz_pvector_foreach (entries, it) {
+			if (((RzBinAddr *)*it)->vaddr == addr) {
+				return rz_str_dup("entry");
+			}
+		}
+	}
+	return NULL;
+}
+
+/**
+ * \brief Returns the name of the function at an address for code, without its parameters, or `sub_<address>` for a
+ * function without a name.
+ *
+ * The caller frees the result with free().
+ */
+char *names_for_code(RzCore *core, ut64 addr) {
+	char *name = name_at(core, addr);
+	if (name) {
+		cut_parameters(name);
+	}
+	if (RZ_STR_ISEMPTY(name)) {
+		free(name);
+		return rz_str_newf("sub_%" PFMT64x, addr);
+	}
+	return name;
+}

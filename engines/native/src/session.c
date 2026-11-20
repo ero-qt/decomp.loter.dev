@@ -22,7 +22,8 @@ void session_put_address(PJ *j, const char *key, ut64 addr) {
 }
 
 /**
- * \brief Starts a session with a new core that has the Ghidra plugin and prints plain text.
+ * \brief Starts a session with a new core that has the Ghidra plugin, prints plain text and finds Ghidra's languages
+ * below `/sleigh`.
  */
 EMSCRIPTEN_KEEPALIVE Session *session_new(void) {
 	Session *session = RZ_NEW0(Session);
@@ -31,7 +32,11 @@ EMSCRIPTEN_KEEPALIVE Session *session_new(void) {
 	}
 
 	session->core = rz_core_new();
-	if (!session->core) {
+	session->prepared = rz_set_u_new();
+	rz_vector_init(&session->starts, sizeof(ut64), NULL, NULL);
+	if (!session->core || !session->prepared) {
+		rz_core_free(session->core);
+		rz_set_u_free(session->prepared);
 		free(session);
 		return NULL;
 	}
@@ -42,6 +47,15 @@ EMSCRIPTEN_KEEPALIVE Session *session_new(void) {
 	rz_config_set_b(config, "scr.interactive", false);
 	rz_config_set_b(config, "scr.prompt", false);
 	rz_config_set_b(config, "scr.utf8", false);
+	rz_config_set_b(config, "asm.flags.real", true);
+	rz_config_set(config, "ghidra.sleighhome", "/sleigh");
+
+	// rz-ghidra's warnings are about its own mapping of variables and mean nothing to the reader of the code
+	rz_config_set_b(config, "ghidra.verbose", false);
+	rz_config_set_i(config, "ghidra.indent", 4);
+	rz_config_set_i(config, "ghidra.linelen", 120);
+	rz_config_set_b(config, "ghidra.cmt.cpp", true);
+	session->core->parser->localvar_only = true;
 	return session;
 }
 
@@ -53,6 +67,8 @@ EMSCRIPTEN_KEEPALIVE Session *session_new(void) {
 EMSCRIPTEN_KEEPALIVE void session_free(Session *session) {
 	rz_core_free(session->core);
 	rz_cons_break_clear();
+	rz_set_u_free(session->prepared);
+	rz_vector_fini(&session->starts);
 	free(session);
 }
 

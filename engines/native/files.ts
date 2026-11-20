@@ -1,4 +1,4 @@
-import type { ModuleFileSystem } from './module';
+import type { ModuleFileSystem, NativeModule } from './module';
 
 /** A file in the module's file system, with the function that takes it out again. */
 export interface MountedFile {
@@ -22,4 +22,18 @@ export async function mountInMemory(fs: ModuleFileSystem, folder: string, name: 
             fs.rmdir(folder);
         },
     };
+}
+
+/**
+ * Writes the type, calling convention and format databases that `share/files.txt` lists into the module's file system
+ * below `/usr/local/share`, where Rizin's build looks for them. Rizin reads them when it loads a binary.
+ */
+export async function writeShareFiles(module: NativeModule): Promise<void> {
+    const files = new TextDecoder().decode(await module.fetchFile('share/files.txt')).split('\n').filter(Boolean);
+    const contents = await Promise.all(files.map(file => module.fetchFile(`share/${file}`)));
+    files.forEach((file, index) => {
+        const path = `/usr/local/share/${file}`;
+        module.fs.mkdirTree(path.slice(0, path.lastIndexOf('/')));
+        module.fs.writeFile(path, contents[index]);
+    });
 }

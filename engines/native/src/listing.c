@@ -5,7 +5,10 @@ static bool has_address(const RzBinSymbol *symbol) {
 	return !symbol->is_imported && symbol->vaddr && symbol->vaddr != UT64_MAX;
 }
 
-static bool is_function(const RzBinSymbol *symbol) {
+/**
+ * \brief Returns whether a symbol is a function of the binary, which leaves out imports.
+ */
+bool listing_is_function(const RzBinSymbol *symbol) {
 	return has_address(symbol) && symbol->type && !strcmp(symbol->type, RZ_BIN_TYPE_FUNC_STR);
 }
 
@@ -78,7 +81,7 @@ static RzSetU *add_symbols(PJ *j, RzBinObject *object, bool (*is_kind)(const RzB
  */
 static void add_functions(PJ *j, RzBinObject *object) {
 	pj_ka(j, "functions");
-	RzSetU *listed = add_symbols(j, object, is_function);
+	RzSetU *listed = add_symbols(j, object, listing_is_function);
 	const RzPVector *entries = rz_bin_object_get_entries(object);
 	void **it;
 	if (entries) {
@@ -95,7 +98,29 @@ static void add_functions(PJ *j, RzBinObject *object) {
 }
 
 /**
- * \brief Adds the first max imports and counts the others in `omittedImports`.
+ * \brief Returns the address of an import's stub or pointer, like its entry in an ELF file's PLT, or UT64_MAX.
+ *
+ * A call of the import goes to that address.
+ */
+static ut64 import_address(RzBinObject *object, RzBinImport *import) {
+	RzBinSymbol *symbol = import->name ? rz_bin_object_get_symbol_of_import(object, import) : NULL;
+	return symbol && symbol->vaddr ? symbol->vaddr : UT64_MAX;
+}
+
+/**
+ * \brief Returns whether an import is a function: its type says so, or its stub lies in a section of code.
+ */
+static bool is_import_function(RzBinObject *object, RzBinImport *import, ut64 addr) {
+	if (import->type && !strcmp(import->type, RZ_BIN_TYPE_FUNC_STR)) {
+		return true;
+	}
+
+	RzBinSection *section = addr != UT64_MAX ? rz_bin_get_section_at(object, addr, true) : NULL;
+	return section && section->perm & RZ_PERM_X;
+}
+
+/**
+ * \brief Adds the first max imports with their addresses and counts the others in `omittedImports`.
  */
 static void add_imports(PJ *j, RzBinObject *object, size_t max) {
 	pj_ka(j, "imports");
@@ -105,10 +130,14 @@ static void add_imports(PJ *j, RzBinObject *object, size_t max) {
 		RzBinImport *import = rz_pvector_at(imports, i);
 		const char *raw = RZ_STR_ISNOTEMPTY(import->dname) ? import->dname : import->name;
 		char *name = names_clean(raw ? raw : "");
+		ut64 addr = import_address(object, import);
 		pj_o(j);
 		pj_ks(j, "name", name);
 		pj_ks(j, "library", import->libname ? import->libname : "");
-		pj_kb(j, "function", import->type && !strcmp(import->type, RZ_BIN_TYPE_FUNC_STR));
+		pj_kb(j, "function", is_import_function(object, import, addr));
+		if (addr != UT64_MAX) {
+			session_put_address(j, "addr", addr);
+		}
 		pj_end(j);
 		free(name);
 	}

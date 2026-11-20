@@ -1,3 +1,4 @@
+import type { Decompiled } from './code';
 import type { GlueListing } from './rows';
 
 /** The part of Emscripten's file system that the engine uses. */
@@ -14,7 +15,9 @@ interface RizinModule {
     _session_free(session: number): void;
     _session_open(session: number, path: number): number;
     _session_listing(session: number, maxMembers: number): number;
+    _session_prepare(session: number, address: number): number;
     _session_cmd(session: number, command: number): number;
+    _session_decompile(session: number, address: number): number;
     _free(pointer: number): void;
     stringToNewUTF8(text: string): number;
     UTF8ToString(pointer: number): string;
@@ -26,6 +29,14 @@ type CreateRizin = (options: { wasmBinary?: ArrayBuffer }) => Promise<RizinModul
 
 /** An error of the module or its files, like a file that didn't load, which the handlers refuse a call with. */
 export class ModuleError extends Error {}
+
+/** A function that the glue analyzed, with the bytes of its code, the name that its C has and its signature. */
+export interface PreparedFunction {
+    addr: string;
+    size: number;
+    name: string;
+    signature: string;
+}
 
 /** Rizin with rz-ghidra in wasm, with typed calls of the engine's glue. */
 export interface NativeModule {
@@ -40,6 +51,12 @@ export interface NativeModule {
      * imports.
      */
     listSymbols(session: number, maxMembers: number): GlueListing;
+    /** Analyzes the function at an address for the decompiler, or returns `undefined` where Rizin doesn't find one. */
+    prepareFunction(session: number, address: bigint): PreparedFunction | undefined;
+    /** Reads a file beside `rizin.mjs`, like `sleigh/files.txt`. */
+    fetchFile(path: string): Promise<Uint8Array>;
+    /** Decompiles the function at an address with Ghidra and returns its C with rz-ghidra's annotations. */
+    decompile(session: number, address: bigint): Decompiled;
     /** Runs a Rizin command in a session and returns its output. */
     runCommand(session: number, command: string): string;
     /** Returns the size of the module's wasm memory, which never shrinks. */
@@ -99,6 +116,28 @@ export async function loadModule(moduleUrl: string, wasmBinary?: ArrayBuffer): P
         freeSession: session => module._session_free(session),
         openSession: (session, path) => withText(module, path, text => module._session_open(session, text) !== 0),
         listSymbols: (session, maxMembers) => takeJson(module, 'the symbols of the file', () => module._session_listing(session, maxMembers)),
+        prepareFunction(session, address) {
+            const text = withText(module, `0x${address.toString(16)}`, pointer => takeText(module, module._session_prepare(session, pointer)));
+
+            return text === '' ? undefined : JSON.parse(text);
+        },
+        decompile(session, address) {
+            return withText(module, `0x${address.toString(16)}`, pointer => {
+                return takeJson(module, 'the C of the function', () => module._session_decompile(session, pointer));
+            });
+        },
+        async fetchFile(path) {
+            try {
+                const response = await fetch(new URL(path, moduleUrl));
+                if (!response.ok) {
+                    throw new Error(`${response.status} ${response.statusText}`);
+                }
+
+                return new Uint8Array(await response.arrayBuffer());
+            } catch (error) {
+                throw new ModuleError(`The native engine couldn't load ${path}: ${error instanceof Error ? error.message : error}`);
+            }
+        },
         runCommand: (session, command) => withText(module, command, text => takeText(module, module._session_cmd(session, text))),
         readMemoryBytes: () => module.HEAPU8.length,
     };

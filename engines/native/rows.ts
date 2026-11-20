@@ -17,6 +17,8 @@ export interface GlueImport {
     name: string;
     library: string;
     function: boolean;
+    /** The address of the import's stub or pointer, like its entry in an ELF file's PLT, which a call goes to. */
+    addr?: string;
 }
 
 /** The symbols of a file as the glue lists them, with the struct names of the file's debug information. */
@@ -35,6 +37,8 @@ export interface GlueListing {
 export interface NativeRows {
     rows: Row[];
     keys: AddressKeys;
+    /** The key of each import's row by the address that a call of the import goes to. */
+    importKeys: Map<bigint, number>;
     note: string;
 }
 
@@ -132,10 +136,11 @@ function listScopes(scope: Scope): Scope[] {
     return [...scope.scopes.values()].flatMap(inner => [inner, ...listScopes(inner)]);
 }
 
-// adds `Imports` with the imports by library
-function pushImports(rows: Row[], imports: GlueImport[], count: number) {
+// adds `Imports` with the imports by library and returns the key of each import's row by the import's address
+function pushImports(rows: Row[], imports: GlueImport[], count: number): Map<bigint, number> {
+    const importKeys = new Map<bigint, number>();
     if (imports.length === 0) {
-        return;
+        return importKeys;
     }
 
     const key = tagKey(keyTags.imports, 0);
@@ -147,12 +152,18 @@ function pushImports(rows: Row[], imports: GlueImport[], count: number) {
             rows.push({ kind: 'reference', flags: 0, parent, key: tagKey(keyTags.imports, index + 1), name: library, detail: '', hiddenViews: 0 });
         }
 
-        for (const [importIndex, { name, function: isFunction }] of libraries.get(library)!) {
+        for (const [importIndex, { name, function: isFunction, addr }] of libraries.get(library)!) {
             const kind = isFunction ? 'method' : 'field';
             const flags = flagsOf('public', 'extern');
-            rows.push({ kind, flags, parent: libraryRow, key: tagKey(keyTags.importedSymbol, importIndex), name, detail: '', hiddenViews: 0 });
+            const importKey = tagKey(keyTags.importedSymbol, importIndex);
+            rows.push({ kind, flags, parent: libraryRow, key: importKey, name, detail: '', hiddenViews: 0 });
+            if (addr !== undefined) {
+                importKeys.set(BigInt(addr), importKey);
+            }
         }
     }
+
+    return importKeys;
 }
 
 // writes the note of what the listing leaves out, like `Lists 200,000 of 312,512 functions and globals.`
@@ -192,7 +203,7 @@ export function groupRows(listing: GlueListing, maxMembers = defaultMaxMembers):
     const namespaceIndexes = new Map(namespaceNames.map((name, index) => [name, index]));
 
     const rows: Row[] = [];
-    pushImports(rows, listing.imports, importCount);
+    const importKeys = pushImports(rows, listing.imports, importCount);
 
     function pushMember({ symbol, address, scopes: names, isFunction }: Member, parent: number, owner: Scope | undefined, hasDocument: boolean) {
         const name = names.at(-1)!;
@@ -233,5 +244,5 @@ export function groupRows(listing: GlueListing, maxMembers = defaultMaxMembers):
 
     pushScope(root, -1, undefined, false);
 
-    return { rows, keys, note };
+    return { rows, keys, importKeys, note };
 }

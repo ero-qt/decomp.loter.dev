@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test';
 import { failed, ok } from '../../contract/reply';
 import { mountInMemory } from './files';
 import { createNativeHandlers } from './handlers';
-import { ModuleError } from './module';
+import { ModuleError, type NativeModule } from './module';
 import { loadTestModule, readFixture, useNativeEngine } from './testing';
 
 const connect = useNativeEngine();
@@ -67,4 +67,33 @@ test('a failed load of the module becomes a failed reply, and the next call load
 
     expect(await handlers.open(1, file.name, file, signal)).toEqual(failed(refusal));
     expect(await handlers.open(1, file.name, file, signal)).toEqual(ok(undefined));
+}, 120000);
+
+test('a failed fetch of the share files becomes a failed reply, and the next call fetches them again', async () => {
+    const module = await loadTestModule();
+    let isFailing = true;
+    const flaky: NativeModule = {
+        ...module,
+        async fetchFile(path) {
+            if (isFailing && path.startsWith('share/')) {
+                throw new ModuleError(`The native engine couldn't load ${path}: 503 Service Unavailable`);
+            }
+
+            return module.fetchFile(path);
+        },
+    };
+    const handlers = createNativeHandlers(async () => flaky, mountInMemory);
+    const file = await readFixture('shapes-x64.so');
+    const signal = new AbortController().signal;
+    const refusal = failed("The native engine couldn't load share/files.txt: 503 Service Unavailable");
+
+    expect(await handlers.open(1, file.name, file, signal)).toEqual(refusal);
+    isFailing = false;
+    expect(await handlers.open(1, file.name, file, signal)).toEqual(ok(undefined));
+}, 120000);
+
+test("the module's fetch of a missing file throws a module error", async () => {
+    const module = await loadTestModule();
+
+    await expect(module.fetchFile('missing.txt')).rejects.toBeInstanceOf(ModuleError);
 }, 120000);

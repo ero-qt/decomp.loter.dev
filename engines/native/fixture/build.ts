@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const sourceFolder = fileURLToPath(new URL('src/', import.meta.url));
 const source = join(sourceFolder, 'shapes.cpp');
+const stubSource = join(sourceFolder, 'managed-stub.c');
 const script = fileURLToPath(import.meta.url);
 const outputRoot = fileURLToPath(new URL('../../../artifacts/native-fixture/', import.meta.url));
 
@@ -53,6 +54,9 @@ const commands: Command[] = [
     ...buildMacho('arm64', 'shapes-arm64'),
     ...buildMacho('x86_64', 'shapes-x86_64'),
     ['llvm-lipo', '-create', 'shapes-arm64.dylib', 'shapes-x86_64.dylib', '-output', 'shapes-fat.dylib'],
+    ['llvm-dlltool', '-m', 'i386:x86-64', '-d', join(sourceFolder, 'mscoree.def'), '-l', 'mscoree.lib'],
+    ['clang', '--target=x86_64-pc-windows-msvc', ...compileFlags, '-o', 'managed-stub.obj', stubSource],
+    ['lld-link', '/entry:start', '/subsystem:console', '/nodefaultlib', '/Brepro', '/out:managed-stub.exe', 'managed-stub.obj', 'mscoree.lib'],
 ];
 
 /** The folders that the fixture's build looks in for LLVM's tools, besides the PATH. */
@@ -117,11 +121,15 @@ function run(llvm: LlvmFolders, folder: string, [tool, ...args]: Command) {
 
 /**
  * Builds the fixture's ELF, PE and Mach-O files with LLVM's tools into a folder below `artifacts/native-fixture`
- * whose name is a hash of the source and this script, unless the folder is there. Returns the folder.
+ * whose name is a hash of the sources and this script, unless the folder is there. Returns the folder.
  */
 export async function buildFixture(): Promise<string> {
-    const hash = createHash('sha256').update(readFileSync(source)).update(readFileSync(script)).digest('hex').slice(0, 16);
-    const folder = join(outputRoot, hash);
+    const hash = createHash('sha256');
+    for (const name of readdirSync(sourceFolder).sort()) {
+        hash.update(name).update(readFileSync(join(sourceFolder, name)));
+    }
+
+    const folder = join(outputRoot, hash.update(readFileSync(script)).digest('hex').slice(0, 16));
     if (existsSync(folder)) {
         return folder;
     }

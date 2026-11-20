@@ -49,6 +49,50 @@ EMSCRIPTEN_KEEPALIVE void session_free(Session *session) {
 }
 
 /**
+ * \brief Loads the open file's binary and checks that a plugin other than `any` reads it.
+ *
+ * Rizin reads every file with the plugin `any`.
+ */
+static bool load_binary(RzCore *core, const char *path) {
+	if (!rz_core_bin_load(core, path, UT64_MAX)) {
+		return false;
+	}
+
+	RzBinObject *object = rz_bin_cur_object(core->bin);
+	return object && object->plugin && strcmp(object->plugin->name, "any");
+}
+
+/**
+ * \brief Opens a file, loads its binary and returns whether Rizin reads the binary's format.
+ *
+ * A fat Mach-O file needs asm.arch and asm.bits to pick a slice, so the open tries the AArch64 slice, then the x86-64
+ * one.
+ */
+EMSCRIPTEN_KEEPALIVE bool session_open(Session *session, const char *path) {
+	static const struct {
+		const char *arch;
+		int bits;
+	} slices[] = { { "arm", 64 }, { "x86", 64 } };
+
+	RzCore *core = session_use(session);
+	if (!rz_core_file_open(core, path, RZ_PERM_R, 0)) {
+		return false;
+	}
+	if (load_binary(core, path)) {
+		return true;
+	}
+
+	for (size_t i = 0; i < RZ_ARRAY_SIZE(slices); i++) {
+		rz_config_set(core->config, "asm.arch", slices[i].arch);
+		rz_config_set_i(core->config, "asm.bits", slices[i].bits);
+		if (load_binary(core, path)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
  * \brief Runs a Rizin command and returns its output, which the caller frees with free().
  */
 EMSCRIPTEN_KEEPALIVE char *session_cmd(Session *session, const char *cmd) {

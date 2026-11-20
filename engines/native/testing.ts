@@ -5,6 +5,7 @@ import type { Engine } from '../../contract/engine';
 import { restoreWorker, useInThreadWorker } from '../../contract/in-thread-worker';
 import { connectEngine } from '../../contract/queue';
 import { buildModule, moduleFolder } from './build/link';
+import { mountInMemory } from './files';
 import { buildFixture } from './fixture/build';
 import { createNativeHandlers } from './handlers';
 import { loadModule, type NativeModule } from './module';
@@ -24,19 +25,21 @@ export async function readFixture(name: string): Promise<File> {
  * test.
  */
 export function useNativeEngine(): () => Engine {
-    beforeEach(() => useInThreadWorker(() => createNativeHandlers()));
+    beforeEach(() => useInThreadWorker(() => createNativeHandlers(loadTestModule, mountInMemory), () => testModule?.readMemoryBytes() ?? 0));
     afterEach(restoreWorker);
 
     return () => connectEngine('native.js', { timeLimitMs: 120000, cancelLimitMs: 30000 });
 }
 
 let moduleLoad: Promise<NativeModule> | undefined;
+let testModule: NativeModule | undefined;
 
 async function buildAndLoad(): Promise<NativeModule> {
     await buildModule();
     const wasmBinary = await Bun.file(join(moduleFolder, 'rizin.wasm')).arrayBuffer();
+    testModule = await loadModule(pathToFileURL(join(moduleFolder, 'rizin.mjs')).href, wasmBinary);
 
-    return loadModule(pathToFileURL(join(moduleFolder, 'rizin.mjs')).href, wasmBinary);
+    return testModule;
 }
 
 /** Builds the module when its stamp is stale and loads it with its wasm from disk, once in a process. */

@@ -1,8 +1,10 @@
 import { failed, ok, type Reply } from '../../contract/reply';
+import { writeRows } from '../../contract/rows';
 import type { EngineHandlers } from '../../contract/serve';
 import type { MountedFile, MountFile } from './files';
 import { claimsNativeFile } from './formats';
 import { ModuleError, type NativeModule } from './module';
+import { defaultMaxMembers, groupRows } from './rows';
 
 /** A file that the engine opened, with its Rizin session. */
 interface NativeFile {
@@ -132,7 +134,18 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
             return ok(undefined);
         },
         provide: refuseFileCall,
-        list: refuseFileCall,
+        async list(fileId, signal) {
+            const found = findFile(fileId);
+            if (found.error !== undefined) {
+                return found;
+            }
+
+            const module = await useModule();
+            signal.throwIfAborted();
+            const { rows, note } = groupRows(module.listSymbols(found.value.session, defaultMaxMembers));
+
+            return ok({ ...writeRows(rows), note, missingFiles: [] });
+        },
         read: refuseFileCall,
         describe: refuseCall,
         resolve: refuseCall,

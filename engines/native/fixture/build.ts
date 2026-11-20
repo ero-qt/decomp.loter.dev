@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const sourceFolder = fileURLToPath(new URL('src/', import.meta.url));
 const source = join(sourceFolder, 'shapes.cpp');
+const extrasSource = join(sourceFolder, 'extras.cpp');
 const stubSource = join(sourceFolder, 'managed-stub.c');
 const script = fileURLToPath(import.meta.url);
 const outputRoot = fileURLToPath(new URL('../../../artifacts/native-fixture/', import.meta.url));
@@ -21,9 +22,9 @@ const machoLinkFlags = ['-dylib', '-platform_version', 'macos', '11.0', '11.0', 
 
 type Command = [tool: string, ...args: string[]];
 
-function buildElf(target: string, name: string): Command[] {
+function buildElf(target: string, name: string, from = source): Command[] {
     return [
-        ['clang++', `--target=${target}`, ...elfFlags, '-o', `${name}.o`, source],
+        ['clang++', `--target=${target}`, ...elfFlags, '-o', `${name}.o`, from],
         ['ld.lld', '-shared', '-o', `${name}.so`, `${name}.o`],
     ];
 }
@@ -57,6 +58,14 @@ const commands: Command[] = [
     ['llvm-dlltool', '-m', 'i386:x86-64', '-d', join(sourceFolder, 'mscoree.def'), '-l', 'mscoree.lib'],
     ['clang', '--target=x86_64-pc-windows-msvc', ...compileFlags, '-o', 'managed-stub.obj', stubSource],
     ['lld-link', '/entry:start', '/subsystem:console', '/nodefaultlib', '/Brepro', '/out:managed-stub.exe', 'managed-stub.obj', 'mscoree.lib'],
+    ...buildElf('x86_64-linux-gnu', 'extras-x64', extrasSource),
+    // links at the base of a kernel's image, whose addresses lose their low bits as JavaScript numbers
+    ['ld.lld', '-shared', '--image-base=0xffffffff80000000', '-o', 'extras-high.so', 'extras-x64.o'],
+    ...buildElf('armv7-linux-gnueabihf', 'extras-arm', extrasSource),
+    ...buildElf('mips-linux-gnu', 'extras-mips', extrasSource),
+    // writes the PDB's name in capitals into the DLL's debug directory, like the builds of many Windows programs do
+    ['clang++', '--target=x86_64-pc-windows-msvc', ...compileFlags, '-o', 'extras.obj', extrasSource],
+    ['lld-link', ...peLinkFlags, '/pdbaltpath:EXTRAS.PDB', '/pdb:extras.pdb', '/out:extras.dll', 'extras.obj'],
 ];
 
 /** The folders that the fixture's build looks in for LLVM's tools, besides the PATH. */

@@ -4,6 +4,8 @@ import { pathToFileURL } from 'node:url';
 import type { Engine } from '../../contract/engine';
 import { restoreWorker, useInThreadWorker } from '../../contract/in-thread-worker';
 import { connectEngine } from '../../contract/queue';
+import { unwrap } from '../../contract/reply';
+import { readRows } from '../../contract/rows';
 import { buildModule, moduleFolder } from './build/link';
 import { mountInMemory } from './files';
 import { buildFixture } from './fixture/build';
@@ -47,4 +49,15 @@ export function loadTestModule(): Promise<NativeModule> {
     moduleLoad ??= buildAndLoad();
 
     return moduleLoad;
+}
+
+/** Lists the keys of the rows of a fixture's file, like `shapes-x64.so`, with new handlers. */
+export async function listKeys(name: string): Promise<number[]> {
+    const handlers = createNativeHandlers(loadTestModule, mountInMemory);
+    const file = await readFixture(name);
+    const signal = new AbortController().signal;
+    await handlers.open(1, file.name, file, signal);
+    const listing = await handlers.list(1, signal);
+
+    return readRows(unwrap(listing)).map(row => row.key);
 }

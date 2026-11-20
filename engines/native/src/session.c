@@ -14,6 +14,14 @@ RzCore *session_use(Session *session) {
 }
 
 /**
+ * \brief Writes an address as a hex string, because the worker's numbers lose the low bits of addresses above 2^53.
+ */
+void session_put_address(PJ *j, const char *key, ut64 addr) {
+	char text[32];
+	pj_ks(j, key, rz_strf(text, "0x%" PFMT64x, addr));
+}
+
+/**
  * \brief Starts a session with a new core that has the Ghidra plugin and prints plain text.
  */
 EMSCRIPTEN_KEEPALIVE Session *session_new(void) {

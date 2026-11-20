@@ -1,3 +1,5 @@
+import type { GlueListing } from './rows';
+
 /** The part of Emscripten's file system that the engine uses. */
 export interface ModuleFileSystem {
     mkdirTree(path: string): void;
@@ -11,6 +13,7 @@ interface RizinModule {
     _session_new(): number;
     _session_free(session: number): void;
     _session_open(session: number, path: number): number;
+    _session_listing(session: number, maxMembers: number): number;
     _session_cmd(session: number, command: number): number;
     _free(pointer: number): void;
     stringToNewUTF8(text: string): number;
@@ -32,6 +35,11 @@ export interface NativeModule {
     freeSession(session: number): void;
     /** Opens a file of the module's file system in a session and returns whether Rizin reads the file's format. */
     openSession(session: number, path: string): boolean;
+    /**
+     * Lists the symbols of a session's file for `groupRows`, with at most `maxMembers` functions and globals and as many
+     * imports.
+     */
+    listSymbols(session: number, maxMembers: number): GlueListing;
     /** Runs a Rizin command in a session and returns its output. */
     runCommand(session: number, command: string): string;
     /** Returns the size of the module's wasm memory, which never shrinks. */
@@ -44,10 +52,21 @@ function takeText(module: RizinModule, pointer: number): string {
         return '';
     }
 
-    const text = module.UTF8ToString(pointer);
-    module._free(pointer);
+    try {
+        return module.UTF8ToString(pointer);
+    } finally {
+        module._free(pointer);
+    }
+}
 
-    return text;
+// reads the JSON that the glue returns, or throws a module error that names what the engine couldn't read, because
+// a file with millions of symbols can give a text above the size of a JavaScript string
+function takeJson<T>(module: RizinModule, what: string, call: () => number): T {
+    try {
+        return JSON.parse(takeText(module, call()));
+    } catch (error) {
+        throw new ModuleError(`The native engine couldn't read ${what}: ${error instanceof Error ? error.message : error}`);
+    }
 }
 
 // passes a text to the glue as a C string, which lives only during the call
@@ -79,6 +98,7 @@ export async function loadModule(moduleUrl: string, wasmBinary?: ArrayBuffer): P
         newSession: () => module._session_new(),
         freeSession: session => module._session_free(session),
         openSession: (session, path) => withText(module, path, text => module._session_open(session, text) !== 0),
+        listSymbols: (session, maxMembers) => takeJson(module, 'the symbols of the file', () => module._session_listing(session, maxMembers)),
         runCommand: (session, command) => withText(module, command, text => takeText(module, module._session_cmd(session, text))),
         readMemoryBytes: () => module.HEAPU8.length,
     };

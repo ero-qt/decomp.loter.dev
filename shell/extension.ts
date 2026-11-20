@@ -31,6 +31,7 @@ vscode.workspace.registerTextDocumentContentProvider(documentScheme, documents);
 vscode.languages.registerDocumentSemanticTokensProvider({ scheme: documentScheme }, documents, tokenLegend);
 vscode.languages.registerHoverProvider({ scheme: documentScheme }, features);
 vscode.languages.registerDefinitionProvider({ scheme: documentScheme }, features);
+vscode.languages.registerReferenceProvider({ scheme: documentScheme }, features);
 vscode.languages.registerDocumentSymbolProvider({ scheme: documentScheme }, features);
 vscode.languages.registerWorkspaceSymbolProvider(new SymbolSearch(openFiles, documents));
 registerViewLanguages(engines.flatMap(({ manifest }) => manifest.views));

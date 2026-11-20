@@ -215,6 +215,17 @@ test("Ctrl+click on a symbol of another file opens that file's document at the d
     expect(errors).toEqual([]);
 }, testTimeoutMs);
 
+test("F12 inside a symbol's name on the symbol's declaration lists the symbol's references", async () => {
+    const { page } = await openWorkbench();
+    await openCircle(page, drawing, 'Draw');
+
+    await findWord(page, 'field radius', 'radius').click();
+    await page.keyboard.press('F12');
+
+    const expected = ['readonly field radius', 'uses Drawing.Circle.radius'];
+    expect(await readUntil(() => readReferences(page), expected)).toEqual(expected);
+}, testTimeoutMs);
+
 test("F12 on a local goes to the local's declaration in the same document", async () => {
     const { page } = await openWorkbench();
     await startWithEngines(page, { listed: listedEngine });

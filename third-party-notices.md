@@ -46,6 +46,10 @@ Java code gets its colors from the Java grammar of VS Code's Java extension, whi
 
 C# code gets its colors from the C# grammar of VS Code's C# extension, which the site takes from [@codingame/monaco-vscode-csharp-default-extension](https://github.com/CodinGame/monaco-vscode-api) 39.0.4. The extension's package file lists the MIT License under VS Code's copyright above. VS Code converted the grammar from the grammar of [dotnet/csharp-tmLanguage](https://github.com/dotnet/csharp-tmLanguage), a project under the MIT License, as a note in the grammar's file tells.
 
+## IL grammar
+
+IL code gets its colors from a modified copy of the grammar `il-assembly.tmLanguage.json` of [il-assembly-grammar](https://github.com/mg0x7BE/il-assembly-grammar) at commit `bbdcb6ceef3892923d13288a68606999965fde14`, which is under The Unlicense, whose text is at the end of this file. The copy adds block comments, the bytes of blobs, the labels of branches and more words of the IL that ILSpy writes. The added words come from the ILAsm mode of [ILSpy](https://github.com/icsharpcode/ILSpy), which is under the MIT License.
+
 ## Codicons
 
 The tree's icons and the workbench's icon font are [Codicons](https://github.com/microsoft/vscode-codicons) 0.0.46-24. The icons are under the Creative Commons Attribution 4.0 International license:
@@ -1260,4 +1264,33 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
+
+## The Unlicense
+
+```
+This is free and unencumbered software released into the public domain.
+
+Anyone is free to copy, modify, publish, use, compile, sell, or
+distribute this software, either in source code form or as a compiled
+binary, for any purpose, commercial or non-commercial, and by any
+means.
+
+In jurisdictions that recognize copyright laws, the author or authors
+of this software dedicate any and all copyright interest in the
+software to the public domain. We make this dedication for the benefit
+of the public at large and to the detriment of our heirs and
+successors. We intend this dedication to be an overt act of
+relinquishment in perpetuity of all present and future rights to this
+software under copyright law.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+For more information, please refer to <https://unlicense.org>
 ```

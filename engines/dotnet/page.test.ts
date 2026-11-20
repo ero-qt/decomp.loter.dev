@@ -14,6 +14,13 @@ const painterLine = 'public class Painter';
 const fixtureString = '"héllo\u00a0✓"';
 const dotnetFiles = /\/engines\/dotnet\/(?!manifest\.json)/;
 
+// picks the item with the keyboard once the menu shows the item as focused because the menu can miss an early click
+async function pickMenuItem(page: Page, label: string) {
+    await page.getByRole('menuitem', { name: label }).hover();
+    await page.locator('.context-view .action-item.focused').filter({ hasText: label }).waitFor();
+    await page.keyboard.press('Enter');
+}
+
 // drops `Drawing.dll` and opens `Painter.cs` from the class's row
 async function openPainter(page: Page) {
     await dropFiles(page, { 'Drawing.dll': drawing });
@@ -60,4 +67,24 @@ test("workbench loads the .NET worker and runtime only after a drop, and the C# 
     expect(listedRequests.some(url => /\/engines\/dotnet\/_framework\/.+\.wasm$/.test(url))).toBe(true);
     expect(grammar.length).toBeGreaterThanOrEqual(1);
     expect(listedRequests.filter(url => grammar.includes(url))).toEqual([]);
+}, testTimeoutMs * 2);
+
+test("Show IL to the Side in Painter's menu opens Painter.il beside Painter.cs with the theme's opcode color", async () => {
+    const { page, violations, requests } = await openWorkbench();
+    await openPainter(page);
+    await expandRows(page, 'Painter');
+
+    await findRow(page, 'Painter').click({ button: 'right' });
+    await pickMenuItem(page, 'Show IL to the Side');
+    const ilTab = page.locator('.tab .label-name').getByText('Painter.il', { exact: true });
+    await ilTab.waitFor();
+    await page.locator('.editor-group-container').filter({ has: ilTab }).locator('.view-line').first().click();
+    const rowTexts = await readRowTexts(page);
+
+    expect(await readUntil(() => readWordColor(page, 'IL_0001: ldfld', 'ldfld'), '#609fd2')).toBe('#609fd2');
+    expect(rowTexts).toContain('Count');
+    expect(rowTexts.filter(text => /get_Count|k__BackingField|<Steps>d__11/.test(text))).toEqual([]);
+    expect(requests.filter(url => /il\.tmLanguage/.test(url)).length).toBeGreaterThanOrEqual(1);
+    expect(violations).toEqual([]);
+    expect(listOtherHostRequests(page, requests)).toEqual([]);
 }, testTimeoutMs * 2);

@@ -3,6 +3,8 @@ import csharpGrammarUrl from '@codingame/monaco-vscode-csharp-default-extension/
 import csharpConfigurationUrl from '@codingame/monaco-vscode-csharp-default-extension/resources/language-configuration.json?url';
 import javaGrammarUrl from '@codingame/monaco-vscode-java-default-extension/resources/java.tmLanguage.json?url';
 import javaConfigurationUrl from '@codingame/monaco-vscode-java-default-extension/resources/language-configuration.json?url';
+import ilConfigurationUrl from './grammars/il.language-configuration.json?url';
+import ilGrammarUrl from './grammars/il.tmLanguage.json?url';
 
 /**
  * A language's TextMate grammar and language configuration, which the workbench fetches for the language's first
@@ -15,10 +17,11 @@ export interface Grammar {
 }
 
 /**
- * Maps a view's language to its grammar. Takes only the files' URLs from the default extension because its module
- * would add snippets and texts to the start.
+ * Maps a view's language to its grammar, from a default extension or from the site's own files. Takes only the files'
+ * URLs from a default extension because its module would add snippets and texts to the start.
  */
 export const grammars: Record<string, Grammar> = {
     csharp: { scopeName: 'source.cs', grammarUrl: csharpGrammarUrl, configurationUrl: csharpConfigurationUrl },
+    il: { scopeName: 'source.il', grammarUrl: ilGrammarUrl, configurationUrl: ilConfigurationUrl },
     java: { scopeName: 'source.java', grammarUrl: javaGrammarUrl, configurationUrl: javaConfigurationUrl },
 };

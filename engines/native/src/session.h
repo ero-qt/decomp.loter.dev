@@ -10,6 +10,7 @@ typedef struct {
 	RzCore *core;
 	RzSetU *prepared; ///< addresses of the functions that the session analyzed and prepared for the decompiler
 	RzVector /*<ut64>*/ starts; ///< sorted start addresses of the function symbols, filled on the first analysis
+	bool is_rtti_recovered; ///< whether the analysis has the classes of the binary's RTTI
 } Session;
 
 RzCore *session_use(Session *session);
@@ -20,6 +21,7 @@ char *names_of_symbol(RzBinObject *object, const RzBinSymbol *symbol);
 char *names_for_code(RzCore *core, ut64 addr);
 
 bool listing_is_function(const RzBinSymbol *symbol);
+void classes_add_rtti(PJ *j, Session *session, RzBinObject *object);
 
 void debug_info_apply_dwarf(RzCore *core, RzAnalysisFunction *fcn);
 

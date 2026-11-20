@@ -21,13 +21,20 @@ export interface GlueImport {
     addr?: string;
 }
 
-/** The symbols of a file as the glue lists them, with the struct names of the file's debug information. */
+/** A class from the RTTI of a file without function symbols, with the addresses of its vtables' functions. */
+export interface GlueClass {
+    name: string;
+    methods: string[];
+}
+
+/** The symbols of a file as the glue lists them, with the debug information's struct names and the RTTI's classes. */
 export interface GlueListing {
     base: string;
     functions: GlueSymbol[];
     data: GlueSymbol[];
     imports: GlueImport[];
     types: string[];
+    classes: GlueClass[];
     /** The count of the functions and globals above the glue's cap, which the glue leaves out. */
     omitted: number;
     omittedImports: number;
@@ -75,6 +82,19 @@ const numberFormat = new Intl.NumberFormat('en');
 
 function compareAddresses(first: Member, second: Member): number {
     return first.address < second.address ? -1 : first.address > second.address ? 1 : 0;
+}
+
+// lists each function of a class's vtables as `sub_<address>` inside the class, 1 function for each address, because
+// the classes of a base and a derived class share the functions that the derived class doesn't override
+function listVirtualMethods(classes: GlueClass[]): GlueSymbol[] {
+    const symbols = new Map<string, GlueSymbol>();
+    for (const { name, methods } of classes) {
+        for (const addr of methods.filter(method => !symbols.has(method))) {
+            symbols.set(addr, { addr, size: 0, name: `${name}::sub_${addr.slice(2)}`, global: true });
+        }
+    }
+
+    return [...symbols.values()];
 }
 
 function readMembers(symbols: GlueSymbol[], isFunction: boolean): Member[] {
@@ -182,10 +202,10 @@ function writeNote(...counts: [listed: number, count: number, what: string][]): 
  * functions and globals, those with the lowest addresses.
  */
 export function groupRows(listing: GlueListing, maxMembers = defaultMaxMembers): NativeRows {
-    const functions = readMembers(listing.functions, true);
+    const functions = readMembers([...listing.functions, ...listVirtualMethods(listing.classes)], true);
     const functionAddresses = new Set(functions.map(member => member.address));
     const data = readMembers(listing.data, false).filter(({ address, symbol }) => !functionAddresses.has(address) && !classData.test(symbol.name));
-    const isClass = findClasses(listing.data, functions, listing.types);
+    const isClass = findClasses(listing.data, functions, [...listing.types, ...listing.classes.map(({ name }) => name)]);
 
     const members = [...functions, ...data].sort(compareAddresses);
     const listed = members.slice(0, maxMembers);
@@ -220,7 +240,8 @@ export function groupRows(listing: GlueListing, maxMembers = defaultMaxMembers):
             modifiers.push('document');
         }
 
-        rows.push({ kind, flags: flagsOf(accessibility, ...modifiers), parent, key: keys.keys.get(address)!, name, detail: '', hiddenViews: 0 });
+        const detail = name === `sub_${address.toString(16)}` ? `0x${address.toString(16)}` : '';
+        rows.push({ kind, flags: flagsOf(accessibility, ...modifiers), parent, key: keys.keys.get(address)!, name, detail, hiddenViews: 0 });
     }
 
     function pushScope(scope: Scope, parent: number, owner: Scope | undefined, hasDocument: boolean) {

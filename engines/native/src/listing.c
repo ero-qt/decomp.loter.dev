@@ -189,8 +189,8 @@ static void find_max_address(Session *session, RzBinObject *object, size_t max) 
 }
 
 /**
- * \brief Lists the image base, functions, globals and imports of the open file and the structs of its debug
- * information as JSON, or returns NULL without a binary.
+ * \brief Lists the image base, functions, globals and imports of the open file, the structs of its debug information
+ * and the classes of its RTTI as JSON, or returns NULL without a binary.
  *
  * Lists the max functions and globals with the lowest addresses and the first max imports, and counts the others in
  * `omitted` and `omittedImports`. Lists names as the demangler writes them, with their parameters. The worker groups
@@ -215,6 +215,7 @@ EMSCRIPTEN_KEEPALIVE char *session_listing(Session *session, size_t max) {
 	pj_kn(j, "omitted", cap.omitted);
 	add_imports(j, object, max);
 	add_types(j, core);
+	classes_add_rtti(j, session, object);
 	pj_end(j);
 	return pj_drain(j);
 }

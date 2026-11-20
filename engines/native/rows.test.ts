@@ -39,6 +39,7 @@ function listFunctions(functions: GlueListing['functions']): GlueListing {
         data: [],
         imports: [],
         types: [],
+        classes: [],
         omitted: 0,
         omittedImports: 0,
     };

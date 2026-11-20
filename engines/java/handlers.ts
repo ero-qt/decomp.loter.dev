@@ -1,10 +1,15 @@
 import { failed, ok, type Reply } from '../../contract/reply';
 import type { EngineHandlers } from '../../contract/serve';
+import { writeRows } from '../../contract/rows';
 import { type JavaFile, readFile } from './files';
+import { type JavaRows, listRows } from './rows';
 import { findClassEntry } from './zip';
 
+/** An open file with its rows. */
+export type OpenFile = JavaFile & JavaRows;
+
 /** The handlers that the Java engine has so far. */
-export type JavaHandlers = Pick<EngineHandlers, 'claims' | 'open' | 'close'>;
+export type JavaHandlers = Pick<EngineHandlers, 'claims' | 'open' | 'close' | 'list'>;
 
 // the first 4 bytes of a zip file's local header, end record and spanned archive
 const zipStarts = ['504b0304', '504b0506', '504b0708'];
@@ -34,9 +39,9 @@ function claimsClass(file: Blob, start: Uint8Array): boolean {
 
 /** Returns the Java engine's handlers, which keep the open files in memory. */
 export function createJavaHandlers(): JavaHandlers {
-    const files = new Map<number, JavaFile>();
+    const files = new Map<number, OpenFile>();
 
-    function handleFile<Value>(fileId: number, handle: (file: JavaFile) => Reply<Value>): Reply<Value> {
+    function handleFile<Value>(fileId: number, handle: (file: OpenFile) => Reply<Value>): Reply<Value> {
         const file = files.get(fileId);
 
         return file ? handle(file) : refuseFile(fileId);
@@ -64,7 +69,7 @@ export function createJavaHandlers(): JavaHandlers {
             try {
                 const read = await readFile(name, await file.bytes(), signal);
                 if (read.value) {
-                    files.set(fileId, read.value);
+                    files.set(fileId, { ...read.value, ...listRows(read.value) });
                 }
 
                 return read.error === undefined ? ok(undefined) : read;
@@ -82,6 +87,9 @@ export function createJavaHandlers(): JavaHandlers {
 
                 return ok(undefined);
             });
+        },
+        list(fileId) {
+            return handleFile(fileId, ({ rows, note }) => ok({ ...writeRows(rows), note, missingFiles: [] }));
         },
     };
 }

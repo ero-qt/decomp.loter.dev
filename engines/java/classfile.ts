@@ -5,10 +5,13 @@ import type {
     EnclosingMethodAttribute,
     InnerClass,
     InnerClassesAttribute,
+    SignatureAttribute,
 } from '@katana-project/asm/attr';
 import type { UTF8Entry } from '@katana-project/asm/pool';
 import { ConstantType } from '@katana-project/asm/spec';
-import { access } from './flags';
+import { type Type, tryParseType } from '@katana-project/asm/type';
+import type { Kind } from '../../contract/symbols';
+import { access, readClassFlags } from './flags';
 
 export type ClassKeyword = 'class' | 'interface' | 'enum' | 'record' | '@interface';
 
@@ -28,7 +31,19 @@ export interface ClassSymbols {
     access: number;
     superName?: string;
     interfaces: string[];
+    kind: Kind;
+    /** The flags of the class's row, without `document`. */
+    flags: number;
 }
+
+// keyword -> the kind of the class's row
+const classKinds: Record<ClassKeyword, Kind> = {
+    class: 'class',
+    interface: 'interface',
+    enum: 'enum',
+    record: 'record',
+    '@interface': 'annotation',
+};
 
 const utf16Decoder = new TextDecoder('utf-16le');
 
@@ -98,6 +113,13 @@ export function findOwnEntry(node: Node, name: string): InnerClass | undefined {
     return classes.find(inner => inner.innerEntry?.nameEntry?.string === name);
 }
 
+/** Parses the generic signature of a class or a member, or its descriptor when it doesn't have one. */
+export function parseSignature(holder: Attributable, descriptor: string): Type | null {
+    const signature = findAttribute<SignatureAttribute>(holder, 'Signature')?.signatureEntry?.string;
+
+    return (signature && tryParseType(signature)) || tryParseType(descriptor);
+}
+
 /** Reads what the engine needs of a class file to list and open it. */
 export function readSymbols(node: Node): ClassSymbols {
     const name = node.thisClass.nameEntry!.string;
@@ -116,5 +138,7 @@ export function readSymbols(node: Node): ClassSymbols {
         access: flags,
         superName: node.superClass?.nameEntry?.string,
         interfaces: node.interfaces.flatMap(entry => entry.nameEntry?.string ?? []),
+        kind: classKinds[keyword],
+        flags: readClassFlags(flags, findAttribute(node, 'PermittedSubclasses') !== undefined),
     };
 }

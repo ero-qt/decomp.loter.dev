@@ -1,16 +1,20 @@
 import { afterEach, beforeEach } from 'bun:test';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { Engine } from '../../contract/engine';
 import { restoreWorker, useInThreadWorker } from '../../contract/in-thread-worker';
 import { connectEngine } from '../../contract/queue';
+import { frameworkFolder, publishEngine } from './build';
 import { buildFixture } from './fixture/build';
 import { createDotnetHandlers } from './handlers';
+import { type DotnetRuntime, loadRuntime } from './runtime';
 
 /** The folder that the tests build the fixture's assemblies into. */
 export const fixtureFolder = fileURLToPath(new URL('../../artifacts/dotnet-fixture/', import.meta.url));
 
 let fixtureBuild: Promise<void> | undefined;
+let runtimeLoad: Promise<DotnetRuntime> | undefined;
+let runtime: DotnetRuntime | undefined;
 
 /** Reads an assembly of the fixture, like `Drawing.dll`, and builds the fixture first when its stamp is stale. */
 export async function readFixture(name: string): Promise<File> {
@@ -18,6 +22,20 @@ export async function readFixture(name: string): Promise<File> {
     await fixtureBuild;
 
     return new File([await Bun.file(join(fixtureFolder, name)).bytes()], name);
+}
+
+async function publishAndLoad(): Promise<DotnetRuntime> {
+    await publishEngine();
+    runtime = await loadRuntime(pathToFileURL(`${frameworkFolder}/dotnet.js`).href);
+
+    return runtime;
+}
+
+/** Publishes the engine when its stamp is stale and loads the published runtime, once in a process. */
+export function loadTestRuntime(): Promise<DotnetRuntime> {
+    runtimeLoad ??= publishAndLoad();
+
+    return runtimeLoad;
 }
 
 /**

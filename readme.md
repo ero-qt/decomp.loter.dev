@@ -17,6 +17,6 @@ The build puts the site in `artifacts/site`. Serve that folder with a web server
 
 ## Testing
 
-The tests need a JDK 21 or later with `JAVA_HOME` set because they build the Java fixture with it.
+The tests need a JDK 21 or later with `JAVA_HOME` set because they build the Java fixture with it. They also need the .NET SDK 11 on the `PATH` because they build the .NET fixture and publish the .NET engine with it.
 
 AI assisted.

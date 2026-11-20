@@ -47,7 +47,7 @@ body,
 .tab-page h2 {
     margin: 0 0 8px;
     color: var(--vscode-foreground);
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 600;
 }
 
@@ -65,6 +65,45 @@ body,
 .tab-page header p {
     margin: 4px 0 28px;
     font-size: 14px;
+}
+
+.tab-page .usage {
+    font-size: 13px;
+}
+
+.tab-page h3 {
+    margin: 20px 0 6px;
+    color: var(--vscode-foreground);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.tab-page table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tab-page th {
+    color: var(--vscode-foreground);
+    font-weight: 600;
+    text-align: left;
+}
+
+.tab-page th,
+.tab-page td {
+    padding: 4px 12px 4px 0;
+    border-bottom: 1px solid var(--vscode-widget-border, var(--vscode-editorWidget-border));
+}
+
+.tab-page kbd {
+    padding: 0 4px;
+    border: 1px solid var(--vscode-keybindingLabel-border);
+    border-bottom-color: var(--vscode-keybindingLabel-bottomBorder);
+    border-radius: 3px;
+    color: var(--vscode-keybindingLabel-foreground);
+    background: var(--vscode-keybindingLabel-background);
+    font-family: inherit;
+    font-size: 11px;
 }
 
 .tab-page .transfer {

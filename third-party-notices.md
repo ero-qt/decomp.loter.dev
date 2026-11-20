@@ -42,6 +42,10 @@ vscode-oniguruma's `onig.wasm` is [Oniguruma](https://github.com/kkos/oniguruma)
 
 Java code gets its colors from the Java grammar of VS Code's Java extension, which the site takes from [@codingame/monaco-vscode-java-default-extension](https://github.com/CodinGame/monaco-vscode-api) 39.0.4. The extension's package file lists the MIT License under VS Code's copyright above. VS Code converted the grammar from the grammar of [redhat-developer/vscode-java](https://github.com/redhat-developer/vscode-java), as a note in the grammar's file tells.
 
+## C# grammar
+
+C# code gets its colors from the C# grammar of VS Code's C# extension, which the site takes from [@codingame/monaco-vscode-csharp-default-extension](https://github.com/CodinGame/monaco-vscode-api) 39.0.4. The extension's package file lists the MIT License under VS Code's copyright above. VS Code converted the grammar from the grammar of [dotnet/csharp-tmLanguage](https://github.com/dotnet/csharp-tmLanguage), a project under the MIT License, as a note in the grammar's file tells.
+
 ## Codicons
 
 The tree's icons and the workbench's icon font are [Codicons](https://github.com/microsoft/vscode-codicons) 0.0.46-24. The icons are under the Creative Commons Attribution 4.0 International license:

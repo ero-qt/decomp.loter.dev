@@ -4,6 +4,7 @@
   "explorer.fileNesting.patterns": {
     ".gitignore": ".gitattributes, .editorconfig",
     "readme.md": "license.md",
+    "package.json": "bun.lock, tsconfig.json, justfile",
     "*.ts": "${capture}.test.ts, ${capture}-*.test.ts, ${capture}-testing.ts",
   },
   "files.exclude": {

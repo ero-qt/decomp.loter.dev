@@ -19,6 +19,7 @@ const pageLines = [
 const formatRows = [
     ['Format', 'Files', 'Views'],
     ['Fake test files', '.fake', 'Code, Ops'],
+    ['.NET assemblies', '.dll, .exe', 'C#, IL'],
     ['Java classes and archives', '.class, .jar, .war', 'Java'],
 ];
 const shortcutRows = [

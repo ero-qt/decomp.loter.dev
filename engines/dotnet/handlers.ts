@@ -2,12 +2,13 @@ import type { Document } from '../../contract/document';
 import type { Description, Listing, StringUse } from '../../contract/engine';
 import { failed, ok, type Reply } from '../../contract/reply';
 import type { EngineHandlers } from '../../contract/serve';
+import manifest from './manifest.json' with { type: 'json' };
 import { hasCliHeader } from './pe';
 import { readInt32s, readReply, readVoidReply } from './replies';
 import type { DotnetExports, DotnetRuntime } from './runtime';
 
 // the views whose documents the engine writes
-const views = ['csharp', 'il'];
+const views = manifest.views.map(view => view.id);
 // the largest file that the engine opens, because the decompiler keeps the whole file in wasm memory and its type
 // system takes a few times the file's size there
 const maxFileBytes = 256 * 1024 * 1024;

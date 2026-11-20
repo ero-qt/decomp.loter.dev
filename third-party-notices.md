@@ -18,6 +18,18 @@ The Java engine decompiles classes with [Vineflower](https://github.com/Vineflow
 
 The Java engine reads class files with [@katana-project/asm](https://github.com/katana-project/asm) 0.25.4. Its copyright line is "Copyright (c) 2024 Matouš Kučera". It's under the MIT License, whose text is at the end of this file.
 
+## ICSharpCode.Decompiler
+
+The .NET engine decompiles assemblies with [ICSharpCode.Decompiler](https://github.com/icsharpcode/ILSpy) 11.2.0.10050, the decompiler of ILSpy. Its copyright line is "Copyright 2011-2026 AlphaSierraPapa". It's under the MIT License, whose text is at the end of this file.
+
+## Humanizer
+
+ICSharpCode.Decompiler includes the code of [Humanizer](https://github.com/Humanizr/Humanizer) that turns words into their plural and singular forms. Its copyright line is "Copyright (c) .NET Foundation and Contributors". It's under the MIT License, whose text is at the end of this file.
+
+## .NET runtime
+
+The .NET engine runs in the .NET runtime 11.0.0-rc.3 for WebAssembly, with the parts of the .NET libraries that the build keeps. It's under the MIT License with this copyright line, "Copyright (c) .NET Foundation and Contributors". The runtime ships code of other projects too. Their notices are in `engines/dotnet/THIRD-PARTY-NOTICES.TXT` on the site, which the build copies from the runtime's package.
+
 ## VS Code
 
 The site's workbench and editor are VS Code's, built for the browser by [@codingame/monaco-vscode-api](https://github.com/CodinGame/monaco-vscode-api) 39.0.4 and its service override packages. These packages bundle VS Code's [vscode-textmate](https://github.com/microsoft/vscode-textmate) and [vscode-oniguruma](https://github.com/microsoft/vscode-oniguruma), which color code with TextMate grammars. Their package files list the MIT License, whose text is at the end of this file. VS Code's files start with this copyright line, "Copyright (c) Microsoft Corporation. All rights reserved."

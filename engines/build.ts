@@ -32,6 +32,16 @@ for (const folder of readdirSync(new URL('.', import.meta.url), { withFileTypes:
         throw: true,
     });
 
+    // lets an engine add files that it builds by itself, like the .NET runtime and assemblies
+    if (existsSync(new URL('build.ts', source))) {
+        const { default: buildIntoSite } = await import(fileURLToPath(new URL('build.ts', source)));
+        if (typeof buildIntoSite !== 'function') {
+            throw new Error(`engines/${id}/build.ts doesn't have a default export that builds into the site`);
+        }
+
+        await buildIntoSite(fileURLToPath(target));
+    }
+
     cpSync(new URL('manifest.json', source), new URL('manifest.json', target));
     ids.push(id);
 }

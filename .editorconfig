@@ -9,7 +9,7 @@ indent_style             = space
 trim_trailing_whitespace = true
 
 # Code files
-[*.{css,html,js,ts}]
+[*.{css,html,java,js,ts}]
 max_line_length = 150
 
 # Other markup files

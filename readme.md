@@ -15,4 +15,8 @@ bun run build
 
 The build puts the site in `artifacts/site`. Serve that folder with a web server. The web server has to send the headers in `shell/headers.ts` with every response, also with a missing file. No file in the repo sets them for you, so add them to the web server's own settings.
 
+## Testing
+
+The tests need a JDK 21 or later with `JAVA_HOME` set because they build the Java fixture with it.
+
 AI assisted.

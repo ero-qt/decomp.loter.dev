@@ -1,6 +1,8 @@
+import type { Fixture } from '../../contract/conformance';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildFixture } from './fixture/build';
+import manifest from './manifest.json' with { type: 'json' };
 
 /** The folder that the tests build the fixture's JARs into. */
 export const fixtureFolder = fileURLToPath(new URL('../../artifacts/java-fixture/', import.meta.url));
@@ -13,6 +15,7 @@ await buildFixture(fixtureFolder, process.env.JAVA_HOME);
 
 /** The fixture of `drawing.jar`, whose classes use `shapes.jar`. */
 export const fixture = {
+    manifest,
     file: await readJar('drawing.jar'),
     // a zip file's local header followed by bytes that aren't a zip file's
     broken: new File(['PK\x03\x04', 'not a zip file'], 'broken.jar'),
@@ -21,4 +24,4 @@ export const fixture = {
     symbol: 'drawing.Main',
     string: 'héllo ✓',
     linked: { file: await readJar('shapes.jar'), token: 'area', user: 'drawing.Main', withoutMissingFile: true },
-};
+} satisfies Fixture;

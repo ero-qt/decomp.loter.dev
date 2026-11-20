@@ -13,12 +13,6 @@ import { findClassEntry } from './zip';
 /** An open file with its rows. */
 export type OpenFile = JavaFile & JavaRows;
 
-/** The handlers that the Java engine has so far. */
-export type JavaHandlers = Pick<
-    EngineHandlers,
-    'claims' | 'open' | 'close' | 'list' | 'read' | 'describe' | 'resolve' | 'findReferences' | 'listStrings'
->;
-
 // the first 4 bytes of a zip file's local header, end record and spanned archive
 const zipStarts = ['504b0304', '504b0506', '504b0708'];
 const classStart = 'cafebabe';
@@ -52,7 +46,7 @@ function claimsClass(file: Blob, start: Uint8Array): boolean {
 }
 
 /** Returns the Java engine's handlers, which keep the open files in memory. */
-export function createJavaHandlers(): JavaHandlers {
+export function createJavaHandlers(): EngineHandlers {
     const files = new Map<number, OpenFile>();
 
     function handleFile<Value>(fileId: number, handle: (file: OpenFile) => Reply<Value>): Reply<Value> {
@@ -101,6 +95,9 @@ export function createJavaHandlers(): JavaHandlers {
 
                 return ok(undefined);
             });
+        },
+        provide(fileId) {
+            return handleFile(fileId, () => failed("The Java engine doesn't take other files."));
         },
         list(fileId) {
             return handleFile(fileId, ({ rows, note }) => ok({ ...writeRows(rows), note, missingFiles: [] }));

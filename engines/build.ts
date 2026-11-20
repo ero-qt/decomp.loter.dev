@@ -19,7 +19,19 @@ for (const folder of readdirSync(new URL('.', import.meta.url), { withFileTypes:
     }
 
     const target = new URL(`${id}/`, site);
-    await Bun.build({ entrypoints: [fileURLToPath(new URL('worker.ts', source))], outdir: fileURLToPath(target), minify: true, throw: true });
+    // splits each dynamic import into a chunk beside the worker because the worker then loads a large part, like
+    // Vineflower, only on its first use
+    await Bun.build({
+        entrypoints: [fileURLToPath(new URL('worker.ts', source))],
+        outdir: fileURLToPath(target),
+        target: 'browser',
+        format: 'esm',
+        splitting: true,
+        naming: { chunk: '[name]-[hash].[ext]' },
+        minify: true,
+        throw: true,
+    });
+
     cpSync(new URL('manifest.json', source), new URL('manifest.json', target));
     ids.push(id);
 }

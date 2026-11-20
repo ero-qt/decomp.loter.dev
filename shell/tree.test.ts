@@ -171,6 +171,8 @@ test("file's row shows the listing's note, with each missing file below the row 
 
 test("Open Files passes the extensions of the engines' manifests to the browser's file dialog", async () => {
     const { page } = await openWorkbench();
+    // leaves the Java engine out because the dialog takes any file while an engine has magics
+    await startWithEngines(page, { fake: null });
     const chooser = page.waitForEvent('filechooser');
 
     await findOpenFilesButton(page).click();

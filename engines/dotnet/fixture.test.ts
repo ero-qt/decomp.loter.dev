@@ -3,8 +3,8 @@ import { readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildFixture, pickNewestVersion } from './fixture/build';
+import { fixtureFolder } from './testing';
 
-const fixtureFolder = fileURLToPath(new URL('../../artifacts/dotnet-fixture/', import.meta.url));
 const dotnet = Bun.which('dotnet') ?? undefined;
 
 await buildFixture(fixtureFolder, dotnet);

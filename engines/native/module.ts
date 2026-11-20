@@ -21,6 +21,8 @@ interface RizinModule {
     _session_describe(session: number, address: number): number;
     _session_cmd(session: number, command: number): number;
     _session_decompile(session: number, address: number): number;
+    _session_references(session: number, address: number): number;
+    _session_strings(session: number, maxStrings: number, maxBytes: number): number;
     _free(pointer: number): void;
     stringToNewUTF8(text: string): number;
     UTF8ToString(pointer: number): string;
@@ -77,6 +79,10 @@ export interface NativeModule {
     fetchFile(path: string): Promise<Uint8Array>;
     /** Decompiles the function at an address with Ghidra and returns its C with rz-ghidra's annotations. */
     decompile(session: number, address: bigint): Decompiled;
+    /** Returns the addresses of the code and data that refer to an address, in address order. */
+    listReferences(session: number, address: bigint): bigint[];
+    /** Returns the first `maxStrings` strings of a session's file, each cut after `maxBytes` bytes of UTF-8. */
+    listStrings(session: number, maxStrings: number, maxBytes: number): { addr: string; text: string }[];
     /** Runs a Rizin command in a session and returns its output. */
     runCommand(session: number, command: string): string;
     /** Returns the size of the module's wasm memory, which never shrinks. */
@@ -154,6 +160,16 @@ export async function loadModule(moduleUrl: string, wasmBinary?: ArrayBuffer): P
             return withText(module, `0x${address.toString(16)}`, pointer => {
                 return takeJson(module, 'the C of the function', () => module._session_decompile(session, pointer));
             });
+        },
+        listReferences(session, address) {
+            const references = withText(module, `0x${address.toString(16)}`, pointer => {
+                return takeJson<string[]>(module, 'the references', () => module._session_references(session, pointer));
+            });
+
+            return references.map(reference => BigInt(reference));
+        },
+        listStrings(session, maxStrings, maxBytes) {
+            return takeJson(module, 'the strings of the file', () => module._session_strings(session, maxStrings, maxBytes));
         },
         async fetchFile(path) {
             try {

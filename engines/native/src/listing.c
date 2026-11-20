@@ -209,8 +209,16 @@ static void find_max_address(Session *session, RzBinObject *object, size_t max) 
 }
 
 /**
+ * \brief Adds the count of the binary's strings, which the worker lists only up to its cap.
+ */
+static void add_string_count(PJ *j, RzBinObject *object) {
+	const RzPVector *strings = rz_bin_object_get_strings(object);
+	pj_kn(j, "strings", strings ? rz_pvector_len(strings) : 0);
+}
+
+/**
  * \brief Lists the image base, functions, globals and imports of the open file, the structs of its debug information,
- * the classes of its RTTI and its PDB file as JSON, or returns NULL without a binary.
+ * the classes of its RTTI, its PDB file and the count of its strings as JSON, or returns NULL without a binary.
  *
  * Lists the max functions and globals with the lowest addresses and the first max imports, and counts the others in
  * `omitted` and `omittedImports`. Lists names as the demangler writes them, with their parameters. The worker groups
@@ -237,6 +245,7 @@ EMSCRIPTEN_KEEPALIVE char *session_listing(Session *session, size_t max) {
 	add_imports(j, object, max);
 	add_types(j, core);
 	classes_add_rtti(j, session, object);
+	add_string_count(j, object);
 	pj_end(j);
 	return pj_drain(j);
 }

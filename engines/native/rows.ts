@@ -3,6 +3,7 @@ import type { Row } from '../../contract/rows';
 import { type Accessibility, flagsOf, type Kind, type Modifier } from '../../contract/symbols';
 import { type AddressKeys, keyTags, readAddressKeys, tagKey } from './keys';
 import { splitName } from './names';
+import { maxStrings } from './strings';
 
 /** A function or global of a file as the glue lists it, with its address in hex. */
 export interface GlueSymbol {
@@ -46,6 +47,8 @@ export interface GlueListing {
     /** The count of the functions and globals above the glue's cap, which the glue leaves out. */
     omitted: number;
     omittedImports: number;
+    /** The count of the file's strings, of which the engine lists the first `maxStrings`. */
+    strings: number;
 }
 
 /** The rows of a file with the keys of its functions and globals and the text and missing files of the file's row. */
@@ -223,6 +226,7 @@ export function groupRows(listing: GlueListing, maxMembers = defaultMaxMembers):
     const note = writeNote(
         [listed.length, members.length + listing.omitted, 'functions and globals'],
         [listing.imports.length, importCount, 'imports'],
+        [Math.min(listing.strings, maxStrings), listing.strings, 'strings'],
     );
 
     const base = BigInt(listing.base);

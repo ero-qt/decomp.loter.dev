@@ -44,6 +44,7 @@ function listFunctions(functions: GlueListing['functions']): GlueListing {
         hasPdb: false,
         omitted: 0,
         omittedImports: 0,
+        strings: 0,
     };
 }
 

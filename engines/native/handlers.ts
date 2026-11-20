@@ -1,4 +1,4 @@
-import { type Document, parseTarget } from '../../contract/document';
+import { type Document, formatTarget, parseTarget } from '../../contract/document';
 import { failed, ok, type Reply } from '../../contract/reply';
 import { writeRows } from '../../contract/rows';
 import type { EngineHandlers } from '../../contract/serve';
@@ -12,10 +12,13 @@ import manifest from './manifest.json' with { type: 'json' };
 import { ModuleError, type NativeModule } from './module';
 import { defaultMaxMembers, groupRows, type NativeRows } from './rows';
 import { createLanguageWriter, findProcessor } from './sleigh';
+import { listStrings } from './strings';
+import { createFunctionFinder, type FindFunction, findUsers } from './users';
 
-/** The rows of an open file with each row's index by its key. */
+/** The rows of an open file with each row's index by its key and the function that finds a function by an address. */
 interface FileListing extends NativeRows {
     indexes: Map<number, number>;
+    findFunction: FindFunction;
 }
 
 /** A file that the engine opened, with its Rizin session, its PDB file and its rows once a call needs them. */
@@ -25,6 +28,8 @@ interface NativeFile {
     mounted: MountedFile;
     pdb?: MountedFile;
     listing?: FileListing;
+    /** Whether Rizin searched the file's code for references, which it does once. */
+    isSearched?: boolean;
 }
 
 /** The loaded module with the function that writes a processor's languages before its first decompile. */
@@ -39,10 +44,6 @@ const views = manifest.views.map(view => view.id);
 // counts the files that any handlers mounted, because a module outlives its handlers in tests and each file then gets
 // a folder of its own
 let mountCount = 0;
-
-function refuseCall(): Reply<never> {
-    return failed("The native engine doesn't have code for this call yet.");
-}
 
 // checks whether a binary imports only from mscoree.dll, like a .NET assembly without its CLI header
 function isManagedStub(module: NativeModule, session: number): boolean {
@@ -123,7 +124,8 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
     function readListing(module: NativeModule, file: NativeFile): FileListing {
         if (!file.listing) {
             const listed = groupRows(module.listSymbols(file.session, defaultMaxMembers));
-            file.listing = { ...listed, indexes: new Map(listed.rows.map((row, index) => [row.key, index])) };
+            const indexes = new Map(listed.rows.map((row, index) => [row.key, index]));
+            file.listing = { ...listed, indexes, findFunction: createFunctionFinder(listed) };
         }
 
         return file.listing;
@@ -173,17 +175,18 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
         return index === undefined ? undefined : { fileId: parsed.fileId, file, listing, index };
     }
 
+    // searches a file's code for references once, because Rizin finds a reference only in searched code
+    function searchCode(module: NativeModule, file: NativeFile) {
+        if (!file.isSearched) {
+            module.runCommand(file.session, 'aar');
+            file.isSearched = true;
+        }
+    }
+
     function findFile(fileId: number): Reply<NativeFile> {
         const file = files.get(fileId);
 
         return file ? ok(file) : failed(`The native engine doesn't have an open file with the id ${fileId}.`);
-    }
-
-    // returns the refusal for a file that isn't open, else the refusal of a call that the engine doesn't take yet
-    function refuseFileCall(fileId: number): Reply<never> {
-        const found = findFile(fileId);
-
-        return found.error !== undefined ? found : refuseCall();
     }
 
     return refuseModuleErrors({
@@ -325,7 +328,38 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
         async resolve(target) {
             return ok((await findTarget(target)) ? target : null);
         },
-        findReferences: refuseCall,
-        listStrings: refuseFileCall,
+        // leaves the places of the uses to the page, which finds them in the users' documents, because the C of a user
+        // doesn't exist before its decompile
+        async findReferences(target, view, signal) {
+            if (!views.includes(view)) {
+                return failed(`The native engine doesn't have the view ${view}.`);
+            }
+
+            const found = await findTarget(target);
+            const address = found?.listing.keys.addresses.get(found.listing.rows[found.index].key);
+            if (!found || address === undefined) {
+                return ok([]);
+            }
+
+            const module = await useModule();
+            signal.throwIfAborted();
+            searchCode(module, found.file);
+            const users = findUsers(module, found.file.session, found.listing.findFunction, address);
+
+            return ok(users.map(key => ({ user: formatTarget({ fileId: found.fileId, key }), ranges: null })));
+        },
+        async listStrings(fileId, signal) {
+            const found = findFile(fileId);
+            if (found.error !== undefined) {
+                return found;
+            }
+
+            const module = await useModule();
+            signal.throwIfAborted();
+            const file = found.value;
+            searchCode(module, file);
+
+            return ok(await listStrings(module, file.session, fileId, readListing(module, file).findFunction, signal));
+        },
     });
 }

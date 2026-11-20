@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -7,6 +7,7 @@ const engineFolder = fileURLToPath(new URL('.', import.meta.url));
 const outputFolder = fileURLToPath(new URL('../../artifacts/dotnet/', import.meta.url));
 const publishFolder = join(outputFolder, 'publish');
 const stamp = join(outputFolder, 'publish.stamp');
+const assetsFile = join(outputFolder, 'obj', 'Decomp.Dotnet', 'project.assets.json');
 // keeps the SDK from calling Microsoft and from printing its welcome text
 const sdkEnvironment = { ...process.env, DOTNET_CLI_TELEMETRY_OPTOUT: '1', DOTNET_NOLOGO: '1' };
 
@@ -63,4 +64,31 @@ export async function publishEngine(): Promise<void> {
     runSdk(['publish', 'src', '-c', 'Release', '-o', publishFolder, '--disable-build-servers', '-nodeReuse:false', '-maxcpucount:1']);
 
     await Bun.write(stamp, inputs);
+}
+
+// finds the runtime pack that the publish took its runtime from, in the NuGet folder that the restore used
+async function findRuntimePack(): Promise<string> {
+    const assets = await Bun.file(assetsFile).json();
+    const [packageFolder] = Object.keys(assets.packageFolders);
+    const [framework] = Object.values<{ downloadDependencies: { name: string; version: string }[] }>(assets.project.frameworks);
+    const pack = framework.downloadDependencies.find(dependency => dependency.name.startsWith('Microsoft.NETCore.App.Runtime.'));
+    if (!pack) {
+        throw new Error("the restore of the .NET engine doesn't list a runtime pack");
+    }
+
+    // takes the version out of a range like `[11.0.0, 11.0.0]`
+    const version = pack.version.replace(/^\[([^,]+),.*$/, '$1');
+
+    return join(packageFolder, pack.name.toLowerCase(), version);
+}
+
+/**
+ * Publishes the engine when its stamp is stale and copies the runtime, the assemblies and the runtime's notices into
+ * the engine's folder of the site.
+ */
+export default async function copyIntoSite(siteFolder: string): Promise<void> {
+    await publishEngine();
+
+    cpSync(frameworkFolder, join(siteFolder, '_framework'), { recursive: true });
+    cpSync(join(await findRuntimePack(), 'THIRD-PARTY-NOTICES.TXT'), join(siteFolder, 'THIRD-PARTY-NOTICES.TXT'));
 }

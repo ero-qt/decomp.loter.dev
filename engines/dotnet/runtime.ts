@@ -1,6 +1,16 @@
 /** The methods of the C# class `Decomp.Dotnet.Exports`. */
 export interface DotnetExports {
     Reset(): void;
+    Open(fileId: number, name: string, bytes: Uint8Array): string;
+    Close(fileId: number): string;
+    List(fileId: number): Promise<string>;
+    ReadCSharp(fileId: number, key: number): Promise<string>;
+    ReadIl(fileId: number, key: number): Promise<string>;
+    Describe(target: string, view: string): string;
+    Resolve(target: string): string;
+    FindUsers(target: string): Promise<string>;
+    ListStrings(fileId: number): Promise<string>;
+    Cancel(): void;
 }
 
 /** The .NET runtime in wasm with the engine's exports. */

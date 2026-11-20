@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 import type { Page } from 'playwright';
 import { readUntil } from './editor-testing';
-import { findOpenFilesButton, startWorkbench, testTimeoutMs } from './page-testing';
+import { findOpenFilesButton, readStoredUserFile, startWorkbench, testTimeoutMs } from './page-testing';
 
 const openWorkbench = startWorkbench();
 
@@ -59,9 +59,21 @@ test('keybinding changed in the Keyboard Shortcuts editor stays after a reload',
     await readCommandRows(page, 'workbench.action.quickOpen');
 
     await findShortcutsEditor(page).locator('.monaco-list-row').filter({ hasText: 'workbench.action.quickOpen' }).first().dblclick();
+    // presses the keys only once the widget that records them has the focus because the workbench would take them
+    // otherwise
+    await page.waitForFunction(() => document.activeElement?.closest('.defineKeybindingWidget') !== null);
     await page.keyboard.press('Control+Alt+J');
+    const recorded = page.locator('.defineKeybindingWidget .output');
+
+    expect(await readUntil(async () => (await recorded.innerText()).replace(/\s/g, ''), 'Ctrl+Alt+J')).toBe('Ctrl+Alt+J');
+
     await page.keyboard.press('Enter');
-    await readUntil(() => readKeybinding(page, 'workbench.action.quickOpen'), 'Ctrl+Alt+J User');
+
+    expect(await readUntil(() => readKeybinding(page, 'workbench.action.quickOpen'), 'Ctrl+Alt+J User')).toBe('Ctrl+Alt+J User');
+
+    // reloads only after the workbench stored the file because the reload reads the change from the stored file
+    const storedBinding = async () => (await readStoredUserFile(page, '/User/keybindings.json'))?.includes('"ctrl+alt+j"') ?? false;
+    await readUntil(storedBinding, true);
     await page.reload();
     await findOpenFilesButton(page).waitFor();
     await openShortcutsEditor(page);

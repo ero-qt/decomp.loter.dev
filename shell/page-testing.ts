@@ -53,6 +53,29 @@ export function listOtherHostRequests(page: Page, requests: string[]): string[] 
 }
 
 /**
+ * Reads the text of the user's file at the path, like `/User/keybindings.json`, from the IndexedDB database that backs
+ * the user's data. Returns `undefined` for a file that the workbench didn't store yet.
+ */
+export function readStoredUserFile(page: Page, path: string): Promise<string | undefined> {
+    return page.evaluate(async path => {
+        const { promise: opened, resolve, reject } = Promise.withResolvers<IDBDatabase>();
+        const request = indexedDB.open('vscode-web-db');
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+        const database = await opened;
+
+        const file = database.transaction('vscode-userdata-store').objectStore('vscode-userdata-store').get(path);
+        const content = await new Promise<Uint8Array | undefined>((resolve, reject) => {
+            file.onsuccess = () => resolve(file.result);
+            file.onerror = () => reject(file.error);
+        });
+        database.close();
+
+        return content && new TextDecoder().decode(content);
+    }, path);
+}
+
+/**
  * Collects the text of each console error and each uncaught error in the page. Leaves out the browser's own message for
  * a missing `balance.json`, because only the host writes the file into the site.
  */

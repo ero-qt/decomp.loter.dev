@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 import type { Page } from 'playwright';
 import { readUntil } from './editor-testing';
-import { findOpenFilesButton, startWorkbench, testTimeoutMs } from './page-testing';
+import { findOpenFilesButton, readStoredUserFile, startWorkbench, testTimeoutMs } from './page-testing';
 
 const openWorkbench = startWorkbench();
 
@@ -24,8 +24,9 @@ test('Ctrl+, opens the Settings editor, whose font size changed to 20 stays afte
 
     await findFontSizeInput(page).fill('20');
     await page.keyboard.press('Tab');
-    // waits for the setting's modified mark because the Settings editor writes the setting after a short delay
-    await readUntil(() => findFontSizeSetting(page).evaluate(setting => setting.classList.contains('is-configured')), true);
+    // reloads only after the workbench stored the setting because the Settings editor writes it after a short delay
+    const storedSize = async () => (await readStoredUserFile(page, '/User/settings.json'))?.includes('"editor.fontSize": 20') ?? false;
+    await readUntil(storedSize, true);
     await page.reload();
     await findOpenFilesButton(page).waitFor();
     await openSettings(page);

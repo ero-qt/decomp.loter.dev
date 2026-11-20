@@ -23,6 +23,8 @@ The web server also has to send `.wasm` files as `application/wasm`, because the
 
 The tests need a JDK 21 or later with `JAVA_HOME` set because they build the Java fixture with it. They also need that .NET SDK on the `PATH` because they build the .NET fixture and publish the .NET engine with it.
 
+The native engine's tests first build its WebAssembly module from the forks of Rizin and rz-ghidra in `engines/native/vendor`, which are git submodules. Run `git submodule update --init --recursive` after you clone the repo to get them. The build needs Emscripten 6.0.9, Meson, Ninja, git and a C and C++ compiler for the host. Put them on the `PATH`, or set `NATIVE_EMSCRIPTEN`, `NATIVE_MESON` and `NATIVE_NINJA` to their folders. The first build downloads Rizin's Meson subprojects into `engines/native/vendor/rizin/subprojects`, which Rizin's git ignores. Set `NATIVE_SOURCES_SEED` to the `engines/native/vendor` folder of another clone that has them, to copy them from there without a download. `NATIVE_JOBS` sets how many compiles run at once, 2 by default, so the build stays under 1 GB of memory. The first build takes about 17 minutes with 2 jobs, and a build after a change compiles only what changed.
+
 The native engine's tests build their fixture with clang, lld and LLVM's tools like `llvm-lipo`. They take each tool from the folder in `NATIVE_LLVM` when you set it, else from the `PATH`, also under a versioned name like `ld.lld-18`, which Linux packages often use. Only a tool that's in neither comes from Emscripten's LLVM, because emsdk's LLVM builds only WebAssembly. So install a full LLVM, like Ubuntu's `clang`, `lld` and `llvm` packages.
 
 ---

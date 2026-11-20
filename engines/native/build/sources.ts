@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { findTool, toolEnvironment, vendorFolder } from './tools';
+import { findTool, runTool, toolEnvironment, vendorFolder } from './tools';
 import pinnedVersions from './versions.json' with { type: 'json' };
 
 /** A git submodule at the commit that its repo pins. */
@@ -52,15 +52,6 @@ const repoFolder = fileURLToPath(new URL('../../../', import.meta.url));
 // keeps git's questions and hints out of a build that runs without a terminal
 const gitEnvironment = { GIT_TERMINAL_PROMPT: '0', GIT_ADVICE: '0' };
 
-function run(command: string[], folder: string, environment: Record<string, string | undefined>): string {
-    const { exitCode, stdout, stderr } = Bun.spawnSync(command, { cwd: folder, env: environment });
-    if (exitCode !== 0) {
-        throw new Error(`${command.join(' ')} failed: ${stdout.toString()}${stderr.toString()}`);
-    }
-
-    return stdout.toString();
-}
-
 function readHead(folder: string): string {
     return Bun.spawnSync(['git', 'rev-parse', 'HEAD'], { cwd: folder }).stdout.toString().trim();
 }
@@ -70,13 +61,13 @@ function readHead(folder: string): string {
  * when one isn't checked out, because the build compiles them.
  */
 export function listVendorSubmodules(): VendorSubmodule[] {
-    const status = run(['git', 'submodule', 'status', '--recursive', '--', vendorFolder], repoFolder, process.env);
+    const status = runTool(['git', 'submodule', 'status', '--recursive', '--', vendorFolder], repoFolder, process.env);
     if (status.trim() === '' || /^-/m.test(status)) {
         throw new Error("Run `git submodule update --init --recursive`, because the native engine's build compiles the submodules.");
     }
 
     const printSubmodule = 'echo "$displaypath $(git rev-parse HEAD) $(git config --file "$toplevel/.gitmodules" "submodule.$name.url")"';
-    const lines = run(['git', 'submodule', 'foreach', '--quiet', '--recursive', printSubmodule], repoFolder, process.env);
+    const lines = runTool(['git', 'submodule', 'foreach', '--quiet', '--recursive', printSubmodule], repoFolder, process.env);
 
     return lines
         .trim()
@@ -206,12 +197,12 @@ export async function fetchSubprojects(
         const names = versions.subprojects.map(subproject => subproject.name);
 
         // removes the subprojects of the last fetch, because Meson keeps a subproject's folder that's there
-        run([meson, 'subprojects', 'purge', '--confirm', ...names], folder, environment);
+        runTool([meson, 'subprojects', 'purge', '--confirm', ...names], folder, environment);
         if (seed) {
             copyTarballs(seed, versions, folder);
         }
 
-        run([meson, 'subprojects', 'download', ...names], folder, environment);
+        runTool([meson, 'subprojects', 'download', ...names], folder, environment);
         mkdirSync(cache, { recursive: true });
         writeFileSync(stamp, wraps);
     }

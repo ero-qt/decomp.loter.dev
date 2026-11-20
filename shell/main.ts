@@ -4,6 +4,7 @@ import type { IMonacoEnvironment } from '@codingame/monaco-vscode-api/vscode/vs/
 import { ISplashStorageService } from '@codingame/monaco-vscode-api/vscode/vs/workbench/contrib/splash/browser/splash.service';
 import editorWorkerUrl from '@codingame/monaco-vscode-api/workers/editor.worker?worker&url';
 import configurationOverride from '@codingame/monaco-vscode-configuration-service-override';
+import { createIndexedDBProviders } from '@codingame/monaco-vscode-files-service-override';
 import languagesOverride from '@codingame/monaco-vscode-languages-service-override';
 import modelOverride from '@codingame/monaco-vscode-model-service-override';
 import notificationsOverride from '@codingame/monaco-vscode-notifications-service-override';
@@ -48,6 +49,8 @@ const environment: IMonacoEnvironment = {
 };
 Object.assign(globalThis, { MonacoEnvironment: environment });
 deferHoverDelegates();
+// keeps the user's settings and keybindings in the browser's IndexedDB like vscode.dev, so they stay after a reload
+await createIndexedDBProviders();
 
 await initialize(
     {

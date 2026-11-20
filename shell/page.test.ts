@@ -14,6 +14,30 @@ async function readEditorBackground(page: Page, baseTheme: 'vs' | 'vs-dark') {
     return workbench.evaluate(element => getComputedStyle(element).getPropertyValue('--vscode-editor-background'));
 }
 
+// reads the keys in each store of the database that backs the user's data, like `/User/settings.json`
+function readUserDataStores(page: Page): Promise<Record<string, IDBValidKey[]>> {
+    return page.evaluate(async () => {
+        const { promise: opened, resolve, reject } = Promise.withResolvers<IDBDatabase>();
+        const request = indexedDB.open('vscode-web-db');
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+        const database = await opened;
+        const stores: Record<string, IDBValidKey[]> = {};
+
+        for (const name of database.objectStoreNames) {
+            const keys = database.transaction(name).objectStore(name).getAllKeys();
+            stores[name] = await new Promise((resolve, reject) => {
+                keys.onsuccess = () => resolve(keys.result);
+                keys.onerror = () => reject(keys.error);
+            });
+        }
+
+        database.close();
+
+        return stores;
+    });
+}
+
 async function openThemePicker(page: Page) {
     await page.keyboard.press('F1');
     await page.keyboard.insertText('Preferences: Color Theme');
@@ -112,7 +136,7 @@ test('theme picker lists only the dark theme and the light theme', async () => {
     ]);
 }, testTimeoutMs);
 
-test("workbench keeps only `DefaultOverridesCacheExists` in the browser after a theme pick and reloads in the system's theme", async () => {
+test("workbench keeps a theme pick after a reload, in the user's settings in IndexedDB and nothing else in the browser", async () => {
     const { page } = await openWorkbench();
     const rows = await openThemePicker(page);
     await rows.filter({ hasText: 'decomp.loter.dev Light' }).click();
@@ -120,7 +144,7 @@ test("workbench keeps only `DefaultOverridesCacheExists` in the browser after a 
 
     await page.reload();
 
-    expect(await readEditorBackground(page, 'vs-dark')).toBe('#1e1e1e');
+    expect(await readEditorBackground(page, 'vs')).toBe('#ffffff');
     await page.waitForLoadState('networkidle');
     const kept = await page.evaluate(async () => ({
         localStorage: Object.entries(localStorage),
@@ -133,10 +157,15 @@ test("workbench keeps only `DefaultOverridesCacheExists` in the browser after a 
     expect(kept).toEqual({
         localStorage: [['DefaultOverridesCacheExists', 'yes']],
         sessionStorage: [],
-        databases: [],
+        databases: [{ name: 'vscode-web-db', version: 3 }],
         caches: [],
         serviceWorkers: [],
     });
+    const { 'vscode-userdata-store': userFiles, ...otherStores } = await readUserDataStores(page);
+
+    expect(otherStores).toEqual({ 'vscode-filehandles-store': [], 'vscode-logs-store': [] });
+    expect(userFiles).toContain('/User/settings.json');
+    expect(userFiles.filter(file => !String(file).startsWith('/User/'))).toEqual([]);
     expect(await page.context().cookies()).toEqual([]);
 }, testTimeoutMs);
 

@@ -13,7 +13,7 @@ bun install --frozen-lockfile --ignore-scripts
 bun run build
 ```
 
-The build needs the .NET SDK 11.0.100-rc.3.26522.148 on the `PATH` because it publishes the .NET engine with it. `engines/dotnet/global.json` asks for exactly that SDK, because the engine's lock file pins the packages that come with it.
+The build needs the .NET SDK 11.0.100-rc.3.26522.148 on the `PATH` because it publishes the .NET engine with it. `engines/dotnet/global.json` asks for exactly that SDK, because the engine is built with the packages that come with it.
 
 The build puts the site in `artifacts/site`. Serve that folder with a web server. The web server has to send the headers in `shell/headers.ts` with every response, also with a missing file. No file in the repo sets them for you, so add them to the web server's own settings.
 

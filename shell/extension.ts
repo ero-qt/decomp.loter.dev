@@ -7,7 +7,7 @@ import { RowDocuments } from './documents';
 import { listExtensions, loadEngines } from './engines';
 import { OpenFiles } from './files';
 import { findMissingFileExtensions, loadMissingFileCommand } from './missing-files';
-import { listenForDrops, type PickedFile, pickFiles } from './picking';
+import { formatUnopenedText, listenForDrops, type PickedFile, pickFiles } from './picking';
 import { addSymbolsWelcome, registerViews } from './registration';
 import { SymbolSearch } from './search';
 import { SymbolFeatures } from './symbol-features';
@@ -33,8 +33,12 @@ function readTarget(engineId: string, source: ViewRow | Uri | undefined = vscode
     return path?.engineId === engineId ? formatTarget(path) : undefined;
 }
 
-function open(pickedFiles: PickedFile[]) {
-    return vscode.window.withProgress({ location: { viewId: symbolsViewId } }, () => openFiles.open(pickedFiles));
+async function open(pickedFiles: PickedFile[]) {
+    const unopened = await vscode.window.withProgress({ location: { viewId: symbolsViewId } }, () => openFiles.open(pickedFiles));
+    const warning = formatUnopenedText(pickedFiles, unopened);
+    if (warning) {
+        void vscode.window.showWarningMessage(warning);
+    }
 }
 
 vscode.commands.registerCommand('decomp.openFiles', async () => open(await pickFiles(listExtensions(engines))));
@@ -43,8 +47,14 @@ vscode.commands.registerCommand('decomp.openFolder', async () => open(await pick
 vscode.commands.registerCommand(loadMissingFileCommand, async (name: string, path: string) => {
     const [picked] = await pickFiles(findMissingFileExtensions(name), 'file');
     const file = openFiles.files.find(file => file.picked.path === path);
+    if (!picked || !file) {
+        return;
+    }
 
-    return picked && file && vscode.window.withProgress({ location: { viewId: symbolsViewId } }, () => openFiles.load(file, name, picked));
+    const isLoaded = await vscode.window.withProgress({ location: { viewId: symbolsViewId } }, () => openFiles.load(file, name, picked));
+    if (!isLoaded) {
+        void vscode.window.showWarningMessage(formatUnopenedText([picked], [picked])!);
+    }
 });
 // closes the selected row when the command doesn't get a row because the Delete key runs the command without arguments
 vscode.commands.registerCommand('decomp.close', (viewRow: ViewRow | undefined = view.selection[0]) => {

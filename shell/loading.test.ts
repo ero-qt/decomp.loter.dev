@@ -185,6 +185,19 @@ test("file's row shows the engine's refusal text for a picked companion without 
     expect(errors).toEqual([]);
 }, testTimeoutMs);
 
+test("hover's load link shows a warning for a picked file that no engine claims and leaves the file's rows", async () => {
+    const { page } = await openWorkbench();
+    await openCircle(page, drawing, 'Draw');
+    await findRow(page, 'drawing.fake').click();
+    await waitForTopRow(page, 'drawing.fake');
+    await findRow(page, 'Drawing').waitFor({ state: 'detached' });
+
+    await pickFile(page, await findLoadLink(page, 'uses Shapes.Shape.Area', 'Shapes.Shape.Area'), 'shapes.fake', 'A text file.');
+
+    expect(await readWarnings(page, "No engine opens 'shapes.fake'.")).toEqual(["No engine opens 'shapes.fake'."]);
+    expect(await readRowTexts(page)).toEqual(['drawing.fake 1 class left out']);
+}, testTimeoutMs);
+
 test("file's row keeps the engine's refusal text after another file opens", async () => {
     const { page } = await openWorkbench();
     await startWithEngines(page, { companion: companionEngine });
@@ -255,6 +268,9 @@ test("hover shows a command link in a missing file's name as text and has only t
     expect(await readHover(page, 'uses X.Y', 'X.Y')).toEqual(['X.Y', `${craftedName} isn't loaded. Click here to load.`]);
     const link = await findLoadLink(page, 'uses X.Y', 'X.Y');
     expect(await page.locator('.monaco-editor .monaco-hover-content a').filter({ visible: true }).count()).toBe(1);
+    await pickFile(page, link, 'x.notes', 'A note.');
+
+    expect(await readWarnings(page, "No engine opens 'x.notes'.")).toEqual(["No engine opens 'x.notes'."]);
 }, testTimeoutMs);
 
 test('file dialog of a missing file without an extension accepts every file', async () => {

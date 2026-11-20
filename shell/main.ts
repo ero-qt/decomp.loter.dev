@@ -6,6 +6,7 @@ import editorWorkerUrl from '@codingame/monaco-vscode-api/workers/editor.worker?
 import configurationOverride from '@codingame/monaco-vscode-configuration-service-override';
 import languagesOverride from '@codingame/monaco-vscode-languages-service-override';
 import modelOverride from '@codingame/monaco-vscode-model-service-override';
+import notificationsOverride from '@codingame/monaco-vscode-notifications-service-override';
 import outlineOverride from '@codingame/monaco-vscode-outline-service-override';
 import textmateOverride from '@codingame/monaco-vscode-textmate-service-override';
 import textMateWorkerUrl from '@codingame/monaco-vscode-textmate-service-override/worker?worker&url';
@@ -50,6 +51,7 @@ await initialize(
         ...themeOverride(),
         ...languagesOverride(),
         ...modelOverride(),
+        ...notificationsOverride(),
         ...outlineOverride(),
         ...textmateOverride(),
         ...workbenchOverride(),

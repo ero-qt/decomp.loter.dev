@@ -232,6 +232,17 @@ test('Shift+F12 on a symbol with 60 users reads the documents of the first 50 us
     expect(await countUserReads(page)).toBe(50);
 }, testTimeoutMs);
 
+test('Shift+F12 on a symbol with 60 users shows a warning that the references come from the first 50 documents', async () => {
+    const { page } = await openWorkbench();
+    await openDocument(page, 'Used', 'used.test');
+
+    await findWord(page, 'class Used', 'Used').click();
+    await page.keyboard.press('Shift+F12');
+
+    const expected = ['Showing references from the first 50 documents.'];
+    expect(await readWarnings(page, ...expected)).toEqual(expected);
+}, testTimeoutMs);
+
 test('Shift+F12 on a symbol with 50 users shows no warning', async () => {
     const { page } = await openWorkbench();
     await openDocument(page, 'Used', 'used50.test');

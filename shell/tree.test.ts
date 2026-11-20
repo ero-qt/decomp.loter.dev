@@ -204,6 +204,32 @@ test("drop lists a folder's fake files past the first 100 entries and leaves out
     expect((await readRowTexts(page)).slice(0, 4)).toEqual(['drawing.fake', 'file0.fake', 'file1.fake', 'file2.fake']);
 }, testTimeoutMs);
 
+test("drop of a file that no engine opens shows a warning with the file's name", async () => {
+    const { page } = await openWorkbench();
+
+    await dropFiles(page, { 'notes.txt': 'A text file.' });
+
+    expect(await readWarnings(page, "No engine opens 'notes.txt'.")).toEqual(["No engine opens 'notes.txt'."]);
+}, testTimeoutMs);
+
+test("Open Files with files that no engine opens shows 1 warning with the files' names", async () => {
+    const { page } = await openWorkbench();
+
+    await chooseFiles(page, 'Open Files', { 'a.txt': '', 'drawing.fake': drawing, 'b.txt': '' });
+    await findRow(page, 'drawing.fake').waitFor();
+
+    expect(await readWarnings(page, "No engine opens 'a.txt' or 'b.txt'.")).toEqual(["No engine opens 'a.txt' or 'b.txt'."]);
+}, testTimeoutMs);
+
+test('Open Folder without a file that an engine opens shows a warning', async () => {
+    const folder = writeFiles({ 'bin/readme.txt': 'A text file.', 'bin/lib/notes.txt': 'A text file.' });
+    const { page } = await openWorkbench();
+
+    await chooseFiles(page, 'Open Folder', `${folder}/bin`);
+
+    expect(await readWarnings(page, 'No file in the folder can be opened.')).toEqual(['No file in the folder can be opened.']);
+}, testTimeoutMs);
+
 test('file opened again from the same path replaces the open file', async () => {
     const { page } = await openWorkbench();
     await chooseFiles(page, 'Open Files', { 'drawing.fake': drawing });

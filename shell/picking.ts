@@ -5,6 +5,22 @@ export interface PickedFile {
     file: File;
 }
 
+/**
+ * Returns the warning for the picked files that no engine opened, or `undefined` when each file opened. The warning
+ * lists each unopened file outside a folder, but a folder gets a warning only when none of the folder's files opened,
+ * because a folder often has files that no engine opens.
+ */
+export function formatUnopenedText(pickedFiles: PickedFile[], unopened: PickedFile[]): string | undefined {
+    const names = unopened.filter(({ path }) => !path.includes('/')).map(({ file }) => `'${file.name}'`);
+    if (names.length > 0) {
+        const shown = names.length > 4 ? [...names.slice(0, 3), `${names.length - 3} other files`] : names;
+
+        return `No engine opens ${new Intl.ListFormat('en', { type: 'disjunction' }).format(shown)}.`;
+    }
+
+    return unopened.length > 0 && unopened.length === pickedFiles.length ? 'No file in the folder can be opened.' : undefined;
+}
+
 /** Opens the file dialog for 1 file or for files with the extensions, or for a folder. */
 export function pickFiles(extensions: string[], mode: 'file' | 'files' | 'folder' = 'files'): Promise<PickedFile[]> {
     const input = document.createElement('input');

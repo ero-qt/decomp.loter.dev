@@ -163,6 +163,19 @@ void debug_info_apply_dwarf(RzCore *core, RzAnalysisFunction *fcn) {
 }
 
 /**
+ * \brief Adds the parameters, locals and type of the procedure of the session's PDB file to a function.
+ *
+ * The load of the PDB file only adds the names of its functions.
+ */
+void debug_info_apply_pdb(Session *session, RzAnalysisFunction *fcn) {
+	RzCore *core = session->core;
+	if (session->pdb && !fcn->has_debuginfo &&
+		rz_analysis_pdb_integrate_function(core->analysis, session->pdb, rz_bin_get_baddr(core->bin), fcn)) {
+		remove_shadowed_variables(core->analysis, fcn);
+	}
+}
+
+/**
  * \brief Returns the C definition of a struct in the type database, which has the classes of the file's debug
  * information, or NULL for a name without a struct.
  *

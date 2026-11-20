@@ -40,6 +40,8 @@ function listFunctions(functions: GlueListing['functions']): GlueListing {
         imports: [],
         types: [],
         classes: [],
+        pdb: '',
+        hasPdb: false,
         omitted: 0,
         omittedImports: 0,
     };
@@ -184,6 +186,13 @@ test("a listing that the module can't read becomes a failed reply", async () => 
 test('a class of methods without a known size counts each as 1 kb', () => {
     expect(describeRows(listBigClass(Array.from({ length: 63 }, () => 0)))[1]).toBe('class big::Big document');
     expect(describeRows(listBigClass(Array.from({ length: 64 }, () => 0)))[1]).toBe('class big::Big');
+});
+
+test('extras-x64.so lists privately as a namespace, whose name only starts like an access', async () => {
+    const rows = describeRows(await listFile('extras-x64.so'));
+
+    expect(rows).toContain('namespace privately');
+    expect(rows).toContain('method privately::helper public document');
 });
 
 test('keys stay the same in a second session', async () => {

@@ -1,3 +1,4 @@
+import type { MissingFile } from '../../contract/engine';
 import type { Row } from '../../contract/rows';
 import { type Accessibility, flagsOf, type Kind, type Modifier } from '../../contract/symbols';
 import { type AddressKeys, keyTags, readAddressKeys, tagKey } from './keys';
@@ -10,6 +11,10 @@ export interface GlueSymbol {
     name: string;
     /** Whether other files can link the symbol, which a `static` function of C can't. */
     global: boolean;
+    /** The access, like `public`, and the words `static` and `virtual` of an MSVC name, which only members have. */
+    access?: 'public' | 'protected' | 'private';
+    static?: boolean;
+    virtual?: boolean;
 }
 
 /** An imported symbol as the glue lists it, with the library's name or the empty text for a file that leaves it out. */
@@ -35,12 +40,15 @@ export interface GlueListing {
     imports: GlueImport[];
     types: string[];
     classes: GlueClass[];
+    /** The name of the PDB file in a PE file's debug directory, or the empty text. */
+    pdb: string;
+    hasPdb: boolean;
     /** The count of the functions and globals above the glue's cap, which the glue leaves out. */
     omitted: number;
     omittedImports: number;
 }
 
-/** The rows of a file with the keys of its functions and globals and the text of the file's row. */
+/** The rows of a file with the keys of its functions and globals and the text and missing files of the file's row. */
 export interface NativeRows {
     rows: Row[];
     keys: AddressKeys;
@@ -49,6 +57,7 @@ export interface NativeRows {
     /** The size of each function and global by its key, in bytes. */
     sizes: Map<number, number>;
     note: string;
+    missingFiles: MissingFile[];
 }
 
 // a function or global with the scopes of its name, like `geometry`, `Rect` and `area`
@@ -109,9 +118,9 @@ function withoutArguments(name: string): string {
     return start > 0 ? name.slice(0, start) : name;
 }
 
-// finds the classes that the names of data, constructors and destructors show, plus the structs of the debug
-// information, whose names have a class's outer scopes or leave them out
-function findClasses(data: GlueSymbol[], functions: Member[], types: string[]): (fullName: string, name: string) => boolean {
+// finds the classes that the names of data, constructors, destructors and MSVC members show, plus the structs of the
+// debug information, whose names have a class's outer scopes or leave them out
+function findClasses(data: GlueSymbol[], members: Member[], types: string[]): (fullName: string, name: string) => boolean {
     const classes = new Set<string>();
     for (const { name } of data) {
         const described = classData.exec(name)?.[1];
@@ -123,9 +132,10 @@ function findClasses(data: GlueSymbol[], functions: Member[], types: string[]): 
         }
     }
 
-    for (const { scopes } of functions) {
+    for (const { scopes, symbol } of members) {
         const [owner, name] = [scopes.at(-2), scopes.at(-1)];
-        if (owner !== undefined && (name === withoutArguments(owner) || name === `~${withoutArguments(owner)}`)) {
+        const isStructor = name === withoutArguments(owner ?? '') || name === `~${withoutArguments(owner ?? '')}`;
+        if (owner !== undefined && (isStructor || symbol.access !== undefined)) {
             classes.add(scopes.slice(0, -1).join('::'));
         }
     }
@@ -205,7 +215,7 @@ export function groupRows(listing: GlueListing, maxMembers = defaultMaxMembers):
     const functions = readMembers([...listing.functions, ...listVirtualMethods(listing.classes)], true);
     const functionAddresses = new Set(functions.map(member => member.address));
     const data = readMembers(listing.data, false).filter(({ address, symbol }) => !functionAddresses.has(address) && !classData.test(symbol.name));
-    const isClass = findClasses(listing.data, functions, [...listing.types, ...listing.classes.map(({ name }) => name)]);
+    const isClass = findClasses(listing.data, [...functions, ...data], [...listing.types, ...listing.classes.map(({ name }) => name)]);
 
     const members = [...functions, ...data].sort(compareAddresses);
     const listed = members.slice(0, maxMembers);
@@ -231,10 +241,13 @@ export function groupRows(listing: GlueListing, maxMembers = defaultMaxMembers):
         const name = names.at(-1)!;
         const isConstructor = owner !== undefined && name === withoutArguments(owner.name);
         const kind: Kind = !isFunction ? 'field' : isConstructor ? 'constructor' : operatorName.test(name) ? 'operator' : 'method';
-        const accessibility: Accessibility = owner || !symbol.global ? '' : 'public';
+        const accessibility: Accessibility = owner ? (symbol.access ?? '') : symbol.global ? 'public' : '';
         const modifiers: Modifier[] = [];
-        if (!symbol.global || (owner && !isFunction)) {
+        if (owner ? !isFunction || symbol.static : !symbol.global) {
             modifiers.push('static');
+        }
+        if (owner && symbol.virtual) {
+            modifiers.push('virtual');
         }
         if (isFunction && !hasDocument) {
             modifiers.push('document');
@@ -269,5 +282,7 @@ export function groupRows(listing: GlueListing, maxMembers = defaultMaxMembers):
 
     const sizes = new Map(listed.map(({ address, symbol }) => [keys.keys.get(address)!, symbol.size]));
 
-    return { rows, keys, importKeys, sizes, note };
+    const missingFiles = listing.pdb !== '' && !listing.hasPdb ? [{ name: listing.pdb, reason: 'not loaded', isCompanion: true }] : [];
+
+    return { rows, keys, importKeys, sizes, note, missingFiles };
 }

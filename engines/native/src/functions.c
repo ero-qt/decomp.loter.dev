@@ -111,6 +111,7 @@ static void name_target(Session *session, ut64 addr) {
 	}
 	if (fcn) {
 		debug_info_apply_dwarf(core, fcn);
+		debug_info_apply_pdb(session, fcn);
 		rename_function(core, fcn);
 	}
 }
@@ -202,6 +203,7 @@ static RzAnalysisFunction *prepare(Session *session, ut64 addr) {
 	keep_own_blocks(fcn, function_end(session, addr));
 	wrap_stack_offsets(core, fcn);
 	debug_info_apply_dwarf(core, fcn);
+	debug_info_apply_pdb(session, fcn);
 	rename_function(core, fcn);
 	name_parts(session, fcn);
 	return fcn;

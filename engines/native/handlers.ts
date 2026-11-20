@@ -17,11 +17,12 @@ interface FileListing extends NativeRows {
     indexes: Map<number, number>;
 }
 
-/** A file that the engine opened, with its Rizin session and its rows once a call needs them. */
+/** A file that the engine opened, with its Rizin session, its PDB file and its rows once a call needs them. */
 interface NativeFile {
     name: string;
     session: number;
     mounted: MountedFile;
+    pdb?: MountedFile;
     listing?: FileListing;
 }
 
@@ -204,12 +205,40 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
 
             (await useModule()).freeSession(found.value.session);
             found.value.mounted.unmount();
+            found.value.pdb?.unmount();
             files.delete(fileId);
             cache.dropFile(fileId);
 
             return ok(undefined);
         },
-        provide: refuseFileCall,
+        async provide(fileId, name, pdb, signal) {
+            const found = findFile(fileId);
+            if (found.error !== undefined) {
+                return found;
+            }
+
+            const module = await useModule();
+            signal.throwIfAborted();
+
+            const file = found.value;
+            if (!readListing(module, file).missingFiles.some(missingFile => missingFile.name === name)) {
+                return failed(`${file.name} doesn't need ${name}.`);
+            }
+
+            const mounted = await mountFile(module.fs, `/files/${++mountCount}`, name, pdb);
+            const load = module.loadPdb(file.session, mounted.path);
+            if (load !== 'loaded') {
+                mounted.unmount();
+                return failed(load === 'mismatch' ? `${name} doesn't match ${file.name}.` : `${name} isn't a readable PDB file.`);
+            }
+
+            // drops the rows and documents that the names and types of the PDB file change
+            file.pdb = mounted;
+            file.listing = undefined;
+            cache.dropFile(fileId);
+
+            return ok(undefined);
+        },
         async list(fileId, signal) {
             const found = findFile(fileId);
             if (found.error !== undefined) {
@@ -218,9 +247,9 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
 
             const module = await useModule();
             signal.throwIfAborted();
-            const { rows, note } = readListing(module, found.value);
+            const { rows, note, missingFiles } = readListing(module, found.value);
 
-            return ok({ ...writeRows(rows), note, missingFiles: [] });
+            return ok({ ...writeRows(rows), note, missingFiles });
         },
         async read(fileId, key, view, signal) {
             const found = findFile(fileId);

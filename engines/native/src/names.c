@@ -68,21 +68,60 @@ char *names_clean(const char *name) {
 }
 
 /**
- * \brief Returns the clean demangled name of a symbol, or NULL for a symbol without a name.
+ * \brief Returns the demangled name of a symbol as the demangler writes it, or NULL for a symbol without a name.
  *
- * Drops the underscore that Mach-O files put in front of C function names. The caller frees the result with
- * free().
+ * Drops the underscore that Mach-O files put in front of C function names.
  */
-char *names_of_symbol(RzBinObject *object, const RzBinSymbol *symbol) {
+const char *names_raw_of_symbol(RzBinObject *object, const RzBinSymbol *symbol) {
 	if (RZ_STR_ISNOTEMPTY(symbol->dname)) {
-		return names_clean(symbol->dname);
+		return symbol->dname;
 	}
 	if (RZ_STR_ISEMPTY(symbol->name)) {
 		return NULL;
 	}
 
 	bool is_underscored = object->plugin && rz_str_startswith(object->plugin->name, "mach0");
-	return names_clean(symbol->name + (is_underscored && symbol->name[0] == '_' && symbol->name[1]));
+	return symbol->name + (is_underscored && symbol->name[0] == '_' && symbol->name[1]);
+}
+
+/**
+ * \brief Returns the clean demangled name of a symbol, or NULL for a symbol without a name.
+ *
+ * The caller frees the result with free().
+ */
+char *names_of_symbol(RzBinObject *object, const RzBinSymbol *symbol) {
+	const char *raw = names_raw_of_symbol(object, symbol);
+	return raw ? names_clean(raw) : NULL;
+}
+
+/**
+ * \brief Adds the access and the words `static` and `virtual` that an MSVC name starts with to a symbol's JSON.
+ *
+ * The MSVC demangler writes them like `public: static int` or `public virtual: long`, so a name that only starts like
+ * an access, like `privately::helper(int)`, has none.
+ */
+void names_add_msvc_words(PJ *j, const char *name) {
+	static const char *const accesses[] = { "public", "protected", "private" };
+	const char *access = NULL;
+	const char *colon = NULL;
+	for (size_t i = 0; i < RZ_ARRAY_SIZE(accesses) && !colon; i++) {
+		const char *after = rz_str_startswith(name, accesses[i]) ? name + strlen(accesses[i]) : "";
+		after += rz_str_startswith(after, " virtual") ? strlen(" virtual") : 0;
+		if (rz_str_startswith(after, ": ")) {
+			access = accesses[i];
+			colon = after;
+		}
+	}
+	if (!colon) {
+		return;
+	}
+
+	char *words = rz_str_ndup(name, colon - name);
+	const char *after = colon + 1;
+	pj_ks(j, "access", access);
+	pj_kb(j, "static", strstr(words, " static") || rz_str_startswith(after, " static "));
+	pj_kb(j, "virtual", strstr(words, " virtual") || rz_str_startswith(after, " virtual "));
+	free(words);
 }
 
 /**
@@ -108,7 +147,7 @@ static void cut_parameters(char *name) {
 }
 
 /**
- * \brief Returns the clean name of the symbol or the entry point at an address, or NULL.
+ * \brief Returns the clean name of the symbol, the PDB function or the entry point at an address, or NULL.
  *
  * The caller frees the result with free().
  */
@@ -122,6 +161,15 @@ static char *name_at(RzCore *core, ut64 addr) {
 	char *name = symbol ? names_of_symbol(object, symbol) : NULL;
 	if (name) {
 		return name;
+	}
+
+	const RzList *flags = rz_flag_get_list(core->flags, addr);
+	RzListIter *flag_it;
+	RzFlagItem *flag;
+	rz_list_foreach (flags, flag_it, flag) {
+		if (rz_str_startswith(flag->name, "pdb.") && RZ_STR_ISNOTEMPTY(flag->realname)) {
+			return names_clean(flag->realname);
+		}
 	}
 
 	const RzPVector *entries = rz_bin_object_get_entries(object);

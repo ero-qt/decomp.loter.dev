@@ -17,6 +17,7 @@ interface RizinModule {
     _session_listing(session: number, maxMembers: number): number;
     _session_prepare(session: number, address: number): number;
     _session_struct(session: number, name: number): number;
+    _session_load_pdb(session: number, path: number): number;
     _session_cmd(session: number, command: number): number;
     _session_decompile(session: number, address: number): number;
     _free(pointer: number): void;
@@ -27,6 +28,11 @@ interface RizinModule {
 }
 
 type CreateRizin = (options: { wasmBinary?: ArrayBuffer }) => Promise<RizinModule>;
+
+/** The result of a PDB file's load, in the order of the glue's numbers. */
+export type PdbLoad = 'loaded' | 'unreadable' | 'mismatch';
+
+const pdbLoads: PdbLoad[] = ['loaded', 'unreadable', 'mismatch'];
 
 /** An error of the module or its files, like a file that didn't load, which the handlers refuse a call with. */
 export class ModuleError extends Error {}
@@ -54,6 +60,11 @@ export interface NativeModule {
     listSymbols(session: number, maxMembers: number): GlueListing;
     /** Analyzes the function at an address for the decompiler, or returns `undefined` where Rizin doesn't find one. */
     prepareFunction(session: number, address: bigint): PreparedFunction | undefined;
+    /**
+     * Loads the names and types of a PDB file into a session and returns `loaded`, or why it didn't: `unreadable` or
+     * `mismatch` for a PDB file of another binary.
+     */
+    loadPdb(session: number, path: string): PdbLoad;
     /** Returns the C definition of a struct of the debug information, or `undefined` for a name without one. */
     describeStruct(session: number, name: string): string | undefined;
     /** Reads a file beside `rizin.mjs`, like `sleigh/files.txt`. */
@@ -124,6 +135,7 @@ export async function loadModule(moduleUrl: string, wasmBinary?: ArrayBuffer): P
 
             return text === '' ? undefined : JSON.parse(text);
         },
+        loadPdb: (session, path) => pdbLoads[withText(module, path, pointer => module._session_load_pdb(session, pointer))],
         describeStruct(session, name) {
             return withText(module, name, pointer => takeText(module, module._session_struct(session, pointer))) || undefined;
         },

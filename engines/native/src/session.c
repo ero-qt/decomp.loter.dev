@@ -69,6 +69,7 @@ EMSCRIPTEN_KEEPALIVE void session_free(Session *session) {
 	rz_cons_break_clear();
 	rz_set_u_free(session->prepared);
 	rz_vector_fini(&session->starts);
+	rz_bin_pdb_free(session->pdb);
 	free(session);
 }
 

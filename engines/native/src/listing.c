@@ -32,10 +32,11 @@ static struct {
 } cap;
 
 /**
- * \brief Adds a function or global, but only takes the address while the cap counts, and only counts a symbol above
- * the cap's max_addr.
+ * \brief Adds a function or global with its clean name and the access and words that its MSVC name starts with.
+ *
+ * Only takes the address while the cap counts, and only counts a symbol above the cap's max_addr.
  */
-static void add_symbol(PJ *j, ut64 addr, ut64 size, const char *name, bool global) {
+void listing_add_symbol(PJ *j, ut64 addr, ut64 size, const char *raw_name, bool global) {
 	if (cap.is_counting) {
 		rz_vector_push(&cap.addrs, &addr);
 		return;
@@ -45,43 +46,48 @@ static void add_symbol(PJ *j, ut64 addr, ut64 size, const char *name, bool globa
 		return;
 	}
 
+	char *name = names_clean(raw_name);
 	pj_o(j);
 	session_put_address(j, "addr", addr);
 	pj_kn(j, "size", size);
 	pj_ks(j, "name", name);
 	pj_kb(j, "global", global);
+	names_add_msvc_words(j, raw_name);
 	pj_end(j);
+	free(name);
 }
 
 /**
- * \brief Adds the symbols of a kind, 1 for each address, and returns the set of their addresses.
+ * \brief Adds the symbols of a kind and those of the session's PDB file, 1 for each address, and returns the set of
+ * their addresses.
  *
  * A file can have a symbol twice, like an ELF file in its dynamic and its full symbol table.
  */
-static RzSetU *add_symbols(PJ *j, RzBinObject *object, bool (*is_kind)(const RzBinSymbol *)) {
+static RzSetU *add_symbols(PJ *j, Session *session, RzBinObject *object, bool (*is_kind)(const RzBinSymbol *)) {
 	RzSetU *listed = rz_set_u_new();
 	const RzPVector *symbols = rz_bin_object_get_symbols(object);
 	void **it;
 	if (symbols) {
 		rz_pvector_foreach (symbols, it) {
 			RzBinSymbol *symbol = *it;
-			char *name = is_kind(symbol) && !rz_set_u_contains(listed, symbol->vaddr) ? names_of_symbol(object, symbol) : NULL;
+			const char *name = is_kind(symbol) && !rz_set_u_contains(listed, symbol->vaddr) ? names_raw_of_symbol(object, symbol) : NULL;
 			if (name) {
 				rz_set_u_add(listed, symbol->vaddr);
-				add_symbol(j, symbol->vaddr, symbol->size, name, is_global(symbol));
+				listing_add_symbol(j, symbol->vaddr, symbol->size, name, is_global(symbol));
 			}
-			free(name);
 		}
 	}
+
+	pdb_add_symbols(j, session, listed, is_kind == listing_is_function);
 	return listed;
 }
 
 /**
  * \brief Adds the functions of the symbols and the entry points without a symbol, which get the name `entry`.
  */
-static void add_functions(PJ *j, RzBinObject *object) {
+static void add_functions(PJ *j, Session *session, RzBinObject *object) {
 	pj_ka(j, "functions");
-	RzSetU *listed = add_symbols(j, object, listing_is_function);
+	RzSetU *listed = add_symbols(j, session, object, listing_is_function);
 	const RzPVector *entries = rz_bin_object_get_entries(object);
 	void **it;
 	if (entries) {
@@ -89,7 +95,7 @@ static void add_functions(PJ *j, RzBinObject *object) {
 			RzBinAddr *entry = *it;
 			if (!rz_set_u_contains(listed, entry->vaddr)) {
 				rz_set_u_add(listed, entry->vaddr);
-				add_symbol(j, entry->vaddr, 0, "entry", true);
+				listing_add_symbol(j, entry->vaddr, 0, "entry", true);
 			}
 		}
 	}
@@ -160,6 +166,20 @@ static void add_types(PJ *j, RzCore *core) {
 	pj_end(j);
 }
 
+/**
+ * \brief Adds the name of the PDB file in the debug directory, without its folder, and whether it's loaded.
+ */
+static void add_pdb(PJ *j, Session *session, RzBinObject *object) {
+	const char *path = object->info && object->info->debug_file_name ? object->info->debug_file_name : "";
+	const char *name = path;
+	for (const char *at = path; *at; at++) {
+		name = *at == '/' || *at == '\\' ? at + 1 : name;
+	}
+
+	pj_ks(j, "pdb", rz_str_endswith_icase(name, ".pdb") ? name : "");
+	pj_kb(j, "hasPdb", session->pdb != NULL);
+}
+
 static int compare_addresses(const void *a, const void *b, void *user) {
 	ut64 left = *(const ut64 *)a;
 	ut64 right = *(const ut64 *)b;
@@ -176,8 +196,8 @@ static void find_max_address(Session *session, RzBinObject *object, size_t max) 
 	PJ *ignored = pj_new();
 	cap.is_counting = true;
 	rz_vector_init(&cap.addrs, sizeof(ut64), NULL, NULL);
-	add_functions(ignored, object);
-	rz_set_u_free(add_symbols(ignored, object, is_data));
+	add_functions(ignored, session, object);
+	rz_set_u_free(add_symbols(ignored, session, object, is_data));
 	pj_free(ignored);
 
 	rz_vector_sort(&cap.addrs, compare_addresses, false, NULL);
@@ -189,8 +209,8 @@ static void find_max_address(Session *session, RzBinObject *object, size_t max) 
 }
 
 /**
- * \brief Lists the image base, functions, globals and imports of the open file, the structs of its debug information
- * and the classes of its RTTI as JSON, or returns NULL without a binary.
+ * \brief Lists the image base, functions, globals and imports of the open file, the structs of its debug information,
+ * the classes of its RTTI and its PDB file as JSON, or returns NULL without a binary.
  *
  * Lists the max functions and globals with the lowest addresses and the first max imports, and counts the others in
  * `omitted` and `omittedImports`. Lists names as the demangler writes them, with their parameters. The worker groups
@@ -208,11 +228,12 @@ EMSCRIPTEN_KEEPALIVE char *session_listing(Session *session, size_t max) {
 	PJ *j = pj_new();
 	pj_o(j);
 	session_put_address(j, "base", rz_bin_get_baddr(core->bin));
-	add_functions(j, object);
+	add_functions(j, session, object);
 	pj_ka(j, "data");
-	rz_set_u_free(add_symbols(j, object, is_data));
+	rz_set_u_free(add_symbols(j, session, object, is_data));
 	pj_end(j);
 	pj_kn(j, "omitted", cap.omitted);
+	add_pdb(j, session, object);
 	add_imports(j, object, max);
 	add_types(j, core);
 	classes_add_rtti(j, session, object);

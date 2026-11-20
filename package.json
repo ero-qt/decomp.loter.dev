@@ -2,11 +2,32 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "vite build --config shell/vite.config.ts && bun engines/build.ts",
     "check": "tsc",
-    "test": "bun test"
+    "test": "bun shell/run-tests.ts",
+    "perf": "bun shell/run-tests.ts perf"
+  },
+  "dependencies": {
+    "@codingame/monaco-vscode-api": "39.0.4",
+    "@codingame/monaco-vscode-configuration-service-override": "39.0.4",
+    "@codingame/monaco-vscode-files-service-override": "39.0.4",
+    "@codingame/monaco-vscode-languages-service-override": "39.0.4",
+    "@codingame/monaco-vscode-model-service-override": "39.0.4",
+    "@codingame/monaco-vscode-notifications-service-override": "39.0.4",
+    "@codingame/monaco-vscode-outline-service-override": "39.0.4",
+    "@codingame/monaco-vscode-preferences-service-override": "39.0.4",
+    "@codingame/monaco-vscode-textmate-service-override": "39.0.4",
+    "@codingame/monaco-vscode-theme-service-override": "39.0.4",
+    "@codingame/monaco-vscode-workbench-service-override": "39.0.4",
+    "vscode": "npm:@codingame/monaco-vscode-extension-api@39.0.4"
   },
   "devDependencies": {
     "@types/bun": "1.4.4",
-    "typescript": "6.0.3"
+    "@types/trusted-types": "2.0.7",
+    "@vscode/codicons": "0.0.46-24",
+    "playwright": "1.64.1",
+    "typescript": "6.0.3",
+    "uqr": "0.1.2",
+    "vite": "8.3.8"
   }
 }

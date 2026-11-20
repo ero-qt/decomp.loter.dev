@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>decomp.loter.dev</title>
+
+    <meta name="description" content="decomp.loter.dev is a decompiler by loter that runs entirely in your browser.">
+    <link rel="canonical" href="https://decomp.loter.dev/">
+    <meta property="og:title" content="decomp.loter.dev">
+    <meta property="og:description" content="decomp.loter.dev is a decompiler by loter that runs entirely in your browser.">
+    <meta property="og:url" content="https://decomp.loter.dev/">
+    <meta property="og:type" content="website">
+
+    <meta name="theme-color" content="#181818" media="(prefers-color-scheme: dark)">
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <div id="workbench"></div>
+    <template id="about-page-template">
+      <article class="tab-page about-page">
+        <header>
+          <h1>decomp.loter.dev</h1>
+          <p>Decompiler that runs entirely in your browser.</p>
+        </header>
+
+        <section class="usage">
+          <h2>How to use</h2>
+          <p>Drop files or folders anywhere on the page, or use Open Files and Open Folder in the Symbols view. Click a symbol to
+            open it, and right-click its tab to open its other views to the side.</p>
+
+          <h3>Supported files</h3>
+          <table>
+            <thead><tr><th>Format</th><th>Files</th><th>Views</th></tr></thead>
+            <tbody>
+              <tr><td>Fake test files</td><td><code>.fake</code></td><td>Code, Ops</td></tr>
+            </tbody>
+          </table>
+
+          <h3>Keyboard shortcuts</h3>
+          <table>
+            <tbody>
+              <tr><td>Go to definition</td><td><kbd>F12</kbd> or <kbd>Ctrl</kbd>+click</td></tr>
+              <tr><td>Find references</td><td><kbd>Shift</kbd>+<kbd>F12</kbd></td></tr>
+              <tr><td>Find symbol</td><td><kbd>Ctrl</kbd>+<kbd>T</kbd></td></tr>
+              <tr><td>Find string</td><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></td></tr>
+              <tr><td>Command palette</td><td><kbd>F1</kbd></td></tr>
+              <tr><td>Change shortcuts</td><td><kbd>Ctrl</kbd>+<kbd>K</kbd> <kbd>Ctrl</kbd>+<kbd>S</kbd></td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <footer class="links">
+          <p><span class="codicon codicon-code"></span>Source on
+            <a href="https://github.com/ero-qt/decomp.loter.dev" target="_blank" rel="noopener noreferrer">GitHub</a></p>
+        </footer>
+      </article>
+    </template>
+    <template id="support-page-template">
+      <aside class="tab-page support-note">
+        <h2>Support this project</h2>
+        <p><code>decomp.loter.dev</code> runs on <a href="https://uberspace.de" target="_blank" rel="noopener noreferrer">Uberspace</a>
+          for <span class="support-price">€9</span> a month. Uberspace is a small, owner-managed hosting company from Germany whose data
+          centers run only on renewable energy. A bank transfer with the reference below pays for the server's uptime.</p>
+
+        <div class="transfer">
+          <dl>
+            <dt>Account holder</dt><dd>Jonas Pasche</dd>
+            <dt>IBAN</dt><dd>DE09 5535 0010 0200 0039 78</dd>
+            <dt>BIC</dt><dd>MALADE51WOR</dd>
+            <dt>Reference</dt><dd>Uberspace decomp</dd>
+          </dl>
+          <img alt="Bank transfer QR code" width="82" height="82">
+        </div>
+
+        <p><em>The money goes to Uberspace, not to me. You won't get a receipt, since it's a hosting payment and not a donation.</em></p>
+
+        <div class="support-status" hidden>
+          <div class="status-row"><span data-status="amount"></span><span data-status="lastDay"></span></div>
+          <div class="status-bar" role="meter" aria-label="Months covered" aria-valuemin="0" aria-valuemax="12"><div></div></div>
+          <div class="status-row status-details"><span data-status="months"></span><span data-status="asOf"></span></div>
+        </div>
+
+        <footer class="links">
+          <p><span class="codicon codicon-heart"></span>Support me on
+            <a href="https://github.com/sponsors/ero-qt" target="_blank" rel="noopener noreferrer">GitHub</a></p>
+        </footer>
+      </aside>
+    </template>
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>

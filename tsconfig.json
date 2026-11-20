@@ -4,11 +4,13 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "lib": ["es2024", "dom", "dom.iterable"],
-    "types": ["bun"],
+    "types": ["bun", "trusted-types"],
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true
   },
-  "include": ["contract"]
+  "include": ["contract", "engines", "host", "shell"]
 }

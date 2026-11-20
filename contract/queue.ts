@@ -69,7 +69,7 @@ function findFileId(method: keyof Engine, [first]: unknown[]): QueuedCall['fileI
  * worker only until the time limit. A call whose signal aborts rejects at once with a `CanceledError`. A canceled call
  * that runs past the cancel limit while another call waits stops the worker like a call past the time limit.
  */
-export function connectEngine(workerUrl: string | URL, options: ConnectOptions): Engine {
+export function connectEngine(workerUrl: string | URL | TrustedScriptURL, options: ConnectOptions): Engine {
     const queue: QueuedCall[] = [];
     const openFiles = new Map<number, OpenFile>();
     // file id -> the error of a file that a new worker couldn't open again

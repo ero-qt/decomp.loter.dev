@@ -1,0 +1,201 @@
+html,
+body,
+#workbench {
+    height: 100%;
+    margin: 0;
+}
+
+/* clips what reaches past the window because the page otherwise scrolls by the few pixels of a slider or a sash */
+#workbench {
+    position: relative;
+    overflow: clip;
+}
+
+/* draws the logo in the title bar's text color because a mask keeps only the logo's shape */
+#workbench .window-appicon {
+    background: var(--vscode-titleBar-activeForeground);
+    mask: url('./logo.svg') center / 16px no-repeat;
+}
+
+#workbench .part.titlebar.inactive .window-appicon {
+    background: var(--vscode-titleBar-inactiveForeground);
+}
+
+#workbench .page-pane {
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    padding: 0 8px;
+    outline: none;
+}
+
+.tab-page {
+    box-sizing: border-box;
+    display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
+    width: 640px;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 48px 16px 24px;
+    color: var(--vscode-descriptionForeground);
+    font-size: 12px;
+    line-height: 1.5;
+    user-select: text;
+}
+
+.tab-page h2 {
+    margin: 0 0 8px;
+    color: var(--vscode-foreground);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.tab-page p {
+    margin: 4px 0;
+}
+
+.tab-page h1 {
+    margin: 0;
+    color: var(--vscode-foreground);
+    font-size: 26px;
+    font-weight: 600;
+}
+
+.tab-page header p {
+    margin: 4px 0 28px;
+    font-size: 14px;
+}
+
+.tab-page .usage {
+    font-size: 13px;
+}
+
+.tab-page h3 {
+    margin: 20px 0 6px;
+    color: var(--vscode-foreground);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.tab-page table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tab-page th {
+    color: var(--vscode-foreground);
+    font-weight: 600;
+    text-align: left;
+}
+
+.tab-page th,
+.tab-page td {
+    padding: 4px 12px 4px 0;
+    border-bottom: 1px solid var(--vscode-widget-border, var(--vscode-editorWidget-border));
+}
+
+.tab-page kbd {
+    padding: 0 4px;
+    border: 1px solid var(--vscode-keybindingLabel-border);
+    border-bottom-color: var(--vscode-keybindingLabel-bottomBorder);
+    border-radius: 3px;
+    color: var(--vscode-keybindingLabel-foreground);
+    background: var(--vscode-keybindingLabel-background);
+    font-family: inherit;
+    font-size: 11px;
+}
+
+.tab-page .transfer {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    margin: 12px 0;
+}
+
+.tab-page code {
+    padding: 1px 3px;
+    border-radius: 3px;
+    color: var(--vscode-textPreformat-foreground);
+    background: var(--vscode-textPreformat-background);
+    font-family: var(--monaco-monospace-font);
+}
+
+.tab-page dl {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 0 12px;
+    margin: 0;
+}
+
+.tab-page dd {
+    margin: 0;
+    color: var(--vscode-foreground);
+    font-family: var(--monaco-monospace-font);
+}
+
+.tab-page img {
+    display: block;
+    flex: none;
+}
+
+.tab-page a {
+    color: var(--vscode-textLink-foreground);
+}
+
+.support-status {
+    margin: 12px 0;
+}
+
+.support-status .status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.support-status [data-status="amount"] {
+    color: var(--vscode-foreground);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.support-status .status-details {
+    font-size: 11px;
+}
+
+.support-status .status-bar {
+    height: 4px;
+    margin: 6px 0 4px;
+    overflow: hidden;
+    border-radius: 2px;
+    background: var(--vscode-widget-border, var(--vscode-editorWidget-border));
+}
+
+.support-status .status-bar > div {
+    height: 100%;
+    background: var(--vscode-progressBar-background);
+}
+
+/* pushes the links to the bottom of the tab when the tab is taller than the page's text */
+.tab-page .links {
+    margin-top: auto;
+    padding-top: 32px;
+}
+
+.tab-page .links p {
+    margin: 0;
+    padding-top: 6px;
+    border-top: 1px solid var(--vscode-widget-border, var(--vscode-editorWidget-border));
+}
+
+.tab-page .links .codicon {
+    margin-right: 4px;
+    vertical-align: text-bottom;
+}
+
+/* starts with the workbench's id because the workbench's own icon color comes later at the same specificity */
+#workbench .tab-page .codicon-heart,
+#workbench .part.titlebar .action-label.codicon-heart {
+    color: var(--vscode-charts-red);
+}

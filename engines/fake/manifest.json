@@ -1,0 +1,10 @@
+{
+  "id": "fake",
+  "name": "Fake",
+  "extensions": [".fake"],
+  "views": [
+    { "id": "code", "title": "Code", "extension": ".code", "language": "plaintext" },
+    { "id": "ops", "title": "Ops", "extension": ".ops", "language": "plaintext" }
+  ],
+  "hasLinkedFiles": true
+}

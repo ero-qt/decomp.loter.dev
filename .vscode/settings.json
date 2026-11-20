@@ -3,9 +3,10 @@
   "explorer.fileNesting.expand": false,
   "explorer.fileNesting.patterns": {
     ".gitignore": ".gitattributes, .editorconfig",
-    "readme.md": "license.md",
+    "readme.md": "license.md, third-party-notices.md",
     "package.json": "bun.lock, tsconfig.json, justfile",
-    "*.ts": "${capture}.test.ts, ${capture}-*.test.ts, ${capture}-testing.ts",
+    // leaves editor-testing.ts and page-testing.ts at the top because many test files share them
+    "*.ts": "${capture}.test.ts, ${capture}-*.test.ts, ${capture}.perf.ts, ${capture}-testing.ts",
   },
   "files.exclude": {
     "artifacts/": true,

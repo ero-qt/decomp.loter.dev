@@ -2,6 +2,7 @@ import type { IWorkbenchConstructionOptions } from '@codingame/monaco-vscode-api
 
 export const darkThemeName = 'decomp.loter.dev Dark';
 export const lightThemeName = 'decomp.loter.dev Light';
+export const symbolsViewId = 'decomp.symbols';
 
 export const productConfiguration: IWorkbenchConstructionOptions['productConfiguration'] = {
     nameShort: 'decomp.loter.dev',
@@ -20,4 +21,10 @@ export const configurationDefaults: Record<string, unknown> = {
     'workbench.tips.enabled': false,
     'workbench.layoutControl.enabled': false,
     'workbench.activityBar.location': 'hidden',
+};
+
+// opens the side bar with the Symbols view because the workbench hides the side bar in a window without a folder
+export const defaultLayout: IWorkbenchConstructionOptions['defaultLayout'] = {
+    force: true,
+    views: [{ id: symbolsViewId }],
 };

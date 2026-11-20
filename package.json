@@ -11,11 +11,13 @@
     "@codingame/monaco-vscode-api": "39.0.4",
     "@codingame/monaco-vscode-configuration-service-override": "39.0.4",
     "@codingame/monaco-vscode-theme-service-override": "39.0.4",
-    "@codingame/monaco-vscode-workbench-service-override": "39.0.4"
+    "@codingame/monaco-vscode-workbench-service-override": "39.0.4",
+    "vscode": "npm:@codingame/monaco-vscode-extension-api@39.0.4"
   },
   "devDependencies": {
     "@types/bun": "1.4.4",
     "@types/trusted-types": "2.0.7",
+    "@vscode/codicons": "0.0.46-24",
     "playwright": "1.64.1",
     "typescript": "6.0.3",
     "vite": "8.3.8"

@@ -8,10 +8,12 @@
         "@codingame/monaco-vscode-configuration-service-override": "39.0.4",
         "@codingame/monaco-vscode-theme-service-override": "39.0.4",
         "@codingame/monaco-vscode-workbench-service-override": "39.0.4",
+        "vscode": "npm:@codingame/monaco-vscode-extension-api@39.0.4",
       },
       "devDependencies": {
         "@types/bun": "1.4.4",
         "@types/trusted-types": "2.0.7",
+        "@vscode/codicons": "0.0.46-24",
         "playwright": "1.64.1",
         "typescript": "6.0.3",
         "vite": "8.3.8",
@@ -107,6 +109,8 @@
 
     "@types/trusted-types": ["@types/trusted-types@2.0.7", "", {}, "sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw=="],
 
+    "@vscode/codicons": ["@vscode/codicons@0.0.46-24", "", {}, "sha512-KIDWUYxG6eh+DHRg+3G4bS487T+g1ZkLfB4HylOBbCcHsvLdfLMRM/m92DS1Ljhi8nglLr9ucwwWhHTEAC+DpA=="],
+
     "@vscode/diff": ["@vscode/diff@0.0.2-7", "", {}, "sha512-zGPIPeUAmQs79u7g6FTLmhlXFIocUTtuHYmCV5lRZf6vlDk7SWEOpBlYY6SsShC3TB/lm2KxXMj9tP32YOPrhg=="],
 
     "@vscode/iconv-lite-umd": ["@vscode/iconv-lite-umd@0.7.1", "", {}, "sha512-tK6k0DXFHW7q5+GGuGZO+phpAqpxO4WXl+BLc/8/uOk3RsM2ssAL3CQUQDb1TGfwltjsauhN6S4ghYZzs4sPFw=="],
@@ -178,5 +182,7 @@
     "undici-types": ["undici-types@8.9.0", "", {}, "sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg=="],
 
     "vite": ["vite@8.3.8", "", { "dependencies": { "lightningcss": "^1.33.0", "picomatch": "^4.0.7", "postcss": "^8.5.32", "rolldown": "~1.2.18", "tinyglobby": "^0.2.17" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "peerDependencies": { "@types/node": "^20.19.0 || >=22.12.0", "@vitejs/devtools": "^0.7.1 || ^0.8.0", "esbuild": "^0.27.0 || ^0.28.0", "jiti": ">=1.21.0", "less": "^4.0.0", "sass": "^1.70.0", "sass-embedded": "^1.70.0", "stylus": ">=0.54.8", "sugarss": "^5.0.0", "terser": "^5.16.0", "tsx": "^4.8.1", "yaml": "^2.4.2" }, "optionalPeers": ["@types/node", "@vitejs/devtools", "esbuild", "jiti", "less", "sass", "sass-embedded", "stylus", "sugarss", "terser", "tsx", "yaml"], "bin": { "vite": "bin/vite.js" } }, "sha512-LzOn3h9rG/0vhLdXrV4yJ4QFA9eEoqCl+Yx+kGJd7aB9w6nfNgVHKSYwLPZUHrz4ZGa+t+kXjV9itvcHDLQouA=="],
+
+    "vscode": ["@codingame/monaco-vscode-extension-api@39.0.4", "", { "dependencies": { "@codingame/monaco-vscode-api": "39.0.4", "@codingame/monaco-vscode-extensions-service-override": "39.0.4" } }, "sha512-t1d+kV/jNgyJCKQFKp+vH9nFDIzKDbS537JvF2wyKOrWyyd3MU6aHXl9ZAkp31fnE7C1CTtDUcdYA+ERyJnklA=="],
   }
 }

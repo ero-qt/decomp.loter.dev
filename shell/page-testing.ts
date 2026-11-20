@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { afterAll, afterEach, beforeAll } from 'bun:test';
-import { type Browser, chromium, type Page } from 'playwright';
+import { type Browser, chromium, type Locator, type Page } from 'playwright';
 import { siteHeaders } from './headers';
 
 const siteRoot = new URL('../artifacts/site/', import.meta.url);
@@ -32,6 +32,16 @@ export function startSiteServer(root = siteRoot) {
     });
 }
 
+/** Finds the empty Symbols view's button that opens files. */
+export function findOpenFilesButton(page: Page): Locator {
+    return page.getByRole('button', { name: 'Open Files', exact: true });
+}
+
+/** Lists the URLs of the requests that went to another host than the page's host. */
+export function listOtherHostRequests(page: Page, requests: string[]): string[] {
+    return requests.filter(url => new URL(url).host !== new URL(page.url()).host);
+}
+
 // writes each violation to the console because Chromium's own message for a trusted types violation doesn't have the
 // policy's name
 function reportViolations() {
@@ -41,10 +51,76 @@ function reportViolations() {
     });
 }
 
+interface EngineCalls {
+    /** The method of each call that the page sent to an engine's worker, in the calls' order. */
+    methods: string[];
+    replyCount: number;
+    cancelCount: number;
+}
+
+// counts the calls to the engines' workers and their replies because a test waits for a late reply before it checks
+// that the reply didn't change the page
+function countEngineCalls() {
+    const calls: EngineCalls = { methods: [], replyCount: 0, cancelCount: 0 };
+    Object.assign(window, { engineCalls: calls });
+    window.Worker = class extends Worker {
+        private readonly isEngine: boolean;
+
+        constructor(url: string | URL, options?: WorkerOptions) {
+            super(url, options);
+            this.isEngine = String(url).includes('/engines/');
+            this.addEventListener('message', ({ data }: MessageEvent<object>) => {
+                if (this.isEngine && ('reply' in data || 'fatal' in data)) {
+                    calls.replyCount++;
+                }
+            });
+        }
+
+        override postMessage(message: object, transfer: Transferable[] | StructuredSerializeOptions = []) {
+            // counts a cancel message apart from the calls because the worker doesn't reply to it
+            if (this.isEngine && 'method' in message) {
+                calls.methods.push(String(message.method));
+            } else if (this.isEngine && 'cancel' in message) {
+                calls.cancelCount++;
+            }
+
+            super.postMessage(message, Array.isArray(transfer) ? { transfer } : transfer);
+        }
+    };
+}
+
+/** Counts the cancel messages that the page sent to the engines' workers, also to a worker that stopped since. */
+export function countEngineCancels(page: Page): Promise<number> {
+    return page.evaluate(() => (window as unknown as { engineCalls: EngineCalls }).engineCalls.cancelCount);
+}
+
+/** Waits until the page sent the count of calls with the method to the engines' workers. */
+export async function waitForEngineCalls(page: Page, method: string, count = 1) {
+    await page.waitForFunction(({ method, count }) => {
+        const { methods } = (window as unknown as { engineCalls: EngineCalls }).engineCalls;
+
+        return methods.filter(sent => sent === method).length >= count;
+    }, { method, count });
+}
+
+/**
+ * Waits until the page sent the count of calls with the method to the engines' workers and each call that the page sent
+ * got its reply. The page handles a reply in the reply's task, before the wait reads the count again.
+ */
+export async function waitForEngineReplies(page: Page, method: string, count = 1) {
+    await waitForEngineCalls(page, method, count);
+    await page.waitForFunction(() => {
+        const { methods, replyCount } = (window as unknown as { engineCalls: EngineCalls }).engineCalls;
+
+        return replyCount === methods.length;
+    });
+}
+
 /**
  * Starts the site server and Chromium before a file's tests and stops both after the last test. Returns the function
- * `openWorkbench`, which opens the site in a new page that closes after the test and waits for the workbench.
- * `openWorkbench` returns the page, the message of each content security policy violation and the URL of each request.
+ * `openWorkbench`, which opens the site in a new page that closes after the test and waits for the Symbols view's
+ * buttons. `openWorkbench` returns the page, the message of each content security policy violation in the page and in
+ * the engines' workers, and the URL of each request.
  */
 export function startWorkbench() {
     let server: ReturnType<typeof startSiteServer> | undefined;
@@ -78,8 +154,14 @@ export function startWorkbench() {
             }
         });
         await page.addInitScript(reportViolations);
+        await page.addInitScript(countEngineCalls);
+        // adds the listener to each engine's worker script because an init script doesn't run in a worker
+        await page.route('**/engines/*/worker.js', async route => {
+            const response = await route.fetch();
+            await route.fulfill({ response, body: `(${reportViolations})();\n${await response.text()}` });
+        });
         await page.goto(server!.url.href);
-        await page.locator('.monaco-workbench .part.statusbar').waitFor();
+        await findOpenFilesButton(page).waitFor();
         await page.waitForLoadState('networkidle');
 
         return { page, violations, requests };

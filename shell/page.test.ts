@@ -1,7 +1,9 @@
 import { brotliCompressSync, constants } from 'node:zlib';
 import { expect, test } from 'bun:test';
+import { Color } from '@codingame/monaco-vscode-api/vscode/vs/base/common/color';
 import type { Page } from 'playwright';
-import { findSiteFile, startWorkbench, testTimeoutMs } from './page-testing';
+import { closeTab } from './editor-testing';
+import { findSiteFile, listOtherHostRequests, startWorkbench, testTimeoutMs } from './page-testing';
 
 const openWorkbench = startWorkbench();
 
@@ -27,7 +29,7 @@ test('workbench starts with the title decomp.loter.dev without a policy violatio
 
     expect(await page.title()).toBe('decomp.loter.dev');
     expect(violations).toEqual([]);
-    expect(requests.filter(url => new URL(url).host !== new URL(page.url()).host)).toEqual([]);
+    expect(listOtherHostRequests(page, requests)).toEqual([]);
     expect(await page.locator('link[rel=preconnect], link[rel=dns-prefetch]').count()).toBe(0);
 }, testTimeoutMs);
 
@@ -104,7 +106,7 @@ test("workbench keeps only `DefaultOverridesCacheExists` in the browser after a 
     expect(await page.context().cookies()).toEqual([]);
 }, testTimeoutMs);
 
-test('files that the workbench loads to start are at most 2.2 MB with brotli', async () => {
+test('files that the workbench loads to start are at most 2.3 MB with brotli', async () => {
     const { requests } = await openWorkbench();
     let size = 0;
 
@@ -114,5 +116,5 @@ test('files that the workbench loads to start are at most 2.2 MB with brotli', a
         size += brotliCompressSync(bytes, { params: { [constants.BROTLI_PARAM_QUALITY]: 9 } }).length;
     }
 
-    expect(size).toBeLessThanOrEqual(2_200_000);
+    expect(size).toBeLessThanOrEqual(2_300_000);
 }, testTimeoutMs);

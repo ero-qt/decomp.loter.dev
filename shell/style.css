@@ -21,36 +21,53 @@ body,
     background: var(--vscode-titleBar-inactiveForeground);
 }
 
-#workbench .about-pane {
+#workbench .page-pane {
+    display: flex;
+    flex-direction: column;
     box-sizing: border-box;
     padding: 0 8px;
     outline: none;
 }
 
-.support-note {
+.tab-page {
     box-sizing: border-box;
-    width: 520px;
+    display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
+    width: 640px;
     max-width: 100%;
-    margin: 48px auto 16px;
-    padding: 16px;
+    margin: 0 auto;
+    padding: 48px 16px 24px;
     color: var(--vscode-descriptionForeground);
     font-size: 12px;
     line-height: 1.5;
     user-select: text;
 }
 
-.support-note h2 {
+.tab-page h2 {
     margin: 0 0 8px;
     color: var(--vscode-foreground);
     font-size: 13px;
     font-weight: 600;
 }
 
-.support-note p {
+.tab-page p {
     margin: 4px 0;
 }
 
-.support-note .transfer {
+.tab-page h1 {
+    margin: 0;
+    color: var(--vscode-foreground);
+    font-size: 26px;
+    font-weight: 600;
+}
+
+.tab-page header p {
+    margin: 4px 0 28px;
+    font-size: 14px;
+}
+
+.tab-page .transfer {
     display: flex;
     gap: 16px;
     align-items: center;
@@ -58,7 +75,7 @@ body,
     margin: 12px 0;
 }
 
-.support-note code {
+.tab-page code {
     padding: 1px 3px;
     border-radius: 3px;
     color: var(--vscode-textPreformat-foreground);
@@ -66,25 +83,25 @@ body,
     font-family: var(--monaco-monospace-font);
 }
 
-.support-note dl {
+.tab-page dl {
     display: grid;
     grid-template-columns: auto auto;
     gap: 0 12px;
     margin: 0;
 }
 
-.support-note dd {
+.tab-page dd {
     margin: 0;
     color: var(--vscode-foreground);
     font-family: var(--monaco-monospace-font);
 }
 
-.support-note img {
+.tab-page img {
     display: block;
     flex: none;
 }
 
-.support-note a {
+.tab-page a {
     color: var(--vscode-textLink-foreground);
 }
 
@@ -121,22 +138,25 @@ body,
     background: var(--vscode-progressBar-background);
 }
 
-.support-note hr {
-    margin: 10px 0 6px;
-    border: none;
+/* pushes the links to the bottom of the tab when the tab is taller than the page's text */
+.tab-page .links {
+    margin-top: auto;
+    padding-top: 32px;
+}
+
+.tab-page .links p {
+    margin: 0;
+    padding-top: 6px;
     border-top: 1px solid var(--vscode-widget-border, var(--vscode-editorWidget-border));
 }
 
-.support-note .links {
-    display: flex;
-    justify-content: space-between;
-}
-
-.support-note .links .codicon {
+.tab-page .links .codicon {
     margin-right: 4px;
     vertical-align: text-bottom;
 }
 
-.support-note .codicon-heart {
+/* starts with the workbench's id because the workbench's own icon color comes later at the same specificity */
+#workbench .tab-page .codicon-heart,
+#workbench .part.titlebar .action-label.codicon-heart {
     color: var(--vscode-charts-red);
 }

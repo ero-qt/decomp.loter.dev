@@ -1,20 +1,20 @@
 import { expect, test } from 'bun:test';
 import { Color } from '@codingame/monaco-vscode-api/vscode/vs/base/common/color';
 import type { Locator, Page } from 'playwright';
-import { sampleFiles } from '../contract/fake';
-import { aboutTab, closeTab, findTab, openCircle, readActiveTab, readTabs, readUntil, waitForTabs } from './editor-testing';
+import { aboutTab, findTab, readActiveTab, readTabs, readUntil, waitForTabs } from './editor-testing';
 import { collectErrors, findOpenFilesButton, findSiteFile, runCommand, startWorkbench, testTimeoutMs } from './page-testing';
 import { minimumContrast } from './themes/light';
 import { drawTransferCode, transfer } from './transfer-code';
 
 const openWorkbench = startWorkbench();
 const balanceFile = { balance: '12.50', price: '9.00', asOf: '2026-11-19T08:00+00:00' };
+const supportTab = { label: 'Support', isPreview: false };
 
 // the note's lines without the balance status, which shows only with a `balance.json`
 const noteLines = [
     'Support this project',
-    'decomp.loter.dev runs on Uberspace for €9 a month. A bank transfer with the reference below pays Uberspace directly for the '
-        + "server's uptime. You won't get a receipt, since it's a hosting payment and not a donation.",
+    'decomp.loter.dev runs on Uberspace for €9 a month. Uberspace is a small, owner-managed hosting company from Germany whose '
+        + "data centers run only on renewable energy. A bank transfer with the reference below pays for the server's uptime.",
     'Account holder',
     transfer.name,
     'IBAN',
@@ -23,27 +23,38 @@ const noteLines = [
     transfer.bic,
     'Reference',
     transfer.reference,
+    "The money goes to Uberspace, not to me. You won't get a receipt, since it's a hosting payment and not a donation.",
     'Support me on GitHub',
-    'Source on GitHub',
 ];
 
 function findNote(page: Page) {
     return page.locator('.editor-group-container .support-note');
 }
 
+function findHeart(page: Page) {
+    return page.locator('.part.titlebar').getByRole('button', { name: 'Support decomp.loter.dev' });
+}
+
+async function openSupport(page: Page) {
+    await findHeart(page).click();
+    await findNote(page).waitFor();
+}
+
 async function readNoteLines(page: Page): Promise<string[]> {
     return (await findNote(page).innerText()).split('\n').filter(line => line.trim() !== '');
 }
 
-// serves the balance file's text, or a missing file for `undefined`, and starts the workbench again
+// serves the balance file's text, or a missing file for `undefined`, starts the workbench again and opens the Support
+// tab
 async function reloadWithBalance(page: Page, text: string | undefined) {
     await page.route('**/balance.json', route => text === undefined ? route.fulfill({ status: 404 }) : route.fulfill({ body: text }));
     await page.reload();
     await findOpenFilesButton(page).waitFor();
+    await openSupport(page);
     await page.waitForLoadState('networkidle');
 }
 
-// reads whether the element of the note lies inside the About tab's pane from top to bottom
+// reads whether the element of the note lies inside the Support tab's pane from top to bottom
 function readInsidePane(element: Locator) {
     return element.evaluate(element => {
         const area = element.closest('.support-note')!.parentElement!.getBoundingClientRect();
@@ -53,12 +64,12 @@ function readInsidePane(element: Locator) {
     });
 }
 
-// reads whether the note's last line, the source link, shows in the About tab's pane
+// reads whether the note's last line, the sponsor link, shows in the Support tab's pane
 function readLinkInsidePane(page: Page) {
-    return readInsidePane(findNote(page).getByRole('link', { name: 'GitHub' }).last());
+    return readInsidePane(findNote(page).getByRole('link', { name: 'GitHub' }));
 }
 
-// turns the wheel over the pane until the source link shows and returns whether it shows
+// turns the wheel over the pane until the sponsor link shows and returns whether it shows
 async function wheelToLink(page: Page) {
     // points at the pane because a pointer on the note would first scroll the note's top into view
     await findNote(page).locator('..').hover();
@@ -77,7 +88,7 @@ async function shrinkWindowTo300Pixels(page: Page) {
     await page.waitForFunction(() => document.querySelector('.part.editor')!.getBoundingClientRect().height < 300);
 }
 
-// reads whether the note lies inside the About tab's pane from left to right and whether the pane scrolls sideways
+// reads whether the note lies inside the Support tab's pane from left to right and whether the pane scrolls sideways
 function readNoteWidthFit(page: Page) {
     return findNote(page).evaluate(note => {
         const pane = note.parentElement!;
@@ -88,81 +99,95 @@ function readNoteWidthFit(page: Page) {
     });
 }
 
-test('workbench starts with the active About tab, which shows the support note with the bank details and a QR code', async () => {
+function readColor(element: Locator) {
+    return element.evaluate(element => getComputedStyle(element).color);
+}
+
+// reads the theme's red through a probe because the theme writes the red in hex and the browser computes colors in rgb
+function readThemeRed(page: Page) {
+    return page.locator('.monaco-workbench').evaluate(workbench => {
+        const probe = document.createElement('span');
+        probe.style.color = getComputedStyle(workbench).getPropertyValue('--vscode-charts-red');
+        workbench.append(probe);
+        const red = getComputedStyle(probe).color;
+        probe.remove();
+
+        return red;
+    });
+}
+
+test('workbench starts without the Support tab', async () => {
+    const { page } = await openWorkbench();
+
+    await findHeart(page).waitFor();
+
+    expect(await readTabs(page)).toEqual([aboutTab]);
+    expect(await findNote(page).count()).toBe(0);
+}, testTimeoutMs);
+
+test("title bar's heart opens the Support tab, which shows the support note with the bank details and a QR code", async () => {
     const { page } = await openWorkbench();
     const code = page.getByRole('img', { name: 'Bank transfer QR code' });
 
-    await findNote(page).waitFor();
+    await openSupport(page);
 
-    expect(await readTabs(page)).toEqual([aboutTab]);
-    expect(await readActiveTab(page)).toBe('About');
+    expect(await readTabs(page)).toEqual([aboutTab, supportTab]);
+    expect(await readActiveTab(page)).toBe('Support');
     expect(await readNoteLines(page)).toEqual(noteLines);
     expect(await page.getByRole('heading', { name: 'Support this project' }).count()).toBe(1);
     expect(await findNote(page).locator('code').textContent()).toBe('decomp.loter.dev');
+    expect(await findNote(page).locator('em').textContent()).toStartWith('The money goes to Uberspace');
     expect(await code.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
     expect(await findSiteFile(new URL(await code.evaluate(image => (image as HTMLImageElement).currentSrc)).pathname).text())
         .toBe(drawTransferCode());
 }, testTimeoutMs);
 
-test("About tab's hover shows the site's name", async () => {
+test("title bar's heart shows the open Support tab again without a second Support tab", async () => {
     const { page } = await openWorkbench();
+    await openSupport(page);
+    await findTab(page, 'About').click();
+    await readUntil(() => readActiveTab(page), 'About');
 
-    await findTab(page, 'About').hover();
+    await findHeart(page).click();
 
-    await page.locator('.monaco-hover').filter({ hasText: 'About decomp.loter.dev' }).waitFor();
+    expect(await readUntil(() => readActiveTab(page), 'Support')).toBe('Support');
+    expect(await readTabs(page)).toEqual([aboutTab, supportTab]);
 }, testTimeoutMs);
 
-test('About tab stays open beside an opened document', async () => {
+test("title bar's heart shows the hover Support decomp.loter.dev", async () => {
     const { page } = await openWorkbench();
 
-    await openCircle(page, await sampleFiles.drawing.text(), 'Draw');
+    await findHeart(page).hover();
 
-    expect(await readTabs(page)).toEqual([aboutTab, { label: 'Circle.code', isPreview: true }]);
-    expect(await readActiveTab(page)).toBe('Circle.code');
+    await page.locator('.monaco-hover').filter({ hasText: 'Support decomp.loter.dev' }).waitFor();
 }, testTimeoutMs);
 
-test('Help: About shows the open About tab again without a second About tab', async () => {
-    const { page } = await openWorkbench();
-    await openCircle(page, await sampleFiles.drawing.text(), 'Draw');
-
-    await runCommand(page, 'Help: About');
-
-    expect(await readUntil(() => readActiveTab(page), 'About')).toBe('About');
-    expect(await readTabs(page)).toEqual([aboutTab, { label: 'Circle.code', isPreview: true }]);
-}, testTimeoutMs);
-
-test('Help: About shows the About tab of another group without an About tab in the active group', async () => {
-    const { page } = await openWorkbench();
-    await findNote(page).waitFor();
-    await runCommand(page, 'View: New Editor Group to the Right');
-    await page.locator('.editor-group-container').nth(1).waitFor();
-
-    await runCommand(page, 'Help: About');
-
-    expect(await readUntil(() => readActiveTab(page), 'About')).toBe('About');
-    expect(await readTabs(page)).toEqual([aboutTab]);
-}, testTimeoutMs);
-
-test('Help: About opens 1 About tab again after the About tab closes', async () => {
+test('Help: Support decomp.loter.dev opens the Support tab', async () => {
     const { page } = await openWorkbench();
 
-    await closeTab(page, 'About');
-    await waitForTabs(page);
-    await runCommand(page, 'Help: About');
-    await waitForTabs(page, 'About');
+    await runCommand(page, 'Help: Support decomp.loter.dev');
+    await waitForTabs(page, 'About', 'Support');
 
-    expect(await readTabs(page)).toEqual([aboutTab]);
+    expect(await readActiveTab(page)).toBe('Support');
     expect(await readNoteLines(page)).toEqual(noteLines);
 }, testTimeoutMs);
 
-test('command palette lists Help: About as the only About command', async () => {
+test("Support tab's hover shows the site's name", async () => {
     const { page } = await openWorkbench();
+    await openSupport(page);
 
-    await page.keyboard.press('F1');
-    await page.keyboard.insertText('About');
-    await page.locator('.quick-input-list .monaco-list-row').first().waitFor();
+    await findTab(page, 'Support').hover();
 
-    expect(await page.locator('.quick-input-list .monaco-list-row .label-name').allInnerTexts()).toEqual(['Help: About']);
+    await page.locator('.monaco-hover').filter({ hasText: 'Support decomp.loter.dev' }).waitFor();
+}, testTimeoutMs);
+
+test("title bar's heart and the sponsor link's heart have the theme's red", async () => {
+    const { page } = await openWorkbench();
+    await openSupport(page);
+    const red = await readThemeRed(page);
+
+    expect(await readColor(findHeart(page))).toBe(red);
+    expect(await readColor(findNote(page).locator('.codicon-heart'))).toBe(red);
 }, testTimeoutMs);
 
 test('balance status shows the balance, the covered months and their bar from a served `balance.json`', async () => {
@@ -214,6 +239,7 @@ test('note leaves out the balance status without an error of its own when `balan
 
 test('Uberspace and GitHub links open in a new tab without the opener and the referrer', async () => {
     const { page } = await openWorkbench();
+    await openSupport(page);
 
     const links = findNote(page).getByRole('link');
 
@@ -224,11 +250,10 @@ test('Uberspace and GitHub links open in a new tab without the opener and the re
     expect(linkValues).toEqual([
         ['Uberspace', 'https://uberspace.de', '_blank', 'noopener noreferrer'],
         ['GitHub', 'https://github.com/sponsors/ero-qt', '_blank', 'noopener noreferrer'],
-        ['GitHub', 'https://github.com/ero-qt/decomp.loter.dev', '_blank', 'noopener noreferrer'],
     ]);
 }, testTimeoutMs);
 
-test("note fits the About tab's width in an 800 by 600 window and scrolls down to its last line in a 300 pixel high window", async () => {
+test("note fits the Support tab's width in an 800 by 600 window and scrolls down to its last line in a 300 pixel high window", async () => {
     const { page } = await openWorkbench();
     await reloadWithBalance(page, JSON.stringify(balanceFile));
 
@@ -244,7 +269,7 @@ test("note fits the About tab's width in an 800 by 600 window and scrolls down t
     expect(await readNoteWidthFit(page)).toEqual({ insidePaneWidth: true, scrollsSideways: false });
 }, testTimeoutMs);
 
-test('wheel scrolls down to the source link when the balance status shows after the About pane laid out the note', async () => {
+test('wheel scrolls down to the sponsor link when the balance status shows after the Support pane laid out the note', async () => {
     const { page } = await openWorkbench();
     const { promise: served, resolve: serve } = Promise.withResolvers<void>();
     await page.route('**/balance.json', async route => {
@@ -253,7 +278,7 @@ test('wheel scrolls down to the source link when the balance status shows after 
     });
     await shrinkWindowTo300Pixels(page);
     await page.reload();
-    await findNote(page).waitFor();
+    await openSupport(page);
 
     serve();
     await findNote(page).locator('.support-status').waitFor();
@@ -261,10 +286,11 @@ test('wheel scrolls down to the source link when the balance status shows after 
     expect(await wheelToLink(page)).toBe(true);
 }, testTimeoutMs);
 
-test('End and Home scroll the focused About pane to the source link and back to the heading in a 300 pixel high window', async () => {
+test('End and Home scroll the focused Support pane to the sponsor link and back to the heading in a 300 pixel high window', async () => {
     const { page } = await openWorkbench();
     const heading = findNote(page).getByRole('heading', { name: 'Support this project' });
     await shrinkWindowTo300Pixels(page);
+    await openSupport(page);
 
     await heading.click();
     await page.keyboard.press('End');
@@ -280,7 +306,7 @@ for (const command of ['View: Duplicate Editor Group Right', 'View: Split Editor
     test(`${command} shows the support note in both groups`, async () => {
         const { page } = await openWorkbench();
         const notes = findNote(page);
-        await notes.waitFor();
+        await openSupport(page);
 
         await runCommand(page, command);
         await notes.nth(1).waitFor();
@@ -294,6 +320,7 @@ for (const command of ['View: Duplicate Editor Group Right', 'View: Split Editor
 for (const colorScheme of ['dark', 'light'] as const) {
     test(`note's text has a readable contrast on the editor's background in the ${colorScheme} theme`, async () => {
         const { page } = await openWorkbench(colorScheme);
+        await openSupport(page);
 
         const [noteColor, background] = await findNote(page).evaluate(note => {
             const workbench = getComputedStyle(document.querySelector('.monaco-workbench')!);

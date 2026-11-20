@@ -18,12 +18,25 @@
   </head>
   <body>
     <div id="workbench"></div>
-    <template id="support-note-template">
-      <aside class="support-note">
+    <template id="about-page-template">
+      <article class="tab-page about-page">
+        <header>
+          <h1>decomp.loter.dev</h1>
+          <p>Decompiler that runs entirely in your browser.</p>
+        </header>
+
+        <footer class="links">
+          <p><span class="codicon codicon-code"></span>Source on
+            <a href="https://github.com/ero-qt/decomp.loter.dev" target="_blank" rel="noopener noreferrer">GitHub</a></p>
+        </footer>
+      </article>
+    </template>
+    <template id="support-page-template">
+      <aside class="tab-page support-note">
         <h2>Support this project</h2>
         <p><code>decomp.loter.dev</code> runs on <a href="https://uberspace.de" target="_blank" rel="noopener noreferrer">Uberspace</a>
-          for <span class="support-price">€9</span> a month. A bank transfer with the reference below pays Uberspace directly for the server's
-          uptime. You won't get a receipt, since it's a hosting payment and not a donation.</p>
+          for <span class="support-price">€9</span> a month. Uberspace is a small, owner-managed hosting company from Germany whose data
+          centers run only on renewable energy. A bank transfer with the reference below pays for the server's uptime.</p>
 
         <div class="transfer">
           <dl>
@@ -35,19 +48,18 @@
           <img alt="Bank transfer QR code" width="82" height="82">
         </div>
 
+        <p><em>The money goes to Uberspace, not to me. You won't get a receipt, since it's a hosting payment and not a donation.</em></p>
+
         <div class="support-status" hidden>
           <div class="status-row"><span data-status="amount"></span><span data-status="lastDay"></span></div>
           <div class="status-bar" role="meter" aria-label="Months covered" aria-valuemin="0" aria-valuemax="12"><div></div></div>
           <div class="status-row status-details"><span data-status="months"></span><span data-status="asOf"></span></div>
         </div>
 
-        <hr>
-        <div class="links">
+        <footer class="links">
           <p><span class="codicon codicon-heart"></span>Support me on
             <a href="https://github.com/sponsors/ero-qt" target="_blank" rel="noopener noreferrer">GitHub</a></p>
-          <p><span class="codicon codicon-code"></span>Source on
-            <a href="https://github.com/ero-qt/decomp.loter.dev" target="_blank" rel="noopener noreferrer">GitHub</a></p>
-        </div>
+        </footer>
       </aside>
     </template>
     <script type="module" src="/main.ts"></script>

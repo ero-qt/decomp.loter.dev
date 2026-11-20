@@ -14,7 +14,9 @@ import themeOverride from '@codingame/monaco-vscode-theme-service-override';
 import workbenchOverride from '@codingame/monaco-vscode-workbench-service-override';
 import { startAbout } from './about';
 import { configurationDefaults, defaultLayout, productConfiguration } from './config';
+import { deferHoverDelegates } from './hovers';
 import './registration';
+import './support-tab';
 // registers Go to File and Go to Symbol in Workspace without the search service because its override puts the start
 // over 2.3 MB
 import '@codingame/monaco-vscode-api/vscode/vs/workbench/contrib/search/browser/searchQuickAccess.contribution';
@@ -44,6 +46,7 @@ const environment: IMonacoEnvironment = {
     },
 };
 Object.assign(globalThis, { MonacoEnvironment: environment });
+deferHoverDelegates();
 
 await initialize(
     {

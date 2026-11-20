@@ -96,7 +96,7 @@ async function fetchBalanceFile(): Promise<string> {
 
 let balanceFile: Promise<string> | undefined;
 
-// fetches `balance.json` once because each About pane fills its own copy of the note
+// fetches `balance.json` once because each Support pane fills its own copy of the note
 function readBalanceFile(): Promise<string> {
     balanceFile ??= fetchBalanceFile();
 

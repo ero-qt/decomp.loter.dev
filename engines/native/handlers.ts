@@ -1,10 +1,11 @@
-import type { Document } from '../../contract/document';
+import { type Document, parseTarget } from '../../contract/document';
 import { failed, ok, type Reply } from '../../contract/reply';
 import { writeRows } from '../../contract/rows';
 import type { EngineHandlers } from '../../contract/serve';
 import { modifiersOf } from '../../contract/symbols';
 import { listClassParts, writeClassDocument } from './class-document';
 import { type CodeRows, createDocumentCache, decompileFunction } from './code';
+import { describeRow } from './describe';
 import { type MountedFile, type MountFile, writeShareFiles } from './files';
 import { claimsNativeFile } from './formats';
 import manifest from './manifest.json' with { type: 'json' };
@@ -158,6 +159,20 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
         return reply;
     }
 
+    // finds the open file and the row of a row target, or returns `undefined` for any other target
+    async function findTarget(target: string): Promise<{ fileId: number; file: NativeFile; listing: FileListing; index: number } | undefined> {
+        const parsed = parseTarget(target);
+        const file = 'fileId' in parsed ? files.get(parsed.fileId) : undefined;
+        if (!file || !('fileId' in parsed)) {
+            return undefined;
+        }
+
+        const listing = readListing(await useModule(), file);
+        const index = listing.indexes.get(parsed.key);
+
+        return index === undefined ? undefined : { fileId: parsed.fileId, file, listing, index };
+    }
+
     function findFile(fileId: number): Reply<NativeFile> {
         const file = files.get(fileId);
 
@@ -290,8 +305,26 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
 
             return writeClassDocument(parts, readMethod, signal);
         },
-        describe: refuseCall,
-        resolve: refuseCall,
+        async describe(target, view, signal) {
+            if (!views.includes(view)) {
+                return failed(`The native engine doesn't have the view ${view}.`);
+            }
+
+            const found = await findTarget(target);
+            signal.throwIfAborted();
+            if (!found) {
+                return ok(null);
+            }
+
+            const { fileId, file, listing, index } = found;
+            const module = await useModule();
+            const decompiled = cache.get(fileId, listing.rows[index].key)?.text;
+
+            return ok(describeRow(listing, index, address => module.describeFunction(file.session, address), decompiled));
+        },
+        async resolve(target) {
+            return ok((await findTarget(target)) ? target : null);
+        },
         findReferences: refuseCall,
         listStrings: refuseFileCall,
     });

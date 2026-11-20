@@ -18,6 +18,7 @@ interface RizinModule {
     _session_prepare(session: number, address: number): number;
     _session_struct(session: number, name: number): number;
     _session_load_pdb(session: number, path: number): number;
+    _session_describe(session: number, address: number): number;
     _session_cmd(session: number, command: number): number;
     _session_decompile(session: number, address: number): number;
     _free(pointer: number): void;
@@ -65,6 +66,11 @@ export interface NativeModule {
      * `mismatch` for a PDB file of another binary.
      */
     loadPdb(session: number, path: string): PdbLoad;
+    /**
+     * Returns the signature of the function at an address from its debug information or its demangled name, or
+     * `undefined` where neither has the parameters.
+     */
+    describeFunction(session: number, address: bigint): string | undefined;
     /** Returns the C definition of a struct of the debug information, or `undefined` for a name without one. */
     describeStruct(session: number, name: string): string | undefined;
     /** Reads a file beside `rizin.mjs`, like `sleigh/files.txt`. */
@@ -136,6 +142,11 @@ export async function loadModule(moduleUrl: string, wasmBinary?: ArrayBuffer): P
             return text === '' ? undefined : JSON.parse(text);
         },
         loadPdb: (session, path) => pdbLoads[withText(module, path, pointer => module._session_load_pdb(session, pointer))],
+        describeFunction(session, address) {
+            const text = withText(module, `0x${address.toString(16)}`, pointer => takeText(module, module._session_describe(session, pointer)));
+
+            return text || undefined;
+        },
         describeStruct(session, name) {
             return withText(module, name, pointer => takeText(module, module._session_struct(session, pointer))) || undefined;
         },

@@ -19,6 +19,7 @@ RzCore *session_use(Session *session);
 void session_put_address(PJ *j, const char *key, ut64 addr);
 
 char *names_clean(const char *name);
+char *names_signature(const char *name);
 const char *names_raw_of_symbol(RzBinObject *object, const RzBinSymbol *symbol);
 char *names_of_symbol(RzBinObject *object, const RzBinSymbol *symbol);
 void names_add_msvc_words(PJ *j, const char *name);

@@ -34,8 +34,8 @@ export interface ClassParts {
 
 const declaration = flagsOf('', 'declaration');
 
-// names the type of a static member by its size like Ghidra does, because the debug information doesn't give its type
-function describeType(size: number): string {
+/** Returns a global's type from its size like Ghidra does, because the debug information doesn't give its type. */
+export function describeType(size: number): string {
     return [1, 2, 4, 8].includes(size) ? `undefined${size}` : 'undefined';
 }
 

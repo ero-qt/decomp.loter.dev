@@ -232,3 +232,34 @@ EMSCRIPTEN_KEEPALIVE char *session_prepare(Session *session, const char *addr) {
 	free(signature);
 	return pj_drain(j);
 }
+
+/**
+ * \brief Returns the signature of the function at an address from its debug information, else the demangled name of
+ * its symbol or PDB function when that name has the parameter types, else NULL.
+ *
+ * The caller frees the result with free().
+ */
+EMSCRIPTEN_KEEPALIVE char *session_describe(Session *session, const char *addr) {
+	RzAnalysisFunction *fcn = prepare(session, strtoull(addr, NULL, 16));
+	if (!fcn) {
+		return NULL;
+	}
+
+	RzCore *core = session->core;
+	if (fcn->has_debuginfo || rz_type_func_exist(rz_analysis_get_type_db(core->analysis), fcn->name)) {
+		return rz_analysis_function_get_signature(fcn);
+	}
+
+	RzBinObject *object = rz_bin_cur_object(core->bin);
+	RzBinSymbol *symbol = object ? rz_bin_object_get_symbol_at(object, fcn->addr, true) : NULL;
+	const char *name = symbol && RZ_STR_ISNOTEMPTY(symbol->dname) ? symbol->dname : NULL;
+	const RzList *flags = name ? NULL : rz_flag_get_list(core->flags, fcn->addr);
+	RzListIter *it;
+	RzFlagItem *flag;
+	rz_list_foreach (flags, it, flag) {
+		if (rz_str_startswith(flag->name, "pdb.") && RZ_STR_ISNOTEMPTY(flag->realname) && strchr(flag->realname, '(')) {
+			name = flag->realname;
+		}
+	}
+	return name && strchr(name, '(') ? names_signature(name) : NULL;
+}

@@ -46,25 +46,51 @@ static void drop_msvc_words(char *text) {
 }
 
 /**
+ * \brief Returns a name without the access and calling convention that MSVC names have and without the other words of
+ * msvc_words, cut to MAX_NAME_BYTES, with the return type in front when `keep_return` is set.
+ *
+ * The caller frees the result with free().
+ */
+static char *without_msvc_parts(const char *name, bool keep_return) {
+	const char *start = name;
+	const char *convention = NULL;
+	for (size_t i = 0; i < RZ_ARRAY_SIZE(calling_conventions) && !convention; i++) {
+		convention = strstr(name, calling_conventions[i]);
+		start = convention ? convention + strlen(calling_conventions[i]) : start;
+	}
+
+	RzStrBuf *result = rz_strbuf_new(NULL);
+	if (convention && keep_return) {
+		const char *access = strstr(name, ": ");
+		const char *type = access && access < convention ? access + 2 : name;
+		rz_strbuf_append_n(result, type, convention - type);
+	}
+	rz_strbuf_append(result, start);
+
+	char *text = rz_strbuf_drain(result);
+	drop_msvc_words(text);
+	return text;
+}
+
+/**
  * \brief Returns a name without the access, return type and calling convention that MSVC names have and without the
- * other words of msvc_words, cut to MAX_NAME_BYTES.
+ * other words of msvc_words.
  *
  * Turns `public: long int __cdecl geometry::Rect::area(int)const __ptr64` into `geometry::Rect::area(int)const`. The
  * caller frees the result with free().
  */
 char *names_clean(const char *name) {
-	const char *start = name;
-	for (size_t i = 0; i < RZ_ARRAY_SIZE(calling_conventions); i++) {
-		const char *convention = strstr(name, calling_conventions[i]);
-		if (convention) {
-			start = convention + strlen(calling_conventions[i]);
-			break;
-		}
-	}
+	return without_msvc_parts(name, false);
+}
 
-	char *text = rz_str_dup(start);
-	drop_msvc_words(text);
-	return text;
+/**
+ * \brief Returns a demangled name as a signature, which keeps the return type of an MSVC name, like `long int
+ * geometry::Rect::area(int)const` for `public: long int __cdecl geometry::Rect::area(int)const __ptr64`.
+ *
+ * The caller frees the result with free().
+ */
+char *names_signature(const char *name) {
+	return without_msvc_parts(name, true);
 }
 
 /**

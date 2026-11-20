@@ -22,13 +22,14 @@ test('content security policy allows nothing by default, no base URL, no form ta
     }
 });
 
-test("content security policy allows the site's own files only as scripts, styles, fonts, images and connections", () => {
+test("content security policy allows the site's own files only as scripts, styles, fonts, images, connections and worker scripts", () => {
     expect(policySources.filter(source => source.endsWith(" 'self'"))).toEqual([
         "script-src 'self'",
         "style-src 'self'",
         "font-src 'self'",
         "img-src 'self'",
         "connect-src 'self'",
+        "worker-src 'self'",
     ]);
 });
 

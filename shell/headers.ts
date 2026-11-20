@@ -7,6 +7,7 @@ export const siteHeaders = {
         "font-src 'self'",
         "img-src 'self' data:",
         "connect-src 'self'",
+        "worker-src 'self'",
         "base-uri 'none'",
         "form-action 'none'",
         "frame-ancestors 'none'",

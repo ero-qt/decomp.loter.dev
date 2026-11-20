@@ -17,8 +17,8 @@ import { configurationDefaults, defaultLayout, productConfiguration } from './co
 import { deferHoverDelegates } from './hovers';
 import './registration';
 import './support-tab';
-// registers Go to File and Go to Symbol in Workspace without the search service because its override puts the start
-// over 2.3 MB
+// registers Go to File and Go to Symbol in Workspace without the search service because its override makes the start
+// much bigger
 import '@codingame/monaco-vscode-api/vscode/vs/workbench/contrib/search/browser/searchQuickAccess.contribution';
 
 // worker label -> the worker's URL

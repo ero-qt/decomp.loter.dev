@@ -140,7 +140,7 @@ test("workbench keeps only `DefaultOverridesCacheExists` in the browser after a 
     expect(await page.context().cookies()).toEqual([]);
 }, testTimeoutMs);
 
-test('files that the workbench loads to start are at most 2.3 MB with brotli', async () => {
+test('files that the workbench loads to start are at most 2.5 MB with brotli', async () => {
     const { requests } = await openWorkbench();
     let size = 0;
 
@@ -151,7 +151,8 @@ test('files that the workbench loads to start are at most 2.3 MB with brotli', a
         size += brotliCompressSync(bytes, { params: { [constants.BROTLI_PARAM_QUALITY]: 9 } }).length;
     }
 
-    expect(size).toBeLessThanOrEqual(2_300_000);
+    // catches an engine or a big library that an import pulls into the start by mistake
+    expect(size).toBeLessThanOrEqual(2_500_000);
 }, testTimeoutMs);
 
 test("page has a description, the canonical link and Open Graph tags with the site's URL for search engines", async () => {

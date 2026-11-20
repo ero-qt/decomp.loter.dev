@@ -1,0 +1,13 @@
+{
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    ".gitignore": ".gitattributes, .editorconfig",
+    "readme.md": "license.md",
+    "*.ts": "${capture}.test.ts, ${capture}-*.test.ts, ${capture}-testing.ts",
+  },
+  "files.exclude": {
+    "artifacts/": true,
+    "node_modules/": true,
+  },
+}

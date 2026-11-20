@@ -32,6 +32,7 @@ const storedMethod = 0;
 const deflatedMethod = 8;
 const encryptedFlag = 1 << 0;
 
+/** The most bytes that an entry inflates to, because a hostile entry of a few KB can inflate to gigabytes. */
 export const maxEntryBytes = 16 * 1024 * 1024;
 
 /**

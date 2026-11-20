@@ -1,5 +1,5 @@
 import { failed, ok, type Reply } from '../../contract/reply';
-import { type ClassSymbols, readClass, readSymbols } from './classfile';
+import { type ClassSymbols, type ClassUses, readClass, readSymbols, readUses } from './classfile';
 import { type MemberSymbols, readMembers } from './members';
 import { openZip, type Zip, ZipError } from './zip';
 
@@ -8,6 +8,7 @@ export interface JavaClass {
     entry: string;
     symbols: ClassSymbols;
     members: MemberSymbols[];
+    uses: ClassUses;
 }
 
 /** An open class file or archive. */
@@ -137,7 +138,7 @@ export async function readFile(name: string, bytes: Uint8Array, signal: AbortSig
             if (isArchive && !fitsPath(entry, symbols.name)) {
                 misplaced++;
             } else if (!known || entry.length < known.entry.length) {
-                classes.set(symbols.name, { entry, symbols, members: readMembers(node, symbols) });
+                classes.set(symbols.name, { entry, symbols, members: readMembers(node, symbols), uses: readUses(node) });
             }
         } catch (error) {
             firstError ??= error;

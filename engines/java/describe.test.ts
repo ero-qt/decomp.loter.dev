@@ -144,4 +144,7 @@ test('java engine keeps a class whose name has a `#` apart from members', async 
     expect(await engine.describe('|x/Y#Z', 'java')).toEqual({ text: 'x.Y#Z', container: null, facts: [], missingFile: null });
     expect(await engine.resolve('|a/B#C')).toBe(targetOf('a.B#C'));
     expect(await engine.resolve('|a/B#C#size#I')).toBe(targetOf('a.B#C.size'));
+    const references = await engine.findReferences(targetOf('a.B#C'), 'java');
+
+    expect(references.map(reference => reference.user).sort()).toEqual([targetOf('a.B#C'), targetOf('a.D')]);
 });

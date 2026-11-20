@@ -1,17 +1,26 @@
 import { read, type Node } from '@katana-project/asm';
 import type {
+    Annotation,
+    AnnotationDefaultAttribute,
+    AnnotationElementValue,
+    AnnotationsAttribute,
+    ArrayElementValue,
     Attributable,
     Attribute,
+    ClassElementValue,
     CodeAttribute,
+    ElementValue,
     EnclosingMethodAttribute,
+    EnumElementValue,
     InnerClass,
     InnerClassesAttribute,
     LocalVariableTableAttribute,
+    ParameterAnnotationsAttribute,
     RecordAttribute,
     SignatureAttribute,
 } from '@katana-project/asm/attr';
-import type { UTF8Entry } from '@katana-project/asm/pool';
-import { ConstantType } from '@katana-project/asm/spec';
+import type { ClassEntry, RefEntry, UTF8Entry } from '@katana-project/asm/pool';
+import { ConstantType, ElementTag } from '@katana-project/asm/spec';
 import { type Type, tryParseType } from '@katana-project/asm/type';
 import type { Kind } from '../../contract/symbols';
 import { access, readClassFlags, writeModifiers } from './flags';
@@ -200,4 +209,139 @@ export function findLocalType(node: Node, method: string, descriptor: string, in
     }
 
     return null;
+}
+
+/** The members and classes that a class's code and declarations use. */
+export interface ClassUses {
+    /**
+     * The keys of the members that the class uses, like `shapes/Shape#area#()D`, with the owner of the code's
+     * reference.
+     */
+    members: Set<string>;
+    /** The internal names of the classes that the class uses. */
+    classes: Set<string>;
+}
+
+const memberRefTypes = new Set([ConstantType.FIELDREF, ConstantType.METHODREF, ConstantType.INTERFACE_METHODREF]);
+const annotationAttributes = ['RuntimeVisibleAnnotations', 'RuntimeInvisibleAnnotations'];
+const parameterAnnotationAttributes = ['RuntimeVisibleParameterAnnotations', 'RuntimeInvisibleParameterAnnotations'];
+
+// returns the return descriptor of the annotation's method that an element's value is for, or `undefined` for an empty
+// array because its value doesn't show the type of its items
+function describeElement(value: ElementValue): string | undefined {
+    switch (value.tag) {
+        case ElementTag.STRING:
+            return 'Ljava/lang/String;';
+        case ElementTag.ENUM:
+            return (value as EnumElementValue).typeNameEntry?.string;
+        case ElementTag.CLASS:
+            return 'Ljava/lang/Class;';
+        case ElementTag.ANNOTATION:
+            return (value as AnnotationElementValue).annotation.typeEntry?.string;
+        case ElementTag.ARRAY: {
+            const first = (value as ArrayElementValue).values[0];
+            const item = first && describeElement(first);
+
+            return item && `[${item}`;
+        }
+        default:
+            return value.tag;
+    }
+}
+
+/**
+ * Reads the members that a class uses from the references in its pool and from the elements of its annotations. Reads
+ * the classes that it uses from the classes in its pool, from its annotations and from the descriptors and generic
+ * signatures of its own and its used members and locals.
+ */
+export function readUses(node: Node): ClassUses {
+    const members = new Set<string>();
+    const classes = new Set<string>();
+
+    function addClasses(descriptor: string) {
+        for (const [, name] of descriptor.matchAll(/L([^;<]+)[;<]/g)) {
+            classes.add(name);
+        }
+    }
+
+    function addValue(value: ElementValue) {
+        if (value.tag === ElementTag.ENUM) {
+            addClasses((value as EnumElementValue).typeNameEntry?.string ?? '');
+        } else if (value.tag === ElementTag.CLASS) {
+            addClasses((value as ClassElementValue).classInfoEntry?.string ?? '');
+        } else if (value.tag === ElementTag.ANNOTATION) {
+            addAnnotation((value as AnnotationElementValue).annotation);
+        } else if (value.tag === ElementTag.ARRAY) {
+            (value as ArrayElementValue).values.forEach(addValue);
+        }
+    }
+
+    function addAnnotation({ typeEntry, values }: Annotation) {
+        const type = typeEntry?.string ?? '';
+        addClasses(type);
+
+        for (const { nameEntry, value } of values) {
+            const descriptor = describeElement(value);
+            if (type.startsWith('L') && nameEntry && descriptor !== undefined) {
+                members.add(`${type.slice(1, -1)}#${nameEntry.string}#()${descriptor}`);
+            }
+
+            addValue(value);
+        }
+    }
+
+    function addDeclaration(holder: Attributable) {
+        addClasses(findAttribute<SignatureAttribute>(holder, 'Signature')?.signatureEntry?.string ?? '');
+
+        for (const name of annotationAttributes) {
+            findAttribute<AnnotationsAttribute>(holder, name)?.annotations.forEach(addAnnotation);
+        }
+        for (const name of parameterAnnotationAttributes) {
+            findAttribute<ParameterAnnotationsAttribute>(holder, name)?.parameters.flat().forEach(addAnnotation);
+        }
+
+        const defaultValue = findAttribute<AnnotationDefaultAttribute>(holder, 'AnnotationDefault')?.defaultValue;
+        if (defaultValue) {
+            addValue(defaultValue);
+        }
+    }
+
+    function addLocals(holder: Attributable) {
+        const code = findAttribute<CodeAttribute>(holder, 'Code');
+
+        for (const name of ['LocalVariableTable', 'LocalVariableTypeTable']) {
+            const table = code && findAttribute<LocalVariableTableAttribute>(code, name);
+            table?.entries.forEach(entry => addClasses(entry.descriptorEntry?.string ?? ''));
+        }
+    }
+
+    for (const entry of node.pool) {
+        if (entry && memberRefTypes.has(entry.type)) {
+            const { refEntry, nameTypeEntry } = entry as RefEntry;
+            const owner = refEntry?.nameEntry?.string;
+            const descriptor = nameTypeEntry?.typeEntry?.string;
+            if (owner !== undefined && nameTypeEntry?.nameEntry && descriptor !== undefined) {
+                members.add(`${owner}#${nameTypeEntry.nameEntry.string}#${descriptor}`);
+                addClasses(descriptor);
+            }
+        } else if (entry?.type === ConstantType.CLASS) {
+            const name = (entry as ClassEntry).nameEntry?.string;
+            if (name?.startsWith('[')) {
+                addClasses(name);
+            } else if (name !== undefined) {
+                classes.add(name);
+            }
+        }
+    }
+
+    for (const member of [...node.fields, ...node.methods]) {
+        addClasses(member.type.string);
+        addDeclaration(member);
+        addLocals(member);
+    }
+
+    addDeclaration(node);
+    findAttribute<RecordAttribute>(node, 'Record')?.components.forEach(addDeclaration);
+
+    return { members, classes };
 }

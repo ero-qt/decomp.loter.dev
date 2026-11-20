@@ -63,6 +63,15 @@ jobs:
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.4.4
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: engines/dotnet/global.json
+      - name: Cache NuGet packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('engines/dotnet/global.json', 'engines/dotnet/src/Decomp.Dotnet.csproj') }}
       - name: Install packages
         run: bun install --frozen-lockfile --ignore-scripts
       - name: Build the site
@@ -83,6 +92,7 @@ jobs:
       fail-fast: false
       matrix:
         folder:
+          - engines/dotnet
           - engines/fake
           - engines/java
           - shell
@@ -101,6 +111,17 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+      - name: Set up .NET SDK
+        if: matrix.folder == 'engines/dotnet'
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: engines/dotnet/global.json
+      - name: Cache NuGet packages
+        if: matrix.folder == 'engines/dotnet'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('engines/dotnet/global.json', 'engines/dotnet/src/Decomp.Dotnet.csproj') }}
       - name: Install packages
         run: bun install --frozen-lockfile --ignore-scripts
       - name: Install Chromium

@@ -18,6 +18,18 @@ The Java engine decompiles classes with [Vineflower](https://github.com/Vineflow
 
 The Java engine reads class files with [@katana-project/asm](https://github.com/katana-project/asm) 0.25.4. Its copyright line is "Copyright (c) 2024 Matouš Kučera". It's under the MIT License, whose text is at the end of this file.
 
+## ICSharpCode.Decompiler
+
+The .NET engine decompiles assemblies with [ICSharpCode.Decompiler](https://github.com/icsharpcode/ILSpy) 11.2.0.10050, the decompiler of ILSpy. Its copyright line is "Copyright 2011-2026 AlphaSierraPapa". It's under the MIT License, whose text is at the end of this file.
+
+## Humanizer
+
+ICSharpCode.Decompiler includes the code of [Humanizer](https://github.com/Humanizr/Humanizer) that turns words into their plural and singular forms. Its copyright line is "Copyright (c) .NET Foundation and Contributors". It's under the MIT License, whose text is at the end of this file.
+
+## .NET runtime
+
+The .NET engine runs in the .NET runtime 11.0.0-rc.3 for WebAssembly, with the parts of the .NET libraries that the build keeps. It's under the MIT License with this copyright line, "Copyright (c) .NET Foundation and Contributors". The runtime ships code of other projects too. Their notices are in `engines/dotnet/THIRD-PARTY-NOTICES.TXT` on the site, which the build copies from the runtime's package.
+
 ## VS Code
 
 The site's workbench and editor are VS Code's, built for the browser by [@codingame/monaco-vscode-api](https://github.com/CodinGame/monaco-vscode-api) 39.0.4 and its service override packages. These packages bundle VS Code's [vscode-textmate](https://github.com/microsoft/vscode-textmate) and [vscode-oniguruma](https://github.com/microsoft/vscode-oniguruma), which color code with TextMate grammars. Their package files list the MIT License, whose text is at the end of this file. VS Code's files start with this copyright line, "Copyright (c) Microsoft Corporation. All rights reserved."
@@ -29,6 +41,14 @@ vscode-oniguruma's `onig.wasm` is [Oniguruma](https://github.com/kkos/oniguruma)
 ## Java grammar
 
 Java code gets its colors from the Java grammar of VS Code's Java extension, which the site takes from [@codingame/monaco-vscode-java-default-extension](https://github.com/CodinGame/monaco-vscode-api) 39.0.4. The extension's package file lists the MIT License under VS Code's copyright above. VS Code converted the grammar from the grammar of [redhat-developer/vscode-java](https://github.com/redhat-developer/vscode-java), as a note in the grammar's file tells.
+
+## C# grammar
+
+C# code gets its colors from the C# grammar of VS Code's C# extension, which the site takes from [@codingame/monaco-vscode-csharp-default-extension](https://github.com/CodinGame/monaco-vscode-api) 39.0.4. The extension's package file lists the MIT License under VS Code's copyright above. VS Code converted the grammar from the grammar of [dotnet/csharp-tmLanguage](https://github.com/dotnet/csharp-tmLanguage), a project under the MIT License, as a note in the grammar's file tells.
+
+## IL grammar
+
+IL code gets its colors from a modified copy of the grammar `il-assembly.tmLanguage.json` of [il-assembly-grammar](https://github.com/mg0x7BE/il-assembly-grammar) at commit `bbdcb6ceef3892923d13288a68606999965fde14`, which is under The Unlicense, whose text is at the end of this file. The copy adds block comments, the bytes of blobs, the labels of branches and more words of the IL that ILSpy writes. The added words come from the ILAsm mode of [ILSpy](https://github.com/icsharpcode/ILSpy), which is under the MIT License.
 
 ## Codicons
 
@@ -1244,4 +1264,33 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
+
+## The Unlicense
+
+```
+This is free and unencumbered software released into the public domain.
+
+Anyone is free to copy, modify, publish, use, compile, sell, or
+distribute this software, either in source code form or as a compiled
+binary, for any purpose, commercial or non-commercial, and by any
+means.
+
+In jurisdictions that recognize copyright laws, the author or authors
+of this software dedicate any and all copyright interest in the
+software to the public domain. We make this dedication for the benefit
+of the public at large and to the detriment of our heirs and
+successors. We intend this dedication to be an overt act of
+relinquishment in perpetuity of all present and future rights to this
+software under copyright law.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+For more information, please refer to <https://unlicense.org>
 ```

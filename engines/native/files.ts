@@ -25,6 +25,23 @@ export async function mountInMemory(fs: ModuleFileSystem, folder: string, name: 
 }
 
 /**
+ * Mounts a Blob into the module's file system with Emscripten's WORKERFS, which reads only the parts of the Blob that
+ * Rizin reads, so a large file isn't copied into the module's memory.
+ */
+export async function mountInWorker(fs: ModuleFileSystem, folder: string, name: string, file: Blob): Promise<MountedFile> {
+    fs.mkdirTree(folder);
+    fs.mount(fs.filesystems.WORKERFS, { blobs: [{ name, data: file }] }, folder);
+
+    return {
+        path: `${folder}/${name}`,
+        unmount() {
+            fs.unmount(folder);
+            fs.rmdir(folder);
+        },
+    };
+}
+
+/**
  * Writes the type, calling convention and format databases that `share/files.txt` lists into the module's file system
  * below `/usr/local/share`, where Rizin's build looks for them. Rizin reads them when it loads a binary.
  */

@@ -21,6 +21,7 @@ const formatRows = [
     ['Fake test files', '.fake', 'Code, Ops'],
     ['.NET assemblies', '.dll, .exe', 'C#, IL'],
     ['Java classes and archives', '.class, .jar, .war', 'Java'],
+    ['Native programs and libraries', '.exe, .dll, .sys, .efi, .so, .dylib, .elf and files without an extension', 'C'],
 ];
 const shortcutRows = [
     ['Go to definition', 'F12 or Ctrl+click'],
@@ -43,7 +44,8 @@ function readPageLines(page: Page): Promise<string[]> {
 function readTableRows(page: Page, heading: string): Promise<string[][]> {
     const table = findAboutPage(page).locator(`h3:text-is("${heading}") + table`);
 
-    return table.locator('tr').evaluateAll(rows => rows.map(row => [...row.children].map(cell => cell.textContent!.trim())));
+    // joins a cell's lines like the browser shows them, because a long cell wraps its text in the page's source
+    return table.locator('tr').evaluateAll(rows => rows.map(row => [...row.children].map(cell => cell.textContent!.replace(/\s+/g, ' ').trim())));
 }
 
 // reads whether the source link lies inside the About tab's pane from top to bottom

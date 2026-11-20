@@ -1,17 +1,26 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildGhidra, type GhidraObjects } from './ghidra';
-import { buildRizin, configureRizin, copyShare } from './rizin';
+import { buildRizin, configureRizin, copyShare, rizinFolder } from './rizin';
 import { buildSleigh } from './sleigh';
-import { fetchSubprojects, listVendorSubmodules } from './sources';
+import { fetchSubprojects, listVendorSubmodules, type VendorSubmodule } from './sources';
 import { hashInputs, isStampFresh, readToolVersions, writeStamp } from './stamp';
 import { buildEnvironment, findTool, nativeFolder, runTool } from './tools';
 
 const engineFolder = fileURLToPath(new URL('../', import.meta.url));
 
-/** The folder with `rizin.mjs`, `rizin.wasm`, `share` and `sleigh`, which the worker loads. */
+/**
+ * The folder with `rizin.mjs`, `rizin.wasm`, `share` and `sleigh`, which the worker loads, and Rizin's license texts
+ * and the links to the submodules' commits, which the site serves with the module's source.
+ */
 export const moduleFolder = join(nativeFolder, 'out');
+
+/** The names of Rizin's license texts, the GPL 3.0 and the LGPL 3.0. */
+export const licenseFiles = ['COPYING', 'COPYING.LESSER'];
+
+/** The name of the file that links the commit of each submodule that the module was built from. */
+export const submodulesFile = 'submodules.txt';
 
 const stamp = join(moduleFolder, 'module.stamp');
 
@@ -56,13 +65,25 @@ function listFiles(folder: string): string[] {
         .map(entry => join(entry.parentPath, entry.name));
 }
 
-// hashes the versions, glue and build scripts with the tools' versions and the commits of the submodules
-function hashModuleInputs(toolVersions: string): string {
+/** Lists the versions, glue and build scripts, which the stamp hashes and the site serves with the module. */
+export function listModuleInputs(): string[] {
     const buildHook = join(engineFolder, 'build.ts');
     const files = [...listFiles('build'), ...listFiles('src'), ...(existsSync(buildHook) ? [buildHook] : [])];
+
+    return files.sort();
+}
+
+// hashes the inputs with the tools' versions and the commits of the submodules
+function hashModuleInputs(toolVersions: string): string {
     const commits = listVendorSubmodules().map(({ path, commit }) => `${path} ${commit}`);
 
-    return hashInputs(files.sort(), [toolVersions, ...commits]);
+    return hashInputs(listModuleInputs(), [toolVersions, ...commits]);
+}
+
+// links each submodule's commit on its repo's site, like https://github.com/ero-qt/rizin/tree/<commit>
+function writeSubmodules(submodules: VendorSubmodule[], output: string) {
+    const lines = submodules.map(({ path, commit, url }) => `${path} ${url.replace(/\.git$/, '')}/tree/${commit}`);
+    writeFileSync(join(output, submodulesFile), `${lines.join('\n')}\n`);
 }
 
 function checkEmscripten(toolVersions: string) {
@@ -73,8 +94,9 @@ function checkEmscripten(toolVersions: string) {
 }
 
 /**
- * Builds Rizin with rz-ghidra and the engine's glue as a WebAssembly module into `artifacts/native/out`, unless the
- * stamp of the last build matches the inputs. Fetches Rizin's subprojects first when they're missing.
+ * Builds Rizin with rz-ghidra and the engine's glue as a WebAssembly module into `artifacts/native/out`, with Rizin's
+ * license texts and the links to the submodules' commits beside it, unless the stamp of the last build matches the
+ * inputs. Fetches Rizin's subprojects first when they're missing.
  */
 export async function buildModule(): Promise<void> {
     const toolVersions = readToolVersions();
@@ -94,6 +116,11 @@ export async function buildModule(): Promise<void> {
     buildSleigh(moduleFolder);
     copyShare(moduleFolder);
     linkModule(libraries, objects, moduleFolder);
+    for (const name of licenseFiles) {
+        copyFileSync(join(rizinFolder, name), join(moduleFolder, name));
+    }
+
+    writeSubmodules(listVendorSubmodules(), moduleFolder);
 
     writeStamp(stamp, inputs);
 }

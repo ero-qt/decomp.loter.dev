@@ -7,6 +7,9 @@ export interface ModuleFileSystem {
     writeFile(path: string, data: Uint8Array): void;
     unlink(path: string): void;
     rmdir(path: string): void;
+    mount(type: unknown, options: { blobs: { name: string; data: Blob }[] }, folder: string): void;
+    unmount(folder: string): void;
+    filesystems: { WORKERFS: unknown };
 }
 
 // the part of the module that `rizin.mjs` makes, with the glue's exports and Emscripten's helpers
@@ -30,7 +33,7 @@ interface RizinModule {
     FS: ModuleFileSystem;
 }
 
-type CreateRizin = (options: { wasmBinary?: ArrayBuffer }) => Promise<RizinModule>;
+type CreateRizin = (options: { wasmBinary?: ArrayBuffer; print: (text: string) => void; printErr: (text: string) => void }) => Promise<RizinModule>;
 
 /** The result of a PDB file's load, in the order of the glue's numbers. */
 export type PdbLoad = 'loaded' | 'unreadable' | 'mismatch';
@@ -134,7 +137,8 @@ export async function loadModule(moduleUrl: string, wasmBinary?: ArrayBuffer): P
         throw new ModuleError(`The native engine couldn't load rizin.mjs: ${error instanceof Error ? error.message : error}`);
     }
 
-    const module = await createRizin({ wasmBinary });
+    // drops Rizin's log, whose warnings are about the analysis's guesses and would fill the console of every file
+    const module = await createRizin({ wasmBinary, print: () => {}, printErr: () => {} });
 
     return {
         fs: module.FS,

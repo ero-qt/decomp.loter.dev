@@ -19,6 +19,8 @@ The build puts the site in `artifacts/site`. Serve that folder with a web server
 
 The web server also has to send `.wasm` files as `application/wasm`, because the browser compiles them while they load only with that type. The .NET engine's `engines/dotnet/_framework/dotnet.js` keeps its name from build to build. The other files there get a new name when they change, so browsers can cache them for a long time, but not `dotnet.js`.
 
+The build also builds the native engine's WebAssembly module, so it needs the submodules and the tools that the native engine's tests need, listed below. If you built the module before, set `NATIVE_MODULE` to its folder, like `artifacts/native/out`, and the build copies it without these tools. The CI does that with the module of its native job. The native engine's `rizin.mjs`, `rizin.wasm` and the files in its `share` and `sleigh` folders keep their names from build to build, so browsers shouldn't cache them for long. Its `source` folder has the versions, glue and build scripts that the module was built from, with links to the commits of the forks of Rizin and rz-ghidra. Keep serving that folder with the module, because the LGPL of Rizin asks for it.
+
 ## Testing
 
 The tests need a JDK 21 or later with `JAVA_HOME` set because they build the Java fixture with it. They also need that .NET SDK on the `PATH` because they build the .NET fixture and publish the .NET engine with it.

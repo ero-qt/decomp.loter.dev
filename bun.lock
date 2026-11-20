@@ -6,6 +6,7 @@
       "dependencies": {
         "@codingame/monaco-vscode-api": "39.0.4",
         "@codingame/monaco-vscode-configuration-service-override": "39.0.4",
+        "@codingame/monaco-vscode-cpp-default-extension": "39.0.4",
         "@codingame/monaco-vscode-csharp-default-extension": "39.0.4",
         "@codingame/monaco-vscode-files-service-override": "39.0.4",
         "@codingame/monaco-vscode-java-default-extension": "39.0.4",
@@ -40,6 +41,8 @@
     "@codingame/monaco-vscode-bulk-edit-service-override": ["@codingame/monaco-vscode-bulk-edit-service-override@39.0.4", "", { "dependencies": { "@codingame/monaco-vscode-api": "39.0.4" } }, "sha512-p4WduVBlik7xrSZwNyOu8S5UPa2Kx7A6CCAxwUP0JKrl+P9jp/6COOexRmxM7bSsIa5Bm9KbyQlc7q1u6gIaxg=="],
 
     "@codingame/monaco-vscode-configuration-service-override": ["@codingame/monaco-vscode-configuration-service-override@39.0.4", "", { "dependencies": { "@codingame/monaco-vscode-api": "39.0.4", "@codingame/monaco-vscode-files-service-override": "39.0.4" } }, "sha512-VmsZ2e0Ee9qROx7EvghOOvc6aJo47Kkk+WWZDGPiDxDloIpRxLLjRglnOkGJuZHOCKzOxSwQoSS72fHRbCG++g=="],
+
+    "@codingame/monaco-vscode-cpp-default-extension": ["@codingame/monaco-vscode-cpp-default-extension@39.0.4", "", { "dependencies": { "@codingame/monaco-vscode-api": "39.0.4" } }, "sha512-qjmABv4kB3ZjLp5BqsyJ1y+lkGHuko6QUfzFIDT0OltSva+LB3ni8v8O2K2EMcWTA9gsFUllhI7nNrZsoSOT+Q=="],
 
     "@codingame/monaco-vscode-csharp-default-extension": ["@codingame/monaco-vscode-csharp-default-extension@39.0.4", "", { "dependencies": { "@codingame/monaco-vscode-api": "39.0.4" } }, "sha512-04uamUqi9o/NehxHUTAUlhRunyNh+vCQLrgikL4BqMjpv3PemaJwyRlpO+Vh0e7cdVDY41Zqr1IupkLXZem7qg=="],
 

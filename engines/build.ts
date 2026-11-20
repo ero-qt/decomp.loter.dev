@@ -1,4 +1,4 @@
-import { cpSync, readdirSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, readdirSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { readManifest } from '../contract/manifest';
 
@@ -7,11 +7,12 @@ const ids: string[] = [];
 
 rmSync(site, { recursive: true, force: true });
 for (const folder of readdirSync(new URL('.', import.meta.url), { withFileTypes: true })) {
-    if (!folder.isDirectory()) {
+    const source = new URL(`${folder.name}/`, import.meta.url);
+    // skips an engine's folder without a manifest because the site lists an engine only once it's whole
+    if (!folder.isDirectory() || !existsSync(new URL('manifest.json', source))) {
         continue;
     }
 
-    const source = new URL(`${folder.name}/`, import.meta.url);
     const { id } = readManifest(await Bun.file(new URL('manifest.json', source)).json());
     if (id !== folder.name) {
         throw new Error(`the manifest in engines/${folder.name} has the id '${id}'`);

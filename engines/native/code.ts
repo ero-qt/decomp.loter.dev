@@ -39,6 +39,8 @@ interface Part {
 }
 
 const encoder = new TextEncoder();
+// the text that the cache of documents keeps, about 32 MB in UTF-16
+const maxCachedChars = 16 * 1024 * 1024;
 // the largest function that the engine decompiles, because Ghidra takes 6 s for a function of 62 KB and longer for a
 // larger one
 const maxFunctionBytes = 64 * 1024;
@@ -228,4 +230,56 @@ export function decompileFunction(module: NativeModule, session: number, kind: K
     }
 
     return ok(writeCode(code, annotations, rows));
+}
+
+/** The documents of decompiled functions by file and key, which drops the documents read longest ago. */
+export interface DocumentCache {
+    get(fileId: number, key: number): Document | undefined;
+    set(fileId: number, key: number, document: Document): void;
+    dropFile(fileId: number): void;
+}
+
+/**
+ * Returns an empty cache of documents with room for about 32 MB of text. A read after a canceled read of a class then
+ * takes the methods that the canceled read wrote, and a second read costs nothing.
+ */
+export function createDocumentCache(): DocumentCache {
+    const documents = new Map<string, Document>();
+    let chars = 0;
+
+    function drop(id: string) {
+        chars -= documents.get(id)?.text.length ?? 0;
+        documents.delete(id);
+    }
+
+    return {
+        get(fileId, key) {
+            const id = `${fileId}:${key}`;
+            const document = documents.get(id);
+            if (document) {
+                documents.delete(id);
+                documents.set(id, document);
+            }
+
+            return document;
+        },
+        set(fileId, key, document) {
+            const id = `${fileId}:${key}`;
+            drop(id);
+            documents.set(id, document);
+            chars += document.text.length;
+            for (const oldest of documents.keys()) {
+                if (chars <= maxCachedChars || oldest === id) {
+                    break;
+                }
+
+                drop(oldest);
+            }
+        },
+        dropFile(fileId) {
+            for (const id of [...documents.keys()].filter(id => id.startsWith(`${fileId}:`))) {
+                drop(id);
+            }
+        },
+    };
 }

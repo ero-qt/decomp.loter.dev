@@ -1,8 +1,10 @@
+import type { Document } from '../../contract/document';
 import { failed, ok, type Reply } from '../../contract/reply';
-import { type Row, writeRows } from '../../contract/rows';
+import { writeRows } from '../../contract/rows';
 import type { EngineHandlers } from '../../contract/serve';
 import { modifiersOf } from '../../contract/symbols';
-import { type CodeRows, decompileFunction } from './code';
+import { listClassParts, writeClassDocument } from './class-document';
+import { type CodeRows, createDocumentCache, decompileFunction } from './code';
 import { type MountedFile, type MountFile, writeShareFiles } from './files';
 import { claimsNativeFile } from './formats';
 import manifest from './manifest.json' with { type: 'json' };
@@ -10,9 +12,9 @@ import { ModuleError, type NativeModule } from './module';
 import { defaultMaxMembers, groupRows, type NativeRows } from './rows';
 import { createLanguageWriter, findProcessor } from './sleigh';
 
-/** The rows of an open file with each row by its key. */
+/** The rows of an open file with each row's index by its key. */
 interface FileListing extends NativeRows {
-    rowsByKey: Map<number, Row>;
+    indexes: Map<number, number>;
 }
 
 /** A file that the engine opened, with its Rizin session and its rows once a call needs them. */
@@ -89,6 +91,7 @@ function refuseModuleErrors(handlers: EngineHandlers): EngineHandlers {
  */
 export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mountFile: MountFile): EngineHandlers {
     const files = new Map<number, NativeFile>();
+    const cache = createDocumentCache();
     let moduleLoad: Promise<LoadedModule> | undefined;
 
     // writes the databases and the language list before the first session, because Rizin reads the databases when it
@@ -118,24 +121,40 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
     function readListing(module: NativeModule, file: NativeFile): FileListing {
         if (!file.listing) {
             const listed = groupRows(module.listSymbols(file.session, defaultMaxMembers));
-            file.listing = { ...listed, rowsByKey: new Map(listed.rows.map(row => [row.key, row])) };
+            file.listing = { ...listed, indexes: new Map(listed.rows.map((row, index) => [row.key, index])) };
         }
 
         return file.listing;
     }
 
     // finds the row of a function, global or import at an address, whose import's address is its stub or pointer
-    function findRows(fileId: number, address: bigint, { keys, importKeys, rowsByKey }: FileListing): CodeRows {
+    function findRows(fileId: number, address: bigint, { rows, keys, importKeys, indexes }: FileListing): CodeRows {
         return {
             fileId,
             address,
             findRow(at) {
                 const key = keys.keys.get(at) ?? importKeys.get(at);
-                const row = key === undefined ? undefined : rowsByKey.get(key);
+                const row = key === undefined ? undefined : rows[indexes.get(key)!];
 
                 return row && { key: row.key, kind: row.kind };
             },
         };
+    }
+
+    // decompiles the function of a row once and takes it from the cache after that
+    function readFunction(module: NativeModule, fileId: number, file: NativeFile, listing: FileListing, key: number): Reply<Document> {
+        const cached = cache.get(fileId, key);
+        if (cached) {
+            return ok(cached);
+        }
+
+        const { kind } = listing.rows[listing.indexes.get(key)!];
+        const reply = decompileFunction(module, file.session, kind, findRows(fileId, listing.keys.addresses.get(key)!, listing));
+        if (reply.value) {
+            cache.set(fileId, key, reply.value);
+        }
+
+        return reply;
     }
 
     function findFile(fileId: number): Reply<NativeFile> {
@@ -186,6 +205,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
             (await useModule()).freeSession(found.value.session);
             found.value.mounted.unmount();
             files.delete(fileId);
+            cache.dropFile(fileId);
 
             return ok(undefined);
         },
@@ -216,16 +236,12 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
 
             const file = found.value;
             const listing = readListing(module, file);
-            const row = listing.rowsByKey.get(key);
-            const address = listing.keys.addresses.get(key);
-            if (!row) {
+            const index = listing.indexes.get(key);
+            if (index === undefined) {
                 return failed(`${file.name} doesn't have a symbol with the key 0x${(key >>> 0).toString(16)}.`);
             }
-            if (!modifiersOf(row.flags).includes('document')) {
-                return failed(`${row.name} doesn't have its own document.`);
-            }
-            if (address === undefined) {
-                return refuseCall();
+            if (!modifiersOf(listing.rows[index].flags).includes('document')) {
+                return failed(`${listing.rows[index].name} doesn't have its own document.`);
             }
 
             const processor = findProcessor(module, file.session);
@@ -236,7 +252,14 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
             await writeLanguage(processor.value);
             signal.throwIfAborted();
 
-            return decompileFunction(module, file.session, row.kind, findRows(fileId, address, listing));
+            const readMethod = (methodKey: number) => readFunction(module, fileId, file, listing, methodKey);
+            if (listing.keys.addresses.has(key)) {
+                return readMethod(key);
+            }
+
+            const parts = listClassParts(listing, index, fileId, name => module.describeStruct(file.session, name));
+
+            return writeClassDocument(parts, readMethod, signal);
         },
         describe: refuseCall,
         resolve: refuseCall,

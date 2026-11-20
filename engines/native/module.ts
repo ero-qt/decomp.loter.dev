@@ -16,6 +16,7 @@ interface RizinModule {
     _session_open(session: number, path: number): number;
     _session_listing(session: number, maxMembers: number): number;
     _session_prepare(session: number, address: number): number;
+    _session_struct(session: number, name: number): number;
     _session_cmd(session: number, command: number): number;
     _session_decompile(session: number, address: number): number;
     _free(pointer: number): void;
@@ -53,6 +54,8 @@ export interface NativeModule {
     listSymbols(session: number, maxMembers: number): GlueListing;
     /** Analyzes the function at an address for the decompiler, or returns `undefined` where Rizin doesn't find one. */
     prepareFunction(session: number, address: bigint): PreparedFunction | undefined;
+    /** Returns the C definition of a struct of the debug information, or `undefined` for a name without one. */
+    describeStruct(session: number, name: string): string | undefined;
     /** Reads a file beside `rizin.mjs`, like `sleigh/files.txt`. */
     fetchFile(path: string): Promise<Uint8Array>;
     /** Decompiles the function at an address with Ghidra and returns its C with rz-ghidra's annotations. */
@@ -120,6 +123,9 @@ export async function loadModule(moduleUrl: string, wasmBinary?: ArrayBuffer): P
             const text = withText(module, `0x${address.toString(16)}`, pointer => takeText(module, module._session_prepare(session, pointer)));
 
             return text === '' ? undefined : JSON.parse(text);
+        },
+        describeStruct(session, name) {
+            return withText(module, name, pointer => takeText(module, module._session_struct(session, pointer))) || undefined;
         },
         decompile(session, address) {
             return withText(module, `0x${address.toString(16)}`, pointer => {

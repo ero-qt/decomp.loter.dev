@@ -1,3 +1,4 @@
+#include <emscripten/emscripten.h>
 #include "session.h"
 
 // DWARF register numbers of the stack and frame pointers of x86 and AArch64
@@ -159,4 +160,19 @@ void debug_info_apply_dwarf(RzCore *core, RzAnalysisFunction *fcn) {
 	}
 	place_dwarf_locals(core, fcn, dwarf_fcn);
 	remove_shadowed_variables(core->analysis, fcn);
+}
+
+/**
+ * \brief Returns the C definition of a struct in the type database, which has the classes of the file's debug
+ * information, or NULL for a name without a struct.
+ *
+ * The caller frees the result with free().
+ */
+EMSCRIPTEN_KEEPALIVE char *session_struct(Session *session, const char *name) {
+	RzTypeDB *typedb = rz_analysis_get_type_db(session_use(session)->analysis);
+	RzBaseType *type = rz_type_db_get_base_type(typedb, name);
+	if (!type || type->kind != RZ_BASE_TYPE_KIND_STRUCT) {
+		return NULL;
+	}
+	return rz_type_db_base_type_as_pretty_string(typedb, type, RZ_TYPE_PRINT_MULTILINE | RZ_TYPE_PRINT_END_NEWLINE, 1);
 }

@@ -39,6 +39,8 @@ export interface NativeRows {
     keys: AddressKeys;
     /** The key of each import's row by the address that a call of the import goes to. */
     importKeys: Map<bigint, number>;
+    /** The size of each function and global by its key, in bytes. */
+    sizes: Map<number, number>;
     note: string;
 }
 
@@ -244,5 +246,7 @@ export function groupRows(listing: GlueListing, maxMembers = defaultMaxMembers):
 
     pushScope(root, -1, undefined, false);
 
-    return { rows, keys, importKeys, note };
+    const sizes = new Map(listed.map(({ address, symbol }) => [keys.keys.get(address)!, symbol.size]));
+
+    return { rows, keys, importKeys, sizes, note };
 }

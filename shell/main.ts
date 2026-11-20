@@ -11,6 +11,7 @@ import textmateOverride from '@codingame/monaco-vscode-textmate-service-override
 import textMateWorkerUrl from '@codingame/monaco-vscode-textmate-service-override/worker?worker&url';
 import themeOverride from '@codingame/monaco-vscode-theme-service-override';
 import workbenchOverride from '@codingame/monaco-vscode-workbench-service-override';
+import { startAbout } from './about';
 import { configurationDefaults, defaultLayout, productConfiguration } from './config';
 import './registration';
 // registers Go to File and Go to Symbol in Workspace without the search service because its override puts the start
@@ -63,4 +64,5 @@ await initialize(
     },
 );
 
+await startAbout();
 await import('./extension');

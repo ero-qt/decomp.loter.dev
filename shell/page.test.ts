@@ -24,10 +24,10 @@ async function openThemePicker(page: Page) {
     return rows;
 }
 
-test('workbench starts with the title decomp.loter.dev without a policy violation or a request or hint to another host', async () => {
+test("workbench starts with the About tab's title without a policy violation or a request or hint to another host", async () => {
     const { page, violations, requests } = await openWorkbench();
 
-    expect(await page.title()).toBe('decomp.loter.dev');
+    expect(await page.title()).toBe('About - decomp.loter.dev');
     expect(violations).toEqual([]);
     expect(listOtherHostRequests(page, requests)).toEqual([]);
     expect(await page.locator('link[rel=preconnect], link[rel=dns-prefetch]').count()).toBe(0);
@@ -36,11 +36,45 @@ test('workbench starts with the title decomp.loter.dev without a policy violatio
 test("workbench doesn't show the activity bar, the layout controls and the empty editor's tips", async () => {
     const { page } = await openWorkbench();
 
+    await closeTab(page, 'About');
     await page.locator('.editor-group-watermark').waitFor();
 
     for (const part of ['.part.activitybar', '[aria-label^="Customize Layout"]', '.editor-group-watermark .shortcuts']) {
         expect(await page.locator(part).filter({ visible: true }).count()).toBe(0);
     }
+}, testTimeoutMs);
+
+test("empty editor area shows the workbench's letterpress after the About tab closes", async () => {
+    const { page } = await openWorkbench();
+
+    await closeTab(page, 'About');
+
+    await page.locator('.part.editor .letterpress').filter({ visible: true }).waitFor();
+}, testTimeoutMs);
+
+test("title bar shows the site's logo as the app icon", async () => {
+    const { page } = await openWorkbench();
+    const appIcon = page.locator('.part.titlebar .window-appicon');
+
+    await appIcon.waitFor();
+
+    const { maskImage, width, height, iconColor, titleColor } = await appIcon.evaluate(icon => {
+        const workbench = getComputedStyle(document.querySelector('.monaco-workbench')!);
+        const { width, height } = icon.getBoundingClientRect();
+
+        return {
+            maskImage: getComputedStyle(icon).maskImage,
+            width,
+            height,
+            iconColor: getComputedStyle(icon).backgroundColor,
+            titleColor: workbench.getPropertyValue('--vscode-titleBar-activeForeground'),
+        };
+    });
+    const [, url] = /^url\("(.+)"\)$/.exec(maskImage) ?? [];
+
+    expect(await findSiteFile(new URL(url).pathname).text()).toBe(await Bun.file(new URL('logo.svg', import.meta.url)).text());
+    expect(width * height).toBeGreaterThan(0);
+    expect(Color.Format.CSS.parse(iconColor)!.equals(Color.Format.CSS.parse(titleColor))).toBe(true);
 }, testTimeoutMs);
 
 test('page stays in place when a part of the workbench reaches past the window', async () => {
@@ -110,7 +144,8 @@ test('files that the workbench loads to start are at most 2.3 MB with brotli', a
     const { requests } = await openWorkbench();
     let size = 0;
 
-    for (const url of new Set(requests)) {
+    // leaves out `balance.json` because only the host writes the file into the site
+    for (const url of new Set(requests.filter(url => !url.endsWith('/balance.json')))) {
         const bytes = await findSiteFile(new URL(url).pathname).bytes();
         // compresses with quality 9 because the default quality 11 takes 20 times longer for a size 10 percent smaller
         size += brotliCompressSync(bytes, { params: { [constants.BROTLI_PARAM_QUALITY]: 9 } }).length;

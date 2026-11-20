@@ -128,7 +128,7 @@ async function openDocument(page: Page, label: string, name: string, ...otherNam
     await dropAndWait(page, Object.fromEntries([...otherNames, name].map(dropped => [dropped, ''])));
     await expandRows(page, name);
     await findRow(page, label).click();
-    await waitForTabs(page, `${label}.code`);
+    await waitForTabs(page, 'About', `${label}.code`);
 }
 
 function readCalls(page: Page, engineId = 'users'): Promise<unknown[][]> {
@@ -200,6 +200,8 @@ test('Shift+F12 lists a use in the ops document of a user whose document the fir
     await dropFiles(page, { 'box.fake': box });
     await expandRows(page, 'box.fake', 'Box');
     await findRow(page, 'Get').click();
+    await waitForTabs(page, 'About', 'Box.code');
+
     await findWord(page, 'method Get', 'Get').click();
     await page.keyboard.press('Shift+F12');
 

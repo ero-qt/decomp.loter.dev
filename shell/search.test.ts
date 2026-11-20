@@ -148,13 +148,13 @@ test('Ctrl+Shift+F opens Go to Symbol in Workspace with the quote that searches 
     expect(await readUntil(() => page.locator('.quick-input-box input').inputValue(), '#"')).toBe('#"');
 }, testTimeoutMs);
 
-test('Ctrl+P after a click on `Draw` lists `Circle.code`', async () => {
+test('Ctrl+P after a click on `Draw` lists `Circle.code` above the About tab', async () => {
     const { page } = await openWorkbench();
     await openCircle(page, drawing, 'Draw');
 
     await page.keyboard.press('Control+P');
 
-    expect(await readUntil(() => readResults(page), ['Circle.code'])).toEqual(['Circle.code']);
+    expect(await readUntil(() => readResults(page), ['Circle.code', 'About'])).toEqual(['Circle.code', 'About']);
 }, testTimeoutMs);
 
 test("Ctrl+T on a string whose text the document doesn't show opens the document at the declaration of the string's user", async () => {
@@ -207,7 +207,7 @@ test("Ctrl+T result whose file closed before the pick doesn't open a document", 
     await searchSymbols(page, 'Area');
     await pickResult(page, 'Area');
 
-    const expected = [{ label: 'Shape.code', isPreview: false }];
+    const expected = [aboutTab, { label: 'Shape.code', isPreview: false }];
     expect(await readUntil(() => readTabs(page), expected)).toEqual(expected);
     expect(errors).toEqual([]);
 }, testTimeoutMs);

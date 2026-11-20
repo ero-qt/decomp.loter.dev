@@ -37,6 +37,9 @@ function readGroups(page: Page): Promise<string[][]> {
     });
 }
 
+/**
+ * Reads the line at the cursor in the editor group whose active tab has the label, also in a group without the focus.
+ */
 function readCursorLine(page: Page, label: string): Promise<string | undefined> {
     return findGroup(page, label).evaluate(group => {
         const { top } = group.querySelector<HTMLElement>('.cursors-layer .cursor')!.style;
@@ -67,7 +70,7 @@ test('Ops button of `Circle.code` opens `Circle.ops` in a second editor group', 
 
     await findViewButton(page, 'Circle.code', 'Ops').click();
 
-    expect(await readUntil(() => readGroups(page), [['Circle.code'], ['Circle.ops']])).toEqual([['Circle.code'], ['Circle.ops']]);
+    expect(await readUntil(() => readGroups(page), [['About', 'Circle.code'], ['Circle.ops']])).toEqual([['About', 'Circle.code'], ['Circle.ops']]);
     await findGroup(page, 'Circle.ops').locator('.view-line').filter({ hasText: '.public method Draw' }).waitFor();
 }, testTimeoutMs);
 
@@ -76,7 +79,7 @@ test("Ops button of `Circle.code` keeps the focus in `Circle.code`'s editor grou
     await openCircle(page, drawing, 'Draw');
 
     await findViewButton(page, 'Circle.code', 'Ops').click();
-    await readUntil(() => readGroups(page), [['Circle.code'], ['Circle.ops']]);
+    await readUntil(() => readGroups(page), [['About', 'Circle.code'], ['Circle.ops']]);
 
     expect(await readActiveTab(page)).toBe('Circle.code');
 }, testTimeoutMs);
@@ -86,9 +89,9 @@ test('Ops button of `Circle.code` opens `Circle.ops` in a preview tab', async ()
     await openCircle(page, drawing, 'Draw');
 
     await findViewButton(page, 'Circle.code', 'Ops').click();
-    await waitForTabs(page, 'Circle.code', 'Circle.ops');
+    await waitForTabs(page, 'About', 'Circle.code', 'Circle.ops');
 
-    expect(await readTabs(page)).toEqual([{ label: 'Circle.code', isPreview: true }, { label: 'Circle.ops', isPreview: true }]);
+    expect(await readTabs(page)).toEqual([aboutTab, { label: 'Circle.code', isPreview: true }, { label: 'Circle.ops', isPreview: true }]);
 }, testTimeoutMs);
 
 test('command palette in `Circle.code` lists Show Ops to the Side, which opens `Circle.ops` in a second editor group', async () => {
@@ -106,7 +109,7 @@ test('command palette in `Circle.code` lists Show Ops to the Side, which opens `
     await page.keyboard.press('Enter');
 
     expect(labels.filter(label => label.startsWith('Show '))).toEqual(['Show Ops to the Side']);
-    expect(await readUntil(() => readGroups(page), [['Circle.code'], ['Circle.ops']])).toEqual([['Circle.code'], ['Circle.ops']]);
+    expect(await readUntil(() => readGroups(page), [['About', 'Circle.code'], ['Circle.ops']])).toEqual([['About', 'Circle.code'], ['Circle.ops']]);
 }, testTimeoutMs);
 
 test("Show Ops to the Side in a tab's menu opens `Circle.ops` in a second editor group", async () => {
@@ -116,7 +119,7 @@ test("Show Ops to the Side in a tab's menu opens `Circle.ops` in a second editor
     await page.getByRole('tab', { name: 'Circle.code' }).click({ button: 'right' });
     await pickMenuItem(page, 'Show Ops to the Side');
 
-    expect(await readUntil(() => readGroups(page), [['Circle.code'], ['Circle.ops']])).toEqual([['Circle.code'], ['Circle.ops']]);
+    expect(await readUntil(() => readGroups(page), [['About', 'Circle.code'], ['Circle.ops']])).toEqual([['About', 'Circle.code'], ['Circle.ops']]);
 }, testTimeoutMs);
 
 test("Show Ops to the Side in `Draw`'s menu in the Symbols view opens the document row's `Circle.ops` beside", async () => {
@@ -129,7 +132,7 @@ test("Show Ops to the Side in `Draw`'s menu in the Symbols view opens the docume
     await pickMenuItem(page, 'Show Ops to the Side');
 
     expect(items).not.toContain('Show Code to the Side');
-    expect(await readUntil(() => readGroups(page), [['Circle.code'], ['Circle.ops']])).toEqual([['Circle.code'], ['Circle.ops']]);
+    expect(await readUntil(() => readGroups(page), [['About', 'Circle.code'], ['Circle.ops']])).toEqual([['About', 'Circle.code'], ['Circle.ops']]);
 }, testTimeoutMs);
 
 test("Show Ops to the Side in `Draw`'s menu puts the cursor of `Circle.ops` at `Draw`", async () => {
@@ -138,7 +141,7 @@ test("Show Ops to the Side in `Draw`'s menu puts the cursor of `Circle.ops` at `
 
     await findRow(page, 'Draw').click({ button: 'right' });
     await pickMenuItem(page, 'Show Ops to the Side');
-    await readUntil(() => readGroups(page), [['Circle.code'], ['Circle.ops']]);
+    await readUntil(() => readGroups(page), [['About', 'Circle.code'], ['Circle.ops']]);
     await findGroup(page, 'Circle.ops').locator('.tab.active').click();
 
     expect(await readUntil(() => readCursor(page), 'Ln 5, Col 20')).toBe('Ln 5, Col 20');
@@ -157,14 +160,16 @@ test("file that closes during the read of a document beside doesn't get a tab", 
     // waits for the document's read because the document's tab would open then
     await waitForEngineReplies(page, 'read');
 
-    expect(await readTabs(page)).toEqual([]);
+    expect(await readTabs(page)).toEqual([aboutTab]);
 }, testTimeoutMs);
 
 test('Code button of `Circle.ops` opens `Circle.code` in a second editor group', async () => {
     const { page } = await openWorkbench();
     await openCircle(page, drawing, 'Draw');
     await findViewButton(page, 'Circle.code', 'Ops').click();
-    await page.getByRole('tab', { name: 'Circle.code' }).getByRole('button', { name: /^Close/ }).click();
+    // closes the About tab too because the first editor group then closes and leaves `Circle.ops` as the only group
+    await closeTab(page, 'About');
+    await closeTab(page, 'Circle.code');
     await readUntil(() => readGroups(page), [['Circle.ops']]);
 
     expect(await readViewButtons(page, 'Circle.ops')).toEqual(['Code']);
@@ -181,7 +186,7 @@ test('Code button of `Circle.ops` shows `Circle.code` in the editor group that h
     await findViewButton(page, 'Circle.ops', 'Code').click();
     // waits for the cursor of `Circle.code` at the class because a third editor group would open by then
     expect(await readUntil(() => readCursorLine(page, 'Circle.code'), 'public sealed class Circle')).toBe('public sealed class Circle');
-    expect(await readGroups(page)).toEqual([['Circle.code'], ['Circle.ops']]);
+    expect(await readGroups(page)).toEqual([['About', 'Circle.code'], ['Circle.ops']]);
     expect(await readActiveTab(page)).toBe('Circle.ops');
 }, testTimeoutMs);
 
@@ -217,7 +222,7 @@ test("document of an engine with 1 view doesn't show a view button", async () =>
     await expandRows(page, 'listed.test');
 
     await findRow(page, 'Listed').click();
-    await waitForTabs(page, 'Listed.code');
+    await waitForTabs(page, 'About', 'Listed.code');
     // waits for the editor's buttons because the title draws them after the tab
     await findGroup(page, 'Listed.code').locator('.editor-actions .action-label').first().waitFor();
 
@@ -236,7 +241,7 @@ test("documents of 2 engines show only the buttons of their own engine's views",
     await dropFiles(page, { 'listed.test': '' });
     await expandRows(page, 'listed.test');
     await findRow(page, 'Listed').click();
-    await waitForTabs(page, 'Listed.code');
+    await waitForTabs(page, 'About', 'Listed.code');
     await findViewButton(page, 'Listed.code', 'Tree').waitFor();
 
     expect(await readViewButtons(page, 'Listed.code')).toEqual(['Tree']);

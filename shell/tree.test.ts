@@ -129,6 +129,21 @@ test("sections come before namespaces with the icons of a folder, a library and 
     expect(icons[2]).toContain('<circle cx="12" cy="12" r="5"/>');
 }, testTimeoutMs);
 
+test("clicks on a section's rows don't open a document", async () => {
+    const { page } = await openWorkbench();
+
+    await dropFiles(page, { 'parts.fake': parts });
+    await expandRows(page, 'parts.fake', 'References', 'Resources');
+    await findRow(page, 'Shapes').click();
+    await findRow(page, 'palette.txt').dblclick();
+    // opens Zeta last and waits for its document, because a document that the clicks before it opened would come first
+    await findRow(page, 'Zeta').dblclick();
+    await waitForEngineReplies(page, 'read');
+
+    const tabs = [aboutTab, { label: 'Zeta.code', isPreview: false }];
+    expect(await readUntil(() => readTabs(page), tabs)).toEqual(tabs);
+}, testTimeoutMs);
+
 test('Symbols view leaves out a row that the first view hides', async () => {
     const { page } = await openWorkbench();
 

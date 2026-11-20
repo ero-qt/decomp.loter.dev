@@ -10,3 +10,133 @@ body,
     position: relative;
     overflow: clip;
 }
+
+/* draws the logo in the title bar's text color because a mask keeps only the logo's shape */
+#workbench .window-appicon {
+    background: var(--vscode-titleBar-activeForeground);
+    mask: url('./logo.svg') center / 16px no-repeat;
+}
+
+#workbench .part.titlebar.inactive .window-appicon {
+    background: var(--vscode-titleBar-inactiveForeground);
+}
+
+#workbench .about-pane {
+    box-sizing: border-box;
+    padding: 0 8px;
+    outline: none;
+}
+
+.support-note {
+    box-sizing: border-box;
+    width: 520px;
+    max-width: 100%;
+    margin: 48px auto 16px;
+    padding: 16px;
+    color: var(--vscode-descriptionForeground);
+    font-size: 12px;
+    line-height: 1.5;
+    user-select: text;
+}
+
+.support-note h2 {
+    margin: 0 0 8px;
+    color: var(--vscode-foreground);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.support-note p {
+    margin: 4px 0;
+}
+
+.support-note .transfer {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    margin: 12px 0;
+}
+
+.support-note code {
+    padding: 1px 3px;
+    border-radius: 3px;
+    color: var(--vscode-textPreformat-foreground);
+    background: var(--vscode-textPreformat-background);
+    font-family: var(--monaco-monospace-font);
+}
+
+.support-note dl {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 0 12px;
+    margin: 0;
+}
+
+.support-note dd {
+    margin: 0;
+    color: var(--vscode-foreground);
+    font-family: var(--monaco-monospace-font);
+}
+
+.support-note img {
+    display: block;
+    flex: none;
+}
+
+.support-note a {
+    color: var(--vscode-textLink-foreground);
+}
+
+.support-status {
+    margin: 12px 0;
+}
+
+.support-status .status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.support-status [data-status="amount"] {
+    color: var(--vscode-foreground);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.support-status .status-details {
+    font-size: 11px;
+}
+
+.support-status .status-bar {
+    height: 4px;
+    margin: 6px 0 4px;
+    overflow: hidden;
+    border-radius: 2px;
+    background: var(--vscode-widget-border, var(--vscode-editorWidget-border));
+}
+
+.support-status .status-bar > div {
+    height: 100%;
+    background: var(--vscode-progressBar-background);
+}
+
+.support-note hr {
+    margin: 10px 0 6px;
+    border: none;
+    border-top: 1px solid var(--vscode-widget-border, var(--vscode-editorWidget-border));
+}
+
+.support-note .links {
+    display: flex;
+    justify-content: space-between;
+}
+
+.support-note .links .codicon {
+    margin-right: 4px;
+    vertical-align: text-bottom;
+}
+
+.support-note .codicon-heart {
+    color: var(--vscode-charts-red);
+}

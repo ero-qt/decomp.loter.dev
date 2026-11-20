@@ -117,7 +117,7 @@ test("hover's load link loads the missing file of a file whose path has a percen
     await dropFiles(page, { 'my%20app (1).fake': drawing });
     await expandRows(page, 'my%20app (1).fake', 'Drawing', 'Circle');
     await findRow(page, 'Draw').click();
-    await waitForTabs(page, 'Circle.code');
+    await waitForTabs(page, 'About', 'Circle.code');
 
     await pickFile(page, await findLoadLink(page, 'uses Shapes.Shape.Area', 'Shapes.Shape.Area'), 'shapes.fake', shapes);
 

@@ -83,7 +83,7 @@ async function openListed(page: Page) {
     await dropFiles(page, { 'listed.test': '' });
     await expandRows(page, 'listed.test');
     await findRow(page, 'Listed').click();
-    await waitForTabs(page, 'Listed.code');
+    await waitForTabs(page, 'About', 'Listed.code');
 }
 
 async function openCircleWithShapes(page: Page) {
@@ -194,7 +194,8 @@ test('F12 on a use of a member that the first view hides opens the ops document 
     await dropFiles(page, { 'box.fake': 'fake\nclass Box\n hidden private field backing\n public method Get\n  uses box.fake|Box.backing\n' });
     await expandRows(page, 'box.fake', 'Box');
     await findRow(page, 'Get').click();
-    await waitForTabs(page, 'Box.code');
+    await waitForTabs(page, 'About', 'Box.code');
+
     await findWord(page, 'uses Box.backing', 'Box.backing').click();
     await page.keyboard.press('F12');
 
@@ -235,7 +236,7 @@ test("F12 on a local goes to the local's declaration in the same document", asyn
     await page.keyboard.press('F12');
 
     expect(await readUntil(() => readCursor(page), 'Ln 2, Col 9')).toBe('Ln 2, Col 9');
-    expect(await readTabs(page)).toEqual([{ label: 'Listed.code', isPreview: true }]);
+    expect(await readTabs(page)).toEqual([aboutTab, { label: 'Listed.code', isPreview: true }]);
 }, testTimeoutMs);
 
 test("F12 on a symbol stays in the symbol's engine when another engine has a file with the same id", async () => {
@@ -248,7 +249,7 @@ test("F12 on a symbol stays in the symbol's engine when another engine has a fil
     await page.keyboard.press('F12');
 
     expect(await readUntil(() => readCursor(page), 'Ln 1, Col 7')).toBe('Ln 1, Col 7');
-    expect(await readTabs(page)).toEqual([{ label: 'Listed.code', isPreview: true }]);
+    expect(await readTabs(page)).toEqual([aboutTab, { label: 'Listed.code', isPreview: true }]);
 }, testTimeoutMs);
 
 test("F12 on a symbol of a file that isn't open stays in place and doesn't log an error", async () => {
@@ -263,7 +264,7 @@ test("F12 on a symbol of a file that isn't open stays in place and doesn't log a
     // waits for the definition's search because a definition would open its document then
     await waitForEngineReplies(page, 'resolve');
 
-    expect(await readTabs(page)).toEqual([{ label: 'Circle.code', isPreview: true }]);
+    expect(await readTabs(page)).toEqual([aboutTab, { label: 'Circle.code', isPreview: true }]);
     expect(await readCursor(page)).toBe(cursor);
     expect(errors).toEqual([]);
     await findWord(page, 'uses Drawing.Circle.radius', 'Drawing.Circle.radius').click();

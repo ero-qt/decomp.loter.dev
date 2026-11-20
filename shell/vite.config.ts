@@ -1,6 +1,13 @@
 import { defineConfig } from 'vite';
 import darkTheme from './themes/dark.json' with { type: 'json' };
 import { deriveLightTheme } from './themes/light.ts';
+import { drawTransferCode } from './transfer-code.ts';
+
+// file's name -> the file's text, which the build writes into the site for an import of the file's name with `?url`
+const builtFiles: Record<string, () => string> = {
+    'light.json': () => `${JSON.stringify(deriveLightTheme(darkTheme), null, 2)}\n`,
+    'support-code.svg': drawTransferCode,
+};
 
 export default defineConfig({
     root: import.meta.dirname,
@@ -12,17 +19,22 @@ export default defineConfig({
     },
     plugins: [
         {
-            name: 'light-theme',
+            name: 'built-files',
             enforce: 'pre',
             resolveId(source) {
-                return source.endsWith('/light.json?url') ? '\0light-theme' : undefined;
-            },
-            // writes the light theme into the site because the workbench reads a theme from a URL
-            load(id) {
-                if (id === '\0light-theme') {
-                    const source = `${JSON.stringify(deriveLightTheme(darkTheme), null, 2)}\n`;
+                const name = Object.keys(builtFiles).find(name => source.endsWith(`/${name}?url`));
 
-                    return `export default import.meta.ROLLUP_FILE_URL_${this.emitFile({ type: 'asset', name: 'light.json', source })}`;
+                // ends the module's id with `-built` because Vite's JSON plugin parses each module whose id ends with
+                // `.json`
+                return name && `\0${name}-built`;
+            },
+            // writes each built file into the site because the workbench and the support note read the files from URLs
+            load(id) {
+                const [, name] = /^\0(.+)-built$/.exec(id) ?? [];
+                if (name) {
+                    const fileId = this.emitFile({ type: 'asset', name, source: builtFiles[name]() });
+
+                    return `export default import.meta.ROLLUP_FILE_URL_${fileId}`;
                 }
             },
         },

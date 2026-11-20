@@ -37,15 +37,32 @@ export function findOpenFilesButton(page: Page): Locator {
     return page.getByRole('button', { name: 'Open Files', exact: true });
 }
 
+/**
+ * Runs the command with the title from the command palette. Clicks the row whose label is the title because the palette
+ * can rank another command first, like View: Split Editor into Right Group for View: Split Editor Right.
+ */
+export async function runCommand(page: Page, title: string) {
+    await page.keyboard.press('F1');
+    await page.keyboard.insertText(title);
+    await page.locator('.quick-input-list .monaco-list-row .label-name').getByText(title, { exact: true }).click();
+}
+
 /** Lists the URLs of the requests that went to another host than the page's host. */
 export function listOtherHostRequests(page: Page, requests: string[]): string[] {
     return requests.filter(url => new URL(url).host !== new URL(page.url()).host);
 }
 
-/** Collects the text of each console error and each uncaught error in the page. */
+/**
+ * Collects the text of each console error and each uncaught error in the page. Leaves out the browser's own message for
+ * a missing `balance.json`, because only the host writes the file into the site.
+ */
 export function collectErrors(page: Page): string[] {
     const errors: string[] = [];
-    page.on('console', message => message.type() === 'error' && errors.push(message.text()));
+    page.on('console', message => {
+        if (message.type() === 'error' && !message.location().url.endsWith('/balance.json')) {
+            errors.push(message.text());
+        }
+    });
     page.on('pageerror', error => errors.push(error.message));
 
     return errors;
@@ -153,7 +170,9 @@ export function startWorkbench() {
     return async function openWorkbench(colorScheme: 'dark' | 'light' = 'dark') {
         const violations: string[] = [];
         const requests: string[] = [];
-        page = await browser!.newPage({ colorScheme });
+        // gives the page a screen taller than the window because the workbench takes a window with the screen's height
+        // as full screen
+        page = await browser!.newPage({ colorScheme, screen: { width: 1920, height: 1080 } });
         // gives each step a third of a test's time because a step that hangs then fails with the step's own message
         page.setDefaultTimeout(testTimeoutMs / 3);
         page.on('request', request => requests.push(request.url()));

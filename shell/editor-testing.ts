@@ -76,12 +76,15 @@ export function readWordColor(page: Page, lineText: string, word: string): Promi
     }, { lineText, word });
 }
 
-/** Drops `drawing.fake` with the text and clicks a row below the class `Drawing.Circle`, which opens `Circle.code`. */
+/**
+ * Drops `drawing.fake` with the text and clicks a row below the class `Drawing.Circle`, which opens `Circle.code`
+ * beside the About tab.
+ */
 export async function openCircle(page: Page, text: string, label: string) {
     await dropFiles(page, { 'drawing.fake': text });
     await expandRows(page, 'drawing.fake', 'Drawing', 'Circle');
     await findRow(page, label).click();
-    await waitForTabs(page, 'Circle.code');
+    await waitForTabs(page, 'About', 'Circle.code');
 }
 
 /** Finds a word's element in the first line of the active editor that contains the line's text. */

@@ -36,7 +36,7 @@ test('click on `Draw` opens `Circle.code` in the preview tab with the cursor on 
 
     await openCircle(page, drawing, 'Draw');
 
-    expect(await readTabs(page)).toEqual([{ label: 'Circle.code', isPreview: true }]);
+    expect(await readTabs(page)).toEqual([aboutTab, { label: 'Circle.code', isPreview: true }]);
     expect(await readUntil(() => readCursor(page), 'Ln 5, Col 19')).toBe('Ln 5, Col 19');
     expect(violations).toEqual([]);
     expect(listOtherHostRequests(page, requests)).toEqual([]);
@@ -48,12 +48,12 @@ test("click on another file's class replaces the preview tab", async () => {
     await dropAndWait(page, { 'drawing.fake': drawing, 'shapes.fake': shapes });
     await expandRows(page, 'shapes.fake', 'Shapes', 'drawing.fake', 'Drawing', 'Circle');
     await findRow(page, 'Draw').click();
-    await waitForTabs(page, 'Circle.code');
+    await waitForTabs(page, 'About', 'Circle.code');
 
     await findRow(page, 'Shape').click();
-    await waitForTabs(page, 'Shape.code');
+    await waitForTabs(page, 'About', 'Shape.code');
 
-    expect(await readTabs(page)).toEqual([{ label: 'Shape.code', isPreview: true }]);
+    expect(await readTabs(page)).toEqual([aboutTab, { label: 'Shape.code', isPreview: true }]);
     expect(await readUntil(() => readCursor(page), 'Ln 1, Col 23')).toBe('Ln 1, Col 23');
 }, testTimeoutMs);
 
@@ -64,10 +64,11 @@ test("double-click on `Draw` opens `Circle.code` in a kept tab that a later clic
 
     await findRow(page, 'Draw').dblclick();
 
-    const kept = [{ label: 'Circle.code', isPreview: false }];
+    const kept = [aboutTab, { label: 'Circle.code', isPreview: false }];
     expect(await readUntil(() => readTabs(page), kept)).toEqual(kept);
     await findRow(page, 'Shape').click();
-    await waitForTabs(page, 'Circle.code', 'Shape.code');
+    await waitForTabs(page, 'About', 'Circle.code', 'Shape.code');
+    expect(await readTabs(page)).toEqual([...kept, { label: 'Shape.code', isPreview: true }]);
 }, testTimeoutMs);
 
 test("click on a nested type opens the outer type's document with the cursor on the nested type", async () => {
@@ -107,9 +108,9 @@ test("click on a namespace doesn't open a document", async () => {
     await findRow(page, 'Drawing').click();
     await expandRows(page, 'Drawing');
     await findRow(page, 'Circle').click();
-    await waitForTabs(page, 'Circle.code');
+    await waitForTabs(page, 'About', 'Circle.code');
 
-    expect(await readTabs(page)).toEqual([{ label: 'Circle.code', isPreview: true }]);
+    expect(await readTabs(page)).toEqual([aboutTab, { label: 'Circle.code', isPreview: true }]);
 }, testTimeoutMs);
 
 test("document shows the engine's error text with the cursor at the start when the engine refuses the document", async () => {
@@ -117,7 +118,7 @@ test("document shows the engine's error text with the cursor at the start when t
     await startTestEngine(page, { 'refusing.test': '' });
 
     await findRow(page, 'Listed').click();
-    await waitForTabs(page, 'Listed.code');
+    await waitForTabs(page, 'About', 'Listed.code');
 
     const errorLines = ["The test engine can't write Listed's document in read 1."];
     expect(await readUntil(() => readLines(page), errorLines)).toEqual(errorLines);
@@ -129,7 +130,7 @@ test("click on a refused document's row reads the document again, after 1 read f
     const { page } = await openWorkbench();
     await startTestEngine(page, { 'refusing.test': '' });
     await findRow(page, 'Listed').click();
-    await waitForTabs(page, 'Listed.code');
+    await waitForTabs(page, 'About', 'Listed.code');
     await readUntil(() => readCursor(page), 'Ln 1, Col 1');
 
     await findRow(page, 'Listed').click();
@@ -164,14 +165,14 @@ test("file that closes during its document's read doesn't get a tab", async () =
     // waits for the document's read because the document's tab would open then
     await waitForEngineReplies(page, 'read');
 
-    expect(await readTabs(page)).toEqual([]);
+    expect(await readTabs(page)).toEqual([aboutTab]);
 }, testTimeoutMs);
 
 test('close of a tab whose document the engine still writes sends cancel to the engine', async () => {
     const { page } = await openWorkbench();
     await startTestEngine(page, { 'stuck.test': '' });
     await findRow(page, 'Listed').click();
-    await waitForTabs(page, 'Listed.code');
+    await waitForTabs(page, 'About', 'Listed.code');
     // opens another file of the engine because the engine's files depend on each other, so the tab's document is read
     // again
     await dropFiles(page, { 'other.test': '' });
@@ -189,6 +190,8 @@ test("click on a row while another file opens puts the cursor on the row's decla
     await waitForEngineCalls(page, 'open', 2);
 
     await findRow(page, 'Listed').click();
+    await waitForTabs(page, 'About', 'Listed.code');
+
     expect(await readUntil(() => readCursor(page), 'Ln 2, Col 7')).toBe('Ln 2, Col 7');
 }, testTimeoutMs);
 
@@ -234,7 +237,7 @@ test("open document gives a symbol the color of the symbol's kind once the symbo
     await dropFiles(page, { 'user.fake': user });
     await expandRows(page, 'user.fake', 'N', 'User');
     await findRow(page, 'Run').click();
-    await waitForTabs(page, 'User.code');
+    await waitForTabs(page, 'About', 'User.code');
     await readUntil(() => readWordColor(page, 'method Run', 'Run'), '#dcd2a5');
     const interfaceColor = await readWordColor(page, 'interface Inner', 'Inner');
     const methodColor = await readWordColor(page, 'uses L.Thing', 'L.Thing');
@@ -250,6 +253,7 @@ test("open document takes back a symbol's color once the symbol's file closes", 
     await dropFiles(page, { 'user.fake': user });
     await expandRows(page, 'user.fake', 'N', 'User');
     await findRow(page, 'Run').click();
+    await waitForTabs(page, 'About', 'User.code');
     await readUntil(() => readWordColor(page, 'method Run', 'Run'), '#dcd2a5');
     const interfaceColor = await readWordColor(page, 'interface Inner', 'Inner');
     const outsideColor = await readWordColor(page, 'uses L.Thing', 'L.Thing');
@@ -269,7 +273,7 @@ test("closing a file closes the file's documents", async () => {
 
     await findRow(page, 'drawing.fake').click();
     await page.keyboard.press('Delete');
-    await waitForTabs(page);
+    await waitForTabs(page, 'About');
 
-    expect(await readTabs(page)).toEqual([]);
+    expect(await readTabs(page)).toEqual([aboutTab]);
 }, testTimeoutMs);

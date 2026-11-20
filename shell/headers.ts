@@ -2,7 +2,7 @@
 export const siteHeaders = {
     'Content-Security-Policy': [
         "default-src 'none'",
-        "script-src 'self'",
+        "script-src 'self' 'wasm-unsafe-eval'",
         "style-src 'self' 'unsafe-inline'",
         "font-src 'self'",
         "img-src 'self' data:",

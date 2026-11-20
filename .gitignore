@@ -1,0 +1,14 @@
+# IDE options & cache
+.vs/*
+.vscode/*
+.idea/*
+.zed/*
+
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Artifacts
+artifacts/
+
+# Packages
+node_modules/

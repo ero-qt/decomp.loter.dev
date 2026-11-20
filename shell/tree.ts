@@ -38,6 +38,9 @@ function createViewRows(file: OpenFile, rows: Row[], rowsBelow: RowsBelow, paren
             tooltip: writeTooltip(row),
             iconPath: drawIcon(row.kind, row.flags),
             command: hasDocumentRow ? { command: 'decomp.showRow', title: 'Show', arguments: [file, row] } : undefined,
+            // gives a row with a document the context value `document <engine id>` because the row's menu shows the
+            // engine's views
+            contextValue: hasDocumentRow ? `document ${file.siteEngine!.manifest.id}` : undefined,
             listBelow: rowsBelow.has(index) ? () => createViewRows(file, rows, rowsBelow, index) : undefined,
         });
     });

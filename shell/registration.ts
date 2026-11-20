@@ -2,11 +2,13 @@
 import { ExtensionHostKind, type IExtensionManifest, registerExtension } from '@codingame/monaco-vscode-api/extensions';
 import { Registry } from '@codingame/monaco-vscode-api/vscode/vs/platform/registry/common/platform';
 import { Extensions, type IViewsRegistry } from '@codingame/monaco-vscode-api/vscode/vs/workbench/common/views';
-import type { View } from '../contract/manifest';
+import type { Manifest } from '../contract/manifest';
 import { darkThemeName, lightThemeName, symbolsViewId } from './config';
+import { grammars } from './grammars';
 import darkThemeUrl from './themes/dark.json?url';
 import lightThemeUrl from './themes/light.json?url';
 import { ownTokenTypes } from './tokens';
+import { writeViewContributions } from './view-menus';
 
 const manifest: IExtensionManifest = {
     name: 'decomp-loter-dev',
@@ -74,11 +76,27 @@ export function addSymbolsWelcome(errorTexts: string[]) {
     viewsRegistry.registerViewWelcomeContent(symbolsViewId, { content: lines.join('\n') });
 }
 
-/** Registers each view's language with the view's extension, so a document's language is the language of the document's view. */
-export function registerViewLanguages(views: View[]) {
-    registerExtension({
-        ...manifest,
-        name: 'decomp-loter-dev-views',
-        contributes: { languages: views.map(view => ({ id: view.language, extensions: [view.extension] })) },
+/**
+ * Registers the commands and menus of `writeViewContributions` and each view's language with the view's extension, so a
+ * document's language is the language of the document's view. Gives a language of `grammars` its grammar and its
+ * configuration, which color the language's keywords, strings and numbers.
+ */
+export function registerViews(manifests: Manifest[]) {
+    const views = manifests.flatMap(engine => engine.views);
+    const languages = views.map(({ language, extension }) => {
+        return { id: language, extensions: [extension], ...(grammars[language] && { configuration: `./grammars/${language}.json` }) };
     });
+
+    const known = [...new Set(views.map(view => view.language))].filter(language => grammars[language]);
+    const grammarContributions = known.map(language => {
+        return { language, scopeName: grammars[language].scopeName, path: `./grammars/${language}.tmLanguage.json` };
+    });
+
+    const contributes = { languages, grammars: grammarContributions, ...writeViewContributions(manifests) };
+    const registered = registerExtension({ ...manifest, name: 'decomp-loter-dev-views', contributes }, ExtensionHostKind.LocalProcess);
+
+    for (const language of known) {
+        registered.registerFileUrl(`/grammars/${language}.tmLanguage.json`, grammars[language].grammarUrl);
+        registered.registerFileUrl(`/grammars/${language}.json`, grammars[language].configurationUrl);
+    }
 }

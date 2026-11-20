@@ -23,4 +23,8 @@ The web server also has to send `.wasm` files as `application/wasm`, because the
 
 The tests need a JDK 21 or later with `JAVA_HOME` set because they build the Java fixture with it. They also need that .NET SDK on the `PATH` because they build the .NET fixture and publish the .NET engine with it.
 
-AI assisted.
+The native engine's tests build their fixture with clang, lld and LLVM's tools like `llvm-lipo`. They take each tool from the folder in `NATIVE_LLVM` when you set it, else from the `PATH`, also under a versioned name like `ld.lld-18`, which Linux packages often use. Only a tool that's in neither comes from Emscripten's LLVM, because emsdk's LLVM builds only WebAssembly. So install a full LLVM, like Ubuntu's `clang`, `lld` and `llvm` packages.
+
+---
+
+AI-assisted.

@@ -9,8 +9,13 @@ indent_style             = space
 trim_trailing_whitespace = true
 
 # Code files
-[*.{cs,css,html,java,js,ts}]
+[*.{c,cpp,cs,css,h,html,java,js,ts}]
 max_line_length = 150
+
+# C files, in Rizin's style
+[*.{c,h}]
+indent_style = tab
+tab_width    = 8
 
 # Other markup files
 [*.{csproj,html,json,props,xml,yml}]

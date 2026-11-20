@@ -1,4 +1,4 @@
-import { type Accessibility, flagsOf, type Modifier } from '../../contract/symbols';
+import { type Accessibility, accessibilityOf, flagsOf, type Modifier, modifiersOf } from '../../contract/symbols';
 
 /**
  * The access flags of the class file format, where a method's `bridge` and `varargs` share bits with a field's
@@ -74,4 +74,19 @@ export function readMethodFlags(flags: number, isInInterface: boolean, hasCode: 
     ];
 
     return flagsOf(readAccessibility(flags), ...pickModifiers(flags, bits), ...(isDefault ? ['default' as const] : []));
+}
+
+// the modifiers in the order that Java code writes them
+const javaOrder: Modifier[] = ['abstract', 'default', 'static', 'final', 'sealed', 'transient', 'volatile', 'synchronized', 'native'];
+
+/**
+ * Writes a row's accessibility and modifiers the way Java code writes them, with a space after each and without the
+ * left out ones.
+ */
+export function writeModifiers(flags: number, leftOut: Modifier[] = []): string {
+    const accessibility = accessibilityOf(flags);
+    const modifiers = modifiersOf(flags).filter(modifier => !leftOut.includes(modifier));
+    const words = [accessibility === 'package-private' ? '' : accessibility, ...javaOrder.filter(modifier => modifiers.includes(modifier))];
+
+    return words.filter(word => word !== '').map(word => `${word} `).join('');
 }

@@ -5,13 +5,15 @@ import type {
     EnclosingMethodAttribute,
     InnerClass,
     InnerClassesAttribute,
+    RecordAttribute,
     SignatureAttribute,
 } from '@katana-project/asm/attr';
 import type { UTF8Entry } from '@katana-project/asm/pool';
 import { ConstantType } from '@katana-project/asm/spec';
 import { type Type, tryParseType } from '@katana-project/asm/type';
 import type { Kind } from '../../contract/symbols';
-import { access, readClassFlags } from './flags';
+import { access, readClassFlags, writeModifiers } from './flags';
+import { writeType, writeTypeParameters } from './types';
 
 export type ClassKeyword = 'class' | 'interface' | 'enum' | 'record' | '@interface';
 
@@ -34,6 +36,8 @@ export interface ClassSymbols {
     kind: Kind;
     /** The flags of the class's row, without `document`. */
     flags: number;
+    /** The class's declaration in Java code, like `public record Circle(double radius)`. */
+    signature: string;
 }
 
 // keyword -> the kind of the class's row
@@ -120,6 +124,25 @@ export function parseSignature(holder: Attributable, descriptor: string): Type |
     return (signature && tryParseType(signature)) || tryParseType(descriptor);
 }
 
+// writes a record's components, like `(double radius)`, or `''` for a class that isn't a record
+function writeComponents(node: Node): string {
+    const components = findAttribute<RecordAttribute>(node, 'Record')?.components;
+    const texts = components?.map(component => {
+        const type = parseSignature(component, component.descriptorEntry?.string ?? '');
+
+        return `${type ? writeType(type) : '?'} ${component.nameEntry?.string ?? ''}`;
+    });
+
+    return texts ? `(${texts.join(', ')})` : '';
+}
+
+// leaves out the modifiers that Java code doesn't write for an enum or a record, which are always final
+function writeClassSignature(node: Node, keyword: ClassKeyword, flags: number, shortName: string): string {
+    const modifiers = writeModifiers(flags, keyword === 'enum' || keyword === 'record' ? ['final', 'abstract'] : []);
+
+    return `${modifiers}${keyword} ${shortName}${writeTypeParameters(parseSignature(node, ''))}${writeComponents(node)}`;
+}
+
 /** Reads what the engine needs of a class file to list and open it. */
 export function readSymbols(node: Node): ClassSymbols {
     const name = node.thisClass.nameEntry!.string;
@@ -127,6 +150,7 @@ export function readSymbols(node: Node): ClassSymbols {
     const keyword = readKeyword(node);
     const flags = own ? own.innerAccess : node.access;
     const shortName = own?.innerNameEntry?.string ?? name.slice(name.lastIndexOf('/') + 1);
+    const rowFlags = readClassFlags(flags, findAttribute(node, 'PermittedSubclasses') !== undefined);
 
     return {
         name,
@@ -139,6 +163,7 @@ export function readSymbols(node: Node): ClassSymbols {
         superName: node.superClass?.nameEntry?.string,
         interfaces: node.interfaces.flatMap(entry => entry.nameEntry?.string ?? []),
         kind: classKinds[keyword],
-        flags: readClassFlags(flags, findAttribute(node, 'PermittedSubclasses') !== undefined),
+        flags: rowFlags,
+        signature: writeClassSignature(node, keyword, rowFlags, shortName),
     };
 }

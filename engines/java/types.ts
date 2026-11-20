@@ -1,5 +1,7 @@
 import {
     type ArrayType,
+    type ClassType,
+    type MethodType,
     type ParameterizedType,
     type Type,
     TypeKind,
@@ -76,3 +78,9 @@ export function writeType(type: Type): string {
     return writeNested(type, 0);
 }
 
+/** Writes the type parameters of a generic class or method, like `<T>`, or `''` for a type without them. */
+export function writeTypeParameters(type: Type | null): string {
+    const parameters = (type as ClassType | MethodType | null)?.typeParameters ?? [];
+
+    return parameters.length > 0 ? `<${parameters.map(writeType).join(', ')}>` : '';
+}

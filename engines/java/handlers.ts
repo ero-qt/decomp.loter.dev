@@ -1,6 +1,7 @@
 import { failed, ok, type Reply } from '../../contract/reply';
 import type { EngineHandlers } from '../../contract/serve';
 import { writeRows } from '../../contract/rows';
+import { describeTarget, resolveTarget } from './describe';
 import { type JavaFile, readFile } from './files';
 import { type JavaRows, listRows } from './rows';
 import { findClassEntry } from './zip';
@@ -9,7 +10,7 @@ import { findClassEntry } from './zip';
 export type OpenFile = JavaFile & JavaRows;
 
 /** The handlers that the Java engine has so far. */
-export type JavaHandlers = Pick<EngineHandlers, 'claims' | 'open' | 'close' | 'list'>;
+export type JavaHandlers = Pick<EngineHandlers, 'claims' | 'open' | 'close' | 'list' | 'describe' | 'resolve'>;
 
 // the first 4 bytes of a zip file's local header, end record and spanned archive
 const zipStarts = ['504b0304', '504b0506', '504b0708'];
@@ -20,6 +21,12 @@ const classHeaderSize = 10;
 // the largest file that the engine opens, because the engine reads the whole file into memory and a large WAR's classes
 // take a few times its size there
 const maxFileBytes = 512 * 1024 * 1024;
+
+const javaView = 'java';
+
+function refuseView(view: string): Reply<never> {
+    return failed(`The Java engine doesn't have the view ${view}.`);
+}
 
 function refuseFile(fileId: number): Reply<never> {
     return failed(`The Java engine doesn't have an open file with the id ${fileId}.`);
@@ -90,6 +97,12 @@ export function createJavaHandlers(): JavaHandlers {
         },
         list(fileId) {
             return handleFile(fileId, ({ rows, note }) => ok({ ...writeRows(rows), note, missingFiles: [] }));
+        },
+        describe(target, view) {
+            return view === javaView ? ok(describeTarget(files, target)) : refuseView(view);
+        },
+        resolve(target) {
+            return ok(resolveTarget(files, target));
         },
     };
 }

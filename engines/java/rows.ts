@@ -10,6 +10,8 @@ export interface JavaRows {
      * record component's accessor has the index of the component's field.
      */
     keys: Map<string, number>;
+    /** Row index -> the row's package as `<package>/`, its internal class name or its member key. */
+    rowKeys: string[];
     /**
      * The keys of the members and classes without a row, like a lambda's method, which code shows inside another
      * member.
@@ -40,6 +42,7 @@ export function listRows(file: JavaFile): JavaRows {
     const rows: Row[] = [];
     const keys = new Map<string, number>();
     const hiddenKeys = new Set<string>();
+    const rowKeys: string[] = [];
     // sorts by the names from the top class down because an outer class's row then comes before its nested classes'
     // rows
     const shown = [...file.classes.values()]
@@ -49,6 +52,7 @@ export function listRows(file: JavaFile): JavaRows {
 
     function add(key: string, row: Omit<Row, 'key' | 'hiddenViews'>) {
         keys.set(key, rows.length);
+        rowKeys.push(key);
         rows.push({ ...row, key: rows.length, hiddenViews: 0 });
     }
 
@@ -87,5 +91,5 @@ export function listRows(file: JavaFile): JavaRows {
         }
     }
 
-    return { rows, keys, hiddenKeys };
+    return { rows, keys, rowKeys, hiddenKeys };
 }

@@ -3,8 +3,8 @@ import type { BootstrapMethodsAttribute, CodeAttribute, RecordAttribute } from '
 import type { DynamicEntry } from '@katana-project/asm/pool';
 import { type MethodType, type Type, TypeKind } from '@katana-project/asm/type';
 import { type ClassSymbols, findAttribute, findOwnEntry, parseSignature } from './classfile';
-import { access, readFieldFlags, readMethodFlags } from './flags';
-import { writeType } from './types';
+import { access, readFieldFlags, readMethodFlags, writeModifiers } from './flags';
+import { writeType, writeTypeParameters } from './types';
 
 /** A field or a method of a class. */
 export interface MemberSymbols {
@@ -16,6 +16,8 @@ export interface MemberSymbols {
     /** The parameter types of a method, like `(Shape, int...)`, or `''` for a field. */
     detail: string;
     flags: number;
+    /** The member's declaration in Java code, like `public static String classify(Shape)`. */
+    signature: string;
     /** Whether Vineflower never writes the member, like a lambda's method or an enum's `values()`. */
     isHidden: boolean;
     /** The key of the record component's field whose accessor the method is, which writes the field's name in code. */
@@ -119,6 +121,8 @@ function readMethod(context: MethodContext, method: Member, key: string): Member
     const shownName = name === '<init>' ? symbols.shortName : name;
     const detail = writeParameters(parameters, (method.access & access.varargs) !== 0);
     const flags = readMethodFlags(method.access, (node.access & access.interface) !== 0, hasCode);
+    const typeParameters = writeTypeParameters(type);
+    const returned = name === '<init>' || !type ? '' : `${writeType(type.returnType)} `;
 
     return {
         key,
@@ -126,6 +130,7 @@ function readMethod(context: MethodContext, method: Member, key: string): Member
         name: shownName,
         detail,
         flags,
+        signature: `${writeModifiers(flags)}${typeParameters && `${typeParameters} `}${returned}${shownName}${detail}`,
         isHidden: isHidden || isWrittenByJavac(node, symbols, method),
         aliasOf,
     };
@@ -135,6 +140,7 @@ function readMethod(context: MethodContext, method: Member, key: string): Member
 export function readMembers(node: Node, symbols: ClassSymbols): MemberSymbols[] {
     const fields = node.fields.map((field): MemberSymbols => {
         const name = field.name.string;
+        const type = parseSignature(field, field.type.string);
         const flags = readFieldFlags(field.access);
 
         return {
@@ -143,6 +149,7 @@ export function readMembers(node: Node, symbols: ClassSymbols): MemberSymbols[] 
             name,
             detail: '',
             flags,
+            signature: `${writeModifiers(flags)}${type ? writeType(type) : '?'} ${name}`,
             isHidden: (field.access & access.synthetic) !== 0,
         };
     });

@@ -7,13 +7,17 @@ import { describeTarget, resolveTarget } from './describe';
 import { type JavaFile, readFile } from './files';
 import { findUsers } from './references';
 import { type JavaRows, listRows } from './rows';
+import { listStrings } from './strings';
 import { findClassEntry } from './zip';
 
 /** An open file with its rows. */
 export type OpenFile = JavaFile & JavaRows;
 
 /** The handlers that the Java engine has so far. */
-export type JavaHandlers = Pick<EngineHandlers, 'claims' | 'open' | 'close' | 'list' | 'read' | 'describe' | 'resolve' | 'findReferences'>;
+export type JavaHandlers = Pick<
+    EngineHandlers,
+    'claims' | 'open' | 'close' | 'list' | 'read' | 'describe' | 'resolve' | 'findReferences' | 'listStrings'
+>;
 
 // the first 4 bytes of a zip file's local header, end record and spanned archive
 const zipStarts = ['504b0304', '504b0506', '504b0708'];
@@ -127,6 +131,11 @@ export function createJavaHandlers(): JavaHandlers {
         },
         findReferences(target, view, signal) {
             return view === javaView ? ok(findUsers(files, target, signal)) : refuseView(view);
+        },
+        async listStrings(fileId, signal) {
+            const file = files.get(fileId);
+
+            return file ? ok(await listStrings(fileId, file, signal)) : refuseFile(fileId);
         },
     };
 }

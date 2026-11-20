@@ -7,8 +7,10 @@ import type {
     ArrayElementValue,
     Attributable,
     Attribute,
+    BootstrapMethodsAttribute,
     ClassElementValue,
     CodeAttribute,
+    ConstantValueAttribute,
     ElementValue,
     EnclosingMethodAttribute,
     EnumElementValue,
@@ -19,7 +21,7 @@ import type {
     RecordAttribute,
     SignatureAttribute,
 } from '@katana-project/asm/attr';
-import type { ClassEntry, RefEntry, UTF8Entry } from '@katana-project/asm/pool';
+import type { ClassEntry, DynamicEntry, Entry, RefEntry, StringEntry, UTF8Entry } from '@katana-project/asm/pool';
 import { ConstantType, ElementTag } from '@katana-project/asm/spec';
 import { type Type, tryParseType } from '@katana-project/asm/type';
 import type { Kind } from '../../contract/symbols';
@@ -344,4 +346,66 @@ export function readUses(node: Node): ClassUses {
     findAttribute<RecordAttribute>(node, 'Record')?.components.forEach(addDeclaration);
 
     return { members, classes };
+}
+
+/** A string that a class's code loads or a constant field has. */
+export interface ClassString {
+    text: string;
+    /** The key of the method or the field, like `drawing/Main#classify#(Lshapes/Shape;)Ljava/lang/String;`. */
+    key: string;
+}
+
+const ldc = 0x12;
+const ldcWide = 0x13;
+const invokeDynamic = 0xba;
+const stringConcatFactory = 'java/lang/invoke/StringConcatFactory';
+// the characters that stand for an argument and a constant in a recipe of `StringConcatFactory`
+const recipeMarkers = /[\u0001\u0002]/;
+
+function readText(entry: Entry | null | undefined): string | undefined {
+    return entry?.type === ConstantType.STRING ? (entry as StringEntry).dataEntry?.string : undefined;
+}
+
+/**
+ * Reads the strings of the constant fields and the strings that each method's code loads, each once per method and
+ * without empty strings. Splits a string concatenation's recipe into its constant parts. Leaves out the strings of
+ * other bootstrap methods, like the component names that a record's `toString` gets.
+ */
+export function readStrings(node: Node, className: string): ClassString[] {
+    const bootstrapMethods = findAttribute<BootstrapMethodsAttribute>(node, 'BootstrapMethods')?.methods ?? [];
+
+    function readRecipes(entry: DynamicEntry | null): string[] {
+        const method = entry ? bootstrapMethods[entry.bsmIndex] : undefined;
+        if (method?.refEntry?.refEntry?.refEntry?.nameEntry?.string !== stringConcatFactory) {
+            return [];
+        }
+
+        return method.args.flatMap(({ entry: argument }) => readText(argument)?.split(recipeMarkers) ?? []);
+    }
+
+    const fieldStrings = node.fields.flatMap(field => {
+        const text = readText(findAttribute<ConstantValueAttribute>(field, 'ConstantValue')?.constEntry);
+
+        return text ? [{ text, key: `${className}#${field.name.string}#${field.type.string}` }] : [];
+    });
+
+    const methodStrings = node.methods.flatMap(method => {
+        const texts = new Set<string>();
+
+        for (const { opcode, operands } of findAttribute<CodeAttribute>(method, 'Code')?.insns ?? []) {
+            const index = opcode === ldc ? operands[0] : (operands[0] << 8) | operands[1];
+            if (opcode === ldc || opcode === ldcWide) {
+                const text = readText(node.pool[index]);
+                if (text) {
+                    texts.add(text);
+                }
+            } else if (opcode === invokeDynamic) {
+                readRecipes(node.pool[index] as DynamicEntry | null).forEach(text => text && texts.add(text));
+            }
+        }
+
+        return [...texts].map(text => ({ text, key: `${className}#${method.name.string}#${method.type.string}` }));
+    });
+
+    return [...fieldStrings, ...methodStrings];
 }

@@ -1,5 +1,5 @@
 import type { TreeDataProvider } from 'vscode';
-import type { Row } from '../contract/rows';
+import { findDocumentRow, type Row } from '../contract/rows';
 import { vscode } from './api';
 import { type OpenFile, type OpenFiles, readErrorText } from './files';
 import { drawIcon } from './icons';
@@ -29,6 +29,7 @@ function createViewRows(file: OpenFile, rows: Row[], rowsBelow: RowsBelow, paren
 
     return indexes.toSorted((first, second) => compareRows(rows[first], rows[second])).map(index => {
         const row = rows[index];
+        const hasDocumentRow = findDocumentRow(rows, index) !== undefined;
 
         return new ViewRow(row.name, {
             file,
@@ -36,6 +37,7 @@ function createViewRows(file: OpenFile, rows: Row[], rowsBelow: RowsBelow, paren
             description: row.detail,
             tooltip: writeTooltip(row),
             iconPath: drawIcon(row.kind, row.flags),
+            command: hasDocumentRow ? { command: 'decomp.showRow', title: 'Show', arguments: [file, row] } : undefined,
             listBelow: rowsBelow.has(index) ? () => createViewRows(file, rows, rowsBelow, index) : undefined,
         });
     });

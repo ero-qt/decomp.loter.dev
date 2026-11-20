@@ -3,6 +3,8 @@ import type { IWorkbenchConstructionOptions } from '@codingame/monaco-vscode-api
 export const darkThemeName = 'decomp.loter.dev Dark';
 export const lightThemeName = 'decomp.loter.dev Light';
 export const symbolsViewId = 'decomp.symbols';
+/** The URI scheme of the rows' documents. */
+export const documentScheme = 'decomp';
 
 export const productConfiguration: IWorkbenchConstructionOptions['productConfiguration'] = {
     nameShort: 'decomp.loter.dev',

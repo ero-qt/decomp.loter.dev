@@ -5,9 +5,11 @@ import { ExtensionHostKind, type IExtensionManifest, registerExtension } from '@
 import '@codingame/monaco-vscode-api/vscode/vs/workbench/contrib/files/browser/explorerViewlet';
 import { Registry } from '@codingame/monaco-vscode-api/vscode/vs/platform/registry/common/platform';
 import { Extensions, type IViewsRegistry } from '@codingame/monaco-vscode-api/vscode/vs/workbench/common/views';
+import type { View } from '../contract/manifest';
 import { darkThemeName, lightThemeName, symbolsViewId } from './config';
 import darkThemeUrl from './themes/dark.json?url';
 import lightThemeUrl from './themes/light.json?url';
+import { ownTokenTypes } from './tokens';
 
 const manifest: IExtensionManifest = {
     name: 'decomp-loter-dev',
@@ -15,6 +17,7 @@ const manifest: IExtensionManifest = {
     version: '1.0.0',
     engines: { vscode: '*' },
     contributes: {
+        semanticTokenTypes: ownTokenTypes,
         commands: [
             { command: 'decomp.openFiles', title: 'Open Files...', category: 'File', icon: '$(go-to-file)' },
             { command: 'decomp.openFolder', title: 'Open Folder...', category: 'File', icon: '$(folder-opened)' },
@@ -56,4 +59,13 @@ export function addSymbolsWelcome(errorTexts: string[]) {
         ...errorTexts,
     ];
     Registry.as<IViewsRegistry>(Extensions.ViewsRegistry).registerViewWelcomeContent(symbolsViewId, { content: lines.join('\n') });
+}
+
+/** Registers each view's language with the view's extension, so a document's language is the language of the document's view. */
+export function registerViewLanguages(views: View[]) {
+    registerExtension({
+        ...manifest,
+        name: 'decomp-loter-dev-views',
+        contributes: { languages: views.map(view => ({ id: view.language, extensions: [view.extension] })) },
+    });
 }

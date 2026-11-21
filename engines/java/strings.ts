@@ -1,22 +1,8 @@
 import { formatTarget } from '../../contract/document';
 import type { StringUse } from '../../contract/engine';
+import { cutString, maxStrings } from '../shared/limits';
 import { readClass, readStrings } from './classfile';
 import type { OpenFile } from './handlers';
-
-// keeps the listing small like the other engines because a large JAR loads hundreds of thousands of strings
-const maxStrings = 50000;
-const maxStringLength = 1000;
-
-// cuts a long string after the length with a mark, before a surrogate pair that the cut would split
-function cutText(text: string): string {
-    if (text.length <= maxStringLength) {
-        return text;
-    }
-
-    const splitsPair = /[\ud800-\udbff]/.test(text[maxStringLength - 1]);
-
-    return `${text.slice(0, splitsPair ? maxStringLength - 1 : maxStringLength)}…`;
-}
 
 // returns the row of the nearest class that the tree shows, starting at the class itself
 function findShownClass({ keys, outers }: OpenFile, name: string): number | undefined {
@@ -43,7 +29,7 @@ export async function listStrings(fileId: number, file: OpenFile, signal: AbortS
         const shown = findShownClass(file, name);
         for (const { text, key } of bytes ? readStrings(readClass(bytes), name) : []) {
             const row = file.keys.get(key) ?? shown;
-            strings.push({ text: cutText(text), user: row === undefined ? null : formatTarget({ fileId, key: row }) });
+            strings.push({ text: cutString(text), user: row === undefined ? null : formatTarget({ fileId, key: row }) });
             if (strings.length === maxStrings) {
                 return strings;
             }

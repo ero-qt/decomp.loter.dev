@@ -1,9 +1,9 @@
 import type { MissingFile } from '../../contract/engine';
 import type { Row } from '../../contract/rows';
 import { type Accessibility, flagsOf, type Kind, type Modifier } from '../../contract/symbols';
+import { maxStrings } from '../shared/limits';
 import { type AddressKeys, keyTags, readAddressKeys, tagKey } from './keys';
 import { splitName } from './names';
-import { maxStrings } from './strings';
 
 /** A function or global of a file as the glue lists it, with its address in hex. */
 export interface GlueSymbol {

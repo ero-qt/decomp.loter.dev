@@ -9,6 +9,7 @@ import {
     checkManifest,
     checkReferences,
     checkRows,
+    checkStringLimits,
     checkStrings,
     listChecks,
     testEngine,
@@ -21,6 +22,7 @@ import {
     changeTarget,
     emptyDescription,
     fixture,
+    type FullFixture,
     functionsFixture,
     listCalls,
     testFailure,
@@ -69,6 +71,7 @@ const baseClaims = [
     'lists rows that readRows accepts, each with a key of its own',
     'writes documents that declare their rows and locals and point each row target at 1 row',
     'lists strings whose users are rows',
+    'lists at most 50,000 strings, each with at most 1,000 characters',
     'refuses the calls for a closed file',
     'writes a document again after a canceled read of the document',
 ];
@@ -168,6 +171,18 @@ const defects: [defect: string, breakHandlers: BreakHandlers, check: AnyCheck, m
         () => ({ listStrings: () => ok([{ text: 'circle', user: 'L:0' }]) }),
         checkStrings,
         "the reply of listStrings isn't a list of texts, each with a row target or null as its user",
+    ],
+    [
+        'a string longer than the limit',
+        () => ({ listStrings: () => ok([{ text: 'x'.repeat(1001), user: null }]) }),
+        checkStringLimits,
+        'drawing.fake has a string of 1001 characters, more than 1000',
+    ],
+    [
+        'more strings than the limit',
+        () => ({ listStrings: () => ok(Array.from({ length: 50001 }, () => ({ text: 'x', user: null }))) }),
+        checkStringLimits,
+        'drawing.fake lists 50001 strings, more than 50000',
     ],
     [
         'a close that leaves the file open',
@@ -375,7 +390,7 @@ const defects: [defect: string, breakHandlers: BreakHandlers, check: AnyCheck, m
     ],
 ];
 
-const misfits: [claim: string, misfit: typeof fixture, check: AnyCheck, message: string][] = [
+const misfits: [claim: string, misfit: FullFixture, check: AnyCheck, message: string][] = [
     [
         'a manifest without a view',
         { ...fixture, manifest: { ...fakeManifest, views: [] } },
@@ -399,6 +414,12 @@ const misfits: [claim: string, misfit: typeof fixture, check: AnyCheck, message:
         { ...fixture, string: 'square' },
         checkStrings,
         "drawing.fake doesn't have the string 'square'",
+    ],
+    [
+        "a long string that the file doesn't list cut",
+        { ...fixture, cutString: 'circle' },
+        checkStringLimits,
+        "drawing.fake doesn't list a string that starts with 'circle' and ends with the cut mark …",
     ],
     [
         "a token that the symbol's document doesn't have",

@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test';
 import { findRow } from '../../contract/checking';
 import { formatTarget } from '../../contract/document';
+import { maxStringLength, maxStrings } from '../../contract/limits';
 import { EngineError } from '../../contract/reply';
 import { readRows } from '../../contract/rows';
 import { compileAssembly, loadTestRuntime, readFixture, useDotnetEngine } from './testing';
@@ -50,4 +51,12 @@ test("dotnet engine lists a file's first 50,000 strings and says so in the file'
 
 test("dotnet engine refuses to list the strings of a file that isn't open", async () => {
     await expect(connect().listStrings(1)).rejects.toBeInstanceOf(EngineError);
+});
+
+test("Limits.cs lists as many strings as the contract and cuts them at the contract's length", async () => {
+    const limits = await Bun.file(new URL('src/Limits.cs', import.meta.url)).text();
+    const readConstant = (name: string) => Number(new RegExp(`const int ${name} = ([\\d_]+);`).exec(limits)?.[1].replaceAll('_', ''));
+
+    expect(readConstant('MaxStrings')).toBe(maxStrings);
+    expect(readConstant('MaxStringLength')).toBe(maxStringLength);
 });

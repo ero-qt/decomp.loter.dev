@@ -38,19 +38,19 @@ test("java engine doesn't list the component names that a record's methods get",
     expect(strings.map(listed => listed.text)).not.toContain('radius');
 });
 
-test('java engine lists a string with a character outside the BMP and cuts a long string after 1,000 characters with a mark', async () => {
+test('java engine lists a string with a character outside the BMP and cuts a long string at 1,000 characters with a mark', async () => {
     const fields = [
         { name: 'SMILE', descriptor: 'Ljava/lang/String;', value: 'smile 😀' },
         { name: 'LONG', descriptor: 'Ljava/lang/String;', value: 'x'.repeat(1500) },
-        { name: 'SPLIT', descriptor: 'Ljava/lang/String;', value: `${'x'.repeat(999)}😀${'x'.repeat(500)}` },
+        { name: 'SPLIT', descriptor: 'Ljava/lang/String;', value: `${'x'.repeat(998)}😀${'x'.repeat(500)}` },
     ];
     const file = new File([classFile({ name: 'a/B', fields })], 'B.class');
     const { strings, targetOf } = await openStrings(connect(), file);
 
     expect(strings).toEqual([
         { text: 'smile 😀', user: targetOf('a.B.SMILE') },
-        { text: `${'x'.repeat(1000)}…`, user: targetOf('a.B.LONG') },
-        { text: `${'x'.repeat(999)}…`, user: targetOf('a.B.SPLIT') },
+        { text: `${'x'.repeat(999)}…`, user: targetOf('a.B.LONG') },
+        { text: `${'x'.repeat(998)}…`, user: targetOf('a.B.SPLIT') },
     ]);
 });
 

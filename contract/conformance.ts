@@ -16,11 +16,13 @@ import {
 import { formatTarget, parseTarget, readTokens } from './document';
 import { checkDocuments } from './document-checks';
 import type { Description, Engine, MissingFile, Reference } from './engine';
+import { checkStringLimits } from './limit-checks';
 import { matchesFile, readManifest, readStart } from './manifest';
 import { findDocumentRow, readRows, type Row } from './rows';
 
 export type { Check, Fixture, FixtureWith } from './checking';
 export { checkDocuments } from './document-checks';
+export { checkStringLimits } from './limit-checks';
 
 async function hasMissingFile(engine: Engine, fileId: number, name: string): Promise<boolean> {
     return (await engine.list(fileId)).missingFiles.some(missingFile => missingFile.name === name);
@@ -329,6 +331,7 @@ const checks: [claim: string, check: Check][] = [
     ['lists rows that readRows accepts, each with a key of its own', checkRows],
     ['writes documents that declare their rows and locals and point each row target at 1 row', checkDocuments],
     ['lists strings whose users are rows', checkStrings],
+    ['lists at most 50,000 strings, each with at most 1,000 characters', checkStringLimits],
     ['refuses the calls for a closed file', checkClosedFile],
     ['writes a document again after a canceled read of the document', checkCanceledRead],
 ];

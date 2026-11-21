@@ -21,6 +21,8 @@ export interface Fixture {
     symbol: string;
     /** A string in the file. */
     string?: string;
+    /** The start of a string in the file that is longer than `maxStringLength`, which the engine lists cut. */
+    cutString?: string;
     /** The group of an engine whose files use symbols of other files that the engine opens. */
     linked?: {
         /**

@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import type { Check, Fixture } from './conformance';
+import type { Check, Fixture, FixtureWith } from './conformance';
 import type { Document } from './document';
 import type { Listing } from './engine';
 import { createFakeHandlers, fakeManifest, sampleFiles } from './fake';
@@ -14,6 +14,9 @@ export type BreakHandlers = (handlers: EngineHandlers) => Partial<EngineHandlers
 
 /** A check of any group. */
 export type AnyCheck = Check<'linked' | 'companion'>;
+
+/** A fixture with both groups, which every check takes. */
+export type FullFixture = FixtureWith<'linked' | 'companion'>;
 
 /** The fixture of the sample files, with both groups. */
 export const fixture = {
@@ -115,7 +118,7 @@ export function changeTarget(from: string, to: string): BreakHandlers {
 }
 
 /** Registers a test that the check fails with the message for an engine whose handlers `breakHandlers` replaces. */
-export function testFailure(defect: string, breakHandlers: BreakHandlers, check: AnyCheck, message: string, checked = fixture) {
+export function testFailure(defect: string, breakHandlers: BreakHandlers, check: AnyCheck, message: string, checked: FullFixture = fixture) {
     test(`check fails for ${defect}`, async () => {
         useBrokenHandlers(breakHandlers);
 

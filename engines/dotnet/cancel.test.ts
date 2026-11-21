@@ -11,18 +11,21 @@ import { compileAssembly, loadTestRuntime, readFixture } from './testing';
 await loadTestRuntime();
 setDefaultTimeout(120000);
 
-const classCount = 100;
+const classCount = 200;
 const methodCount = 30;
-const stringCount = 10;
+const stringCount = 5;
 // the time between the engine's checks, which a call has to pass before it sees a cancel
 const checkIntervalMs = 50;
 
-// writes classes whose methods each load their own strings and read 1 field, so a search for the field's users, a
-// listing of the strings and a listing of the rows each take several times the time between the engine's checks
+// writes classes whose methods each read 1 field and load their own strings, so a search for the field's users, a
+// listing of the strings and a listing of the rows each take several times the time between the engine's checks, even
+// on a fast machine. Loads the strings in a lambda because the engine then looks up the method around the lambda for
+// each string, which keeps the listing of the strings long below the engine's cap on strings.
 function writeManyMethods(): string {
     const strings = (index: number, method: number) => Array.from({ length: stringCount }, (_, string) => `"s${index}_${method}_${string}"`);
     const writeMethod = (index: number, method: number) =>
-        `public int M${method}() { System.Console.WriteLine(string.Concat(${strings(index, method).join(', ')})); return Target.Value; }`;
+        `public int M${method}() { System.Func<string> load = () => string.Concat(${strings(index, method).join(', ')}); `
+        + 'System.Console.WriteLine(load()); return Target.Value; }';
     const methods = (index: number) => Array.from({ length: methodCount }, (_, method) => writeMethod(index, method));
     const classes = Array.from({ length: classCount }, (_, index) => `public class C${index} { ${methods(index).join(' ')} }`);
 

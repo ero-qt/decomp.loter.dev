@@ -10,6 +10,7 @@
   "dependencies": {
     "@codingame/monaco-vscode-api": "39.0.4",
     "@codingame/monaco-vscode-configuration-service-override": "39.0.4",
+    "@codingame/monaco-vscode-cpp-default-extension": "39.0.4",
     "@codingame/monaco-vscode-csharp-default-extension": "39.0.4",
     "@codingame/monaco-vscode-files-service-override": "39.0.4",
     "@codingame/monaco-vscode-java-default-extension": "39.0.4",

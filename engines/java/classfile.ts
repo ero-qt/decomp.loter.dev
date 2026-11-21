@@ -38,7 +38,7 @@ export interface ClassSymbols {
     shortName: string;
     /** The internal name of the class that contains a nested, local or anonymous class. */
     outer?: string;
-    /** Whether the class is local or anonymous, which Java code shows only inside its outer class's code. */
+    /** Whether the class is local or anonymous, which Java code only shows inside its outer class's code. */
     isHidden: boolean;
     isModule: boolean;
     keyword: ClassKeyword;

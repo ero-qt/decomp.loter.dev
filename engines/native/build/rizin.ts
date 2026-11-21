@@ -15,7 +15,7 @@ export const rizinFolder = join(vendorFolder, 'rizin');
 /** Rizin's build folder, with the static libraries, the databases and `compile_commands.json`. */
 export const rizinBuildFolder = join(workFolder, 'rizin-build');
 
-// builds only the static libraries, without the debugger, GPL code or system libraries
+// only builds the static libraries, without the debugger, GPL code or system libraries
 const mesonOptions = [
     '--buildtype=plain',
     '--default-library=static',

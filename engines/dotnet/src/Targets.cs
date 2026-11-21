@@ -107,7 +107,7 @@ internal sealed partial class Targets(
         };
     }
 
-    // writes the ID string of a member from its signature, because the decompiler writes ID strings only from metadata,
+    // writes the ID string of a member from its signature, because the decompiler only writes ID strings from metadata,
     // which a member of an assembly that isn't open doesn't have, and takes a method of a generic instance from the
     // file's method reference, because the decompiler puts the type arguments into its parameters
     private string WriteIdString(IMember member, ITypeDefinitionOrUnknown declaringType)
@@ -161,7 +161,7 @@ internal sealed partial class Targets(
 
         foreach (TypeReferenceHandle handle in metadata.TypeReferences)
         {
-            // skips a type reference that the metadata reader can't read, so a broken row costs only its target
+            // skips a type reference that the metadata reader can't read, so a broken row only costs its target
             try
             {
                 TypeReference reference = metadata.GetTypeReference(handle);

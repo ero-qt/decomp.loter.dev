@@ -25,7 +25,7 @@ function refuseView(view: string): Reply<never> {
 
 /**
  * Returns the .NET engine's handlers, which load the runtime with the first call that needs it, because `claims` then
- * reads only the file's headers. The handlers start with an empty runtime because `dotnet.js` loads once in a process.
+ * only reads the file's headers. The handlers start with an empty runtime because `dotnet.js` loads once in a process.
  */
 export function createDotnetHandlers(loadRuntime: () => Promise<DotnetRuntime>): EngineHandlers {
     let runtime: Promise<DotnetRuntime> | undefined;

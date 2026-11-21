@@ -15,7 +15,7 @@ const textMateWorkerText = 'textMateWorkerHost';
 const javaWorker = /\/engines\/java\/worker\.js$/;
 const vineflowerChunk = /\/engines\/java\/vf\.runtime-[^/]+\.js$/;
 
-// returns the workers whose code has the text, because the URLs of most workers have only a hash after a generic name
+// returns the workers whose code has the text, because the URLs of most workers only have a hash after a generic name
 async function findWorkers(page: Page, urls: string[], text: string): Promise<string[]> {
     const codes = await Promise.all(urls.map(url => page.evaluate(async workerUrl => (await fetch(workerUrl)).text(), url)));
 

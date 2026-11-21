@@ -9,7 +9,7 @@ namespace Decomp.Dotnet;
 /// </summary>
 internal sealed class Cancellation
 {
-    // waits every 50 ms because the worker gets the cancel message only while the call waits
+    // waits every 50 ms because the worker only gets the cancel message while the call waits
     private static readonly TimeSpan _waitInterval = TimeSpan.FromMilliseconds(50);
 
     private bool _isCanceled;

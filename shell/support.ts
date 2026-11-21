@@ -82,7 +82,7 @@ export function formatPrice(price: number): string {
     return prices.format(price);
 }
 
-// reads `balance.json` as text, or an empty text without the file, because the host writes the file only on the site's
+// reads `balance.json` as text, or an empty text without the file, because the host only writes the file on the site's
 // server
 async function fetchBalanceFile(): Promise<string> {
     try {

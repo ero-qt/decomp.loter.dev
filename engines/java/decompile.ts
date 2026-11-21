@@ -55,8 +55,8 @@ function collectTokens(collected: Map<string, VineflowerToken[]>): TokenCollecto
 }
 
 /**
- * Decompiles a top class of an open file with every class nested in it, because Vineflower writes a nested or an
- * anonymous class into its outer class only when it gets both. Throws once the signal aborts, after the load and after
+ * Decompiles a top class of an open file with every class nested in it, because Vineflower only writes a nested or
+ * an anonymous class into its outer class when it gets both. Throws once the signal aborts, after the load and after
  * the decompile, because Vineflower can't stop in the middle.
  */
 export async function writeJava(files: OpenFiles, fileId: number, top: string, signal: AbortSignal): Promise<Reply<Document>> {

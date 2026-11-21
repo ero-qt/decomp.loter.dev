@@ -23,7 +23,7 @@ export interface AddressKeys {
 
 /**
  * Picks the keys of the functions and globals at the addresses: the offset from the image base while each offset fits
- * into 31 bits, else the index in address order. Keys then depend only on the file, so they stay the same after a
+ * into 31 bits, else the index in address order. Keys then only depend on the file, so they stay the same after a
  * worker restart.
  */
 export function readAddressKeys(addresses: bigint[], base: bigint): AddressKeys {

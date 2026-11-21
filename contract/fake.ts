@@ -212,7 +212,7 @@ export function createFakeHandlers(): EngineHandlers {
         return line.word === 'uses' && (findTargetRow(outside)?.target ?? outside) === used;
     }
 
-    // places the uses only in the view `ops` because the tests then cover a reply with places and a reply without them
+    // only places the uses in the view `ops` because the tests then cover a reply with places and a reply without them
     function placeUses(file: FakeFile, user: number, used: string, view: string): Int32Array | null {
         const root = findDocumentIndex(file, user);
         if (view !== 'ops' || root === undefined || isHidden(file.rows[root], view)) {

@@ -25,7 +25,7 @@ test("java engine's worker gets ready on the site without a policy violation", a
     const message = await page.evaluate(() => {
         // makes the URL a trusted one because the site's policy requires trusted types for a worker's script
         const trusted = window.trustedTypes!.createPolicy('worker.test', { createScriptURL: url => url });
-        // casts the trusted URL because TypeScript's `Worker` takes a string or a `URL` only
+        // casts the trusted URL because TypeScript's `Worker` only takes a string or a `URL`
         const worker = new Worker(trusted.createScriptURL('engines/java/worker.js') as unknown as URL, { type: 'module' });
 
         return new Promise(resolve => worker.addEventListener('message', event => resolve(event.data), { once: true }));

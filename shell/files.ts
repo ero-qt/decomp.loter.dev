@@ -84,7 +84,7 @@ export class OpenFiles {
         return done;
     }
 
-    // returns false only when no engine claims the file because the callers return an unclaimed file for a warning
+    // only returns false when no engine claims the file because the callers return an unclaimed file for a warning
     private async openFile(picked: PickedFile): Promise<boolean> {
         const file: OpenFile = { picked };
         try {

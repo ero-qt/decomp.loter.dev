@@ -140,7 +140,7 @@ export function classFile({ name, fields = [], innerClasses = [], enclosingClass
         }
 
         const constant = add(`string ${value}`, [8, ...u2(utf8(value))]);
-        // writes `public static final` because javac writes a constant value only for such a field
+        // writes `public static final` because javac only writes a constant value for such a field
         return [...u2(0x19), ...head, ...u2(1), ...u2(utf8('ConstantValue')), ...u4(2), ...u2(constant)];
     });
 

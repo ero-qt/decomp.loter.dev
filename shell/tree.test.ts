@@ -47,7 +47,7 @@ function listEngineWorkers(page: Page): string[] {
 
 async function chooseFiles(page: Page, button: 'Open Files' | 'Open Folder', files: Record<string, string> | string) {
     const chooser = page.waitForEvent('filechooser');
-    // hovers the Symbols view's header because the workbench shows a view's title buttons only on hover while the
+    // hovers the Symbols view's header because the workbench only shows a view's title buttons on hover while the
     // Explorer has 2 views
     await findPaneHeader(page, 'Symbols').hover();
     await page.getByRole('button', { name: `${button}...` }).click();

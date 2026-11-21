@@ -26,7 +26,7 @@ type HandlerOf<Call> = Call extends (...args: infer Args) => Promise<infer Value
 
 /**
  * The calls of `Engine` as an engine's worker handles them. A handler returns a failed reply for a call that the engine
- * refuses and throws only for a bug or after its signal aborts. `open` gets the id of the new file before its other
+ * refuses and only throws for a bug or after its signal aborts. `open` gets the id of the new file before its other
  * arguments. Each handler gets a signal after its arguments, which aborts when the page cancels the call.
  */
 export type EngineHandlers = {

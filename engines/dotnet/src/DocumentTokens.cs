@@ -73,7 +73,7 @@ internal sealed class DocumentTokens(
     }
 
     /// <summary>
-    ///     Moves the last token before the token at an index, for a token whose place the output finds only after it
+    ///     Moves the last token before the token at an index, for a token whose place the output only finds after it
     ///     wrote later tokens.
     /// </summary>
     public void MoveLastTo(int token)

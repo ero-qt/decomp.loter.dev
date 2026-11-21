@@ -43,7 +43,7 @@ async function open(pickedFiles: PickedFile[]) {
 
 vscode.commands.registerCommand('decomp.openFiles', async () => open(await pickFiles(listExtensions(engines))));
 vscode.commands.registerCommand('decomp.openFolder', async () => open(await pickFiles([], 'folder')));
-// takes the open file's path because a command link in a hover takes only JSON arguments
+// takes the open file's path because a command link in a hover only takes JSON arguments
 vscode.commands.registerCommand(loadMissingFileCommand, async (name: string, path: string) => {
     const [picked] = await pickFiles(findMissingFileExtensions(name), 'file');
     const file = openFiles.files.find(file => file.picked.path === path);

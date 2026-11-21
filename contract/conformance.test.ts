@@ -55,7 +55,7 @@ function giveSameKey(rows: Row[]) {
     rows[2].key = rows[1].key;
 }
 
-// registers the tests under a default time limit of 1 ms because the tests then pass only with testEngine's time limit
+// registers the tests under a default time limit of 1 ms because the tests then only pass with testEngine's time limit
 setDefaultTimeout(1);
 testEngine('fake engine', connect, fixture, 1000);
 setDefaultTimeout(5000);

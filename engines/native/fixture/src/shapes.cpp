@@ -3,7 +3,7 @@
 #define EXPORT extern "C" __declspec(dllexport) __attribute__((noinline))
 #define MEMBER __declspec(dllexport) __attribute__((noinline))
 #elif defined(HIDDEN)
-// exports nothing, so a stripped file keeps only the RTTI of its classes
+// exports nothing, so a stripped file only keeps the RTTI of its classes
 #define EXPORT extern "C" __attribute__((noinline))
 #define MEMBER __attribute__((noinline))
 #else
@@ -125,7 +125,7 @@ EXPORT int add_swapped(int left, int right) {
     [[clang::musttail]] return add(right, left);
 }
 
-// jumps into the middle of a loop, which C shows only with a goto
+// jumps into the middle of a loop, which C only shows with a goto
 EXPORT int count_down(int value) {
     if (value > 10) {
         goto inside;

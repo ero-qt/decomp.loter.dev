@@ -115,7 +115,7 @@ function takeJson<T>(module: RizinModule, what: string, call: () => number): T {
     }
 }
 
-// passes a text to the glue as a C string, which lives only during the call
+// passes a text to the glue as a C string, which only lives during the call
 function withText<T>(module: RizinModule, text: string, call: (pointer: number) => T): T {
     const pointer = module.stringToNewUTF8(text);
     try {

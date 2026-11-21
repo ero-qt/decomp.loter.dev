@@ -76,7 +76,7 @@ internal sealed class SymbolRows(
         ConversionFlags = ConversionFlags.ShowTypeParameterList | ConversionFlags.ShowParameterList,
     };
 
-    // writes a type with its type parameters only, because the parameter list of a delegate isn't part of its name
+    // writes a type with only its type parameters, because the parameter list of a delegate isn't part of its name
     private static readonly CSharpAmbience _typeAmbience = new() { ConversionFlags = ConversionFlags.ShowTypeParameterList };
 
     private readonly List<int> _values = [];

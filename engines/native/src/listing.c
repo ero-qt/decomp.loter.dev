@@ -209,7 +209,7 @@ static void find_max_address(Session *session, RzBinObject *object, size_t max) 
 }
 
 /**
- * \brief Adds the count of the binary's strings, which the worker lists only up to its cap.
+ * \brief Adds the count of the binary's strings, which the worker only lists up to its cap.
  */
 static void add_string_count(PJ *j, RzBinObject *object) {
 	const RzPVector *strings = rz_bin_object_get_strings(object);

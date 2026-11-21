@@ -89,7 +89,7 @@ function countText(count: number, one: string, many: string): string[] {
 }
 
 // checks whether an entry's path fits its class's name, like `a/B.class` for `a/B`, also below a folder like
-// `WEB-INF/classes/`, because the JVM loads a class only from such a path, and keeps a default package's class at the
+// `WEB-INF/classes/`, because the JVM only loads a class from such a path, and keeps a default package's class at the
 // root because a folder above it looks the same as a package
 function fitsPath(entry: string, name: string): boolean {
     return entry === `${name}.class` || (name.includes('/') && entry.endsWith(`/${name}.class`));

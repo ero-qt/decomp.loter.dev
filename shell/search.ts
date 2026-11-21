@@ -131,7 +131,7 @@ export class SymbolSearch implements WorkspaceSymbolProvider<SearchResult> {
             return rows.flatMap((row, index) => (row.hiddenViews & 1 ? [] : [{ file, rows, index, text: escapeIcons(row.name) }]));
         });
         const strings = listedFiles.flatMap(listed => this.findStrings(listed, listedFiles));
-        // searches only the strings for a query that starts with a quote because only a string's name starts with a
+        // only searches the strings for a query that starts with a quote because only a string's name starts with a
         // quote
         const candidates = [
             ...(query.trimStart().startsWith('"') ? [] : pickMatches(names.filter(isOpenable), query, maxResults)),

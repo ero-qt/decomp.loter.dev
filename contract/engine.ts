@@ -63,7 +63,7 @@ export interface Reference {
  * Any other error is a bug or a crash, like a text that isn't a target, a worker that crashes or a `fatal` message.
  */
 export interface Engine {
-    /** Checks whether the engine reads a file. The engine reads only the bytes of the file that it needs for that. */
+    /** Checks whether the engine reads a file. The engine only reads the bytes of the file that it needs for that. */
     claims(name: string, file: Blob): Promise<boolean>;
     /** Opens a file and returns the id that the other calls take. */
     open(name: string, file: Blob): Promise<number>;

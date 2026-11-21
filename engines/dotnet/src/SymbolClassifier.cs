@@ -119,7 +119,7 @@ internal static class SymbolClassifier
         return (int)GetAccessibility(entity) | (int)modifiers;
     }
 
-    // shows a static class only as static because C# writes it without `abstract` and `sealed`
+    // only shows a static class as static because C# writes it without `abstract` and `sealed`
     private static SymbolModifiers GetModifiers(ITypeDefinition type)
     {
         if (type.Kind == TypeKind.Class)
@@ -136,7 +136,7 @@ internal static class SymbolClassifier
         return type is { Kind: TypeKind.Struct, IsReadOnly: true } ? SymbolModifiers.ReadOnly : SymbolModifiers.None;
     }
 
-    // shows a constant only as const and an enum member without modifiers because C# writes them that way
+    // only shows a constant as const and an enum member without modifiers because C# writes them that way
     private static SymbolModifiers GetModifiers(IField field)
     {
         if (field.DeclaringTypeDefinition?.Kind == TypeKind.Enum)

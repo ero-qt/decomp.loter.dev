@@ -9,7 +9,7 @@ function findShortcutsEditor(page: Page) {
     return page.getByRole('dialog', { name: 'Keyboard Shortcuts' });
 }
 
-// searches the editor's list for the command's id because the list renders only the rows in view
+// searches the editor's list for the command's id because the list only renders the rows in view
 async function readCommandRows(page: Page, commandId: string): Promise<string[]> {
     const editor = findShortcutsEditor(page);
     await editor.getByPlaceholder('Type to search in keybindings').fill(commandId);
@@ -59,7 +59,7 @@ test('keybinding changed in the Keyboard Shortcuts editor stays after a reload',
     await readCommandRows(page, 'workbench.action.quickOpen');
 
     await findShortcutsEditor(page).locator('.monaco-list-row').filter({ hasText: 'workbench.action.quickOpen' }).first().dblclick();
-    // presses the keys only once the widget that records them has the focus because the workbench would take them
+    // only presses the keys once the widget that records them has the focus because the workbench would take them
     // otherwise
     await page.waitForFunction(() => document.activeElement?.closest('.defineKeybindingWidget') !== null);
     await page.keyboard.press('Control+Alt+J');
@@ -71,7 +71,7 @@ test('keybinding changed in the Keyboard Shortcuts editor stays after a reload',
 
     expect(await readUntil(() => readKeybinding(page, 'workbench.action.quickOpen'), 'Ctrl+Alt+J User')).toBe('Ctrl+Alt+J User');
 
-    // reloads only after the workbench stored the file because the reload reads the change from the stored file
+    // only reloads after the workbench stored the file because the reload reads the change from the stored file
     const storedBinding = async () => (await readStoredUserFile(page, '/User/keybindings.json'))?.includes('"ctrl+alt+j"') ?? false;
     await readUntil(storedBinding, true);
     await page.reload();

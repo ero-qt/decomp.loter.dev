@@ -62,7 +62,7 @@ export type OpenRows = Map<number, Row[]>;
 /** The most rows whose documents or users a check reads. */
 export const checkedRowLimit = 50;
 
-/** A view id that no manifest has, because `readManifest` takes only lowercase letters, digits and `-` in a view id. */
+/** A view id that no manifest has, because `readManifest` only takes lowercase letters, digits and `-` in a view id. */
 export const missingView = '?';
 
 /** Returns the id of the first view in the fixture's manifest. */

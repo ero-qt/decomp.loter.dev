@@ -13,7 +13,7 @@ static const char *const msvc_words[] = { " __ptr64", "class ", "struct ", "unio
 /**
  * \brief Returns the length of the word of msvc_words at a place of a name, or 0 where none starts.
  *
- * Takes a keyword only at the start of a type, which follows `(`, `<`, `,` or a space of the text written so far.
+ * Only takes a keyword at the start of a type, which follows `(`, `<`, `,` or a space of the text written so far.
  */
 static size_t msvc_word_at(const char *at, const char *written, size_t written_length) {
 	for (size_t i = 0; i < RZ_ARRAY_SIZE(msvc_words); i++) {

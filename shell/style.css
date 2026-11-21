@@ -11,7 +11,7 @@ body,
     overflow: clip;
 }
 
-/* draws the logo in the title bar's text color because a mask keeps only the logo's shape */
+/* draws the logo in the title bar's text color because a mask only keeps the logo's shape */
 #workbench .window-appicon {
     background: var(--vscode-titleBar-activeForeground);
     mask: url('./logo.svg') center / 16px no-repeat;

@@ -19,6 +19,7 @@ function listExpectedResponses(siteFolder: string): ExpectedResponse[] {
     return [
         { path: '/', status: 200, cacheControl: 'no-cache' },
         { path: '/privacy.html', status: 200, cacheControl: 'no-cache' },
+        { path: '/favicon.svg', status: 200, cacheControl: 'no-cache', contentType: 'image/svg+xml' },
         { path: '/missing', status: 404, cacheControl: null },
         { path: '/assets/missing-12345678.js', status: 404, cacheControl: null },
         { path: `/assets/${asset}`, status: 200, cacheControl: longCache },

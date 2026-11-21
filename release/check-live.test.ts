@@ -142,6 +142,22 @@ test('live check finds a JSON file without its type and a missing privacy page',
     ]);
 });
 
+test('live check finds a missing favicon and a favicon without its type', async () => {
+    const missing = serveLikeHtaccess((path, status) => (path === '/favicon.svg' ? 404 : status));
+
+    expect(await checkSiteResponses(missing, siteFolder)).toEqual(['/favicon.svg has the status 404, not 200']);
+
+    const untyped = serveLikeHtaccess((path, status, headers) => {
+        if (path === '/favicon.svg') {
+            headers.set('Content-Type', 'text/plain');
+        }
+
+        return status;
+    });
+
+    expect(await checkSiteResponses(untyped, siteFolder)).toEqual(['/favicon.svg sends Content-Type "text/plain", not image/svg+xml']);
+});
+
 test("live check finds a page that isn't the built index.html, like a page of an older release", async () => {
     const url = serveLikeHtaccess(undefined, { '/': '<!doctype html>' });
 

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
 import darkTheme from './themes/dark.json' with { type: 'json' };
 import { deriveLightTheme } from './themes/light.ts';
@@ -23,6 +24,13 @@ export default defineConfig({
         },
     },
     plugins: [
+        {
+            name: 'favicon',
+            // writes the logo into the site's root because browsers look for a page's icon there
+            buildStart() {
+                this.emitFile({ type: 'asset', fileName: 'favicon.svg', source: readFileSync(`${import.meta.dirname}/logo.svg`) });
+            },
+        },
         {
             name: 'absolute-links',
             enforce: 'post',

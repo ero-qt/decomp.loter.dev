@@ -101,6 +101,16 @@ test("title bar shows the site's logo as the app icon", async () => {
     expect(Color.Format.CSS.parse(iconColor)!.equals(Color.Format.CSS.parse(titleColor))).toBe(true);
 }, testTimeoutMs);
 
+test("each page links the site's logo as its icon, which the site serves from its root", async () => {
+    for (const page of ['/index.html', '/privacy.html', '/404.html']) {
+        const icons = (await findSiteFile(page).text()).match(/<link rel="icon"[^>]*>/g);
+
+        expect(icons).toEqual(['<link rel="icon" href="/favicon.svg" type="image/svg+xml">']);
+    }
+
+    expect(await findSiteFile('/favicon.svg').text()).toBe(await Bun.file(new URL('logo.svg', import.meta.url)).text());
+});
+
 test('page stays in place when a part of the workbench reaches past the window', async () => {
     const { page } = await openWorkbench();
 

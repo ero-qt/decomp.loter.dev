@@ -1,11 +1,10 @@
-import { afterEach, beforeEach } from 'bun:test';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { Engine } from '../../contract/engine';
-import { restoreWorker, useInThreadWorker } from '../../contract/in-thread-worker';
 import { connectEngine } from '../../contract/queue';
 import { unwrap } from '../../contract/reply';
 import { readRows } from '../../contract/rows';
+import { useEngine } from '../shared/testing';
 import { buildModule, moduleFolder } from './build/link';
 import { mountInMemory } from './files';
 import { buildFixture } from './fixture/build';
@@ -22,20 +21,19 @@ export async function readFixture(name: string): Promise<File> {
     return new File([await Bun.file(join(folder, name)).bytes()], name);
 }
 
+const connectOptions = { timeLimitMs: 120000, cancelLimitMs: 30000 };
+
 /**
  * Serves the native engine in an in-thread worker during each test of a file and returns the function that connects a
  * test.
  */
 export function useNativeEngine(): () => Engine {
-    beforeEach(() => useInThreadWorker(() => createNativeHandlers(loadTestModule, mountInMemory), () => testModule?.readMemoryBytes() ?? 0));
-    afterEach(restoreWorker);
-
-    return connectNative;
+    return useEngine(() => createNativeHandlers(loadTestModule, mountInMemory), connectOptions, () => testModule?.readMemoryBytes() ?? 0);
 }
 
 /** Connects a test to the native engine in the in-thread worker that the test serves. */
 export function connectNative(): Engine {
-    return connectEngine('native.js', { timeLimitMs: 120000, cancelLimitMs: 30000 });
+    return connectEngine('native.js', connectOptions);
 }
 
 let moduleLoad: Promise<NativeModule> | undefined;

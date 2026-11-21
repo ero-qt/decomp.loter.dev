@@ -29,7 +29,7 @@ test('buildFixture writes the same bytes on every build', async () => {
 
 test("buildFixture rebuilds assemblies whose stamp doesn't match the sources, the build's script, the SDK or the reference pack", async () => {
     const again = fileURLToPath(new URL('../../artifacts/dotnet-fixture-stamp/', import.meta.url));
-    const stamp = join(again, 'fixture.stamp');
+    const stamp = join(again, 'build.stamp');
     rmSync(again, { recursive: true, force: true });
     await buildFixture(again, dotnet);
     const built = readFileSync(stamp, 'utf8');

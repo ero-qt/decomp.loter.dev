@@ -127,17 +127,16 @@ test("live check accepts a host with the balance and a host without it, which on
     expect(await checkSiteResponses(serveLikeHtaccess(), siteFolder)).toEqual([]);
 });
 
-test('live check finds a JSON file without its type and a missing privacy page', async () => {
+test('live check finds a JSON file without its type', async () => {
     const url = serveLikeHtaccess((path, status, headers) => {
         if (path.endsWith('.json')) {
             headers.set('Content-Type', 'text/plain');
         }
 
-        return path === '/privacy.html' ? 404 : status;
+        return status;
     });
 
     expect(await checkSiteResponses(url, siteFolder)).toEqual([
-        '/privacy.html has the status 404, not 200',
         '/engines/index.json sends Content-Type "text/plain", not application/json',
     ]);
 });

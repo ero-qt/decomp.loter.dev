@@ -18,6 +18,7 @@ import { startAbout } from './about';
 import { configurationDefaults, defaultLayout, productConfiguration } from './config';
 import { deferHoverDelegates } from './hovers';
 import './registration';
+import './privacy-tab';
 import './support-tab';
 // registers Go to File and Go to Symbol in Workspace without the search service because its override makes the start
 // much bigger

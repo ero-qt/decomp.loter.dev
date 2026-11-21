@@ -35,7 +35,7 @@ registerAction2(class ShowSupportAction extends Action2 {
             category: Categories.Help,
             icon: Codicon.heart,
             f1: true,
-            menu: { id: MenuId.TitleBar, group: 'navigation' },
+            menu: { id: MenuId.TitleBar, group: 'navigation', order: 2 },
         });
     }
 

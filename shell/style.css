@@ -78,6 +78,15 @@ body,
     font-weight: 600;
 }
 
+.tab-page .notice {
+    margin-top: 20px;
+    font-size: 13px;
+}
+
+.tab-page .notice p {
+    margin: 0 0 8px;
+}
+
 .tab-page table {
     width: 100%;
     border-collapse: collapse;

@@ -73,7 +73,7 @@ test('page for a missing file deep in a folder loads its style without an error,
 
     expect(errors).toEqual([]);
     expect(listOtherHostRequests(page, responses.map(([url]) => url))).toEqual([]);
-    expect(files.some(([url]) => /^\/assets\/privacy-[\w-]+\.css$/.test(new URL(url).pathname))).toBe(true);
+    expect(files.some(([url]) => /^\/assets\/404-[\w-]+\.css$/.test(new URL(url).pathname))).toBe(true);
     expect(files.filter(([, status]) => status !== 200)).toEqual([]);
 }, testTimeoutMs);
 

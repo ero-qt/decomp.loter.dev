@@ -102,7 +102,7 @@ test("title bar shows the site's logo as the app icon", async () => {
 }, testTimeoutMs);
 
 test("each page links the site's logo as its icon, which the site serves from its root", async () => {
-    for (const page of ['/index.html', '/privacy.html', '/404.html']) {
+    for (const page of ['/index.html', '/404.html']) {
         const icons = (await findSiteFile(page).text()).match(/<link rel="icon"[^>]*>/g);
 
         expect(icons).toEqual(['<link rel="icon" href="/favicon.svg" type="image/svg+xml">']);

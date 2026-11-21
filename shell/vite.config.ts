@@ -17,10 +17,9 @@ export default defineConfig({
         outDir: '../artifacts/site',
         emptyOutDir: true,
         assetsInlineLimit: 0,
-        // builds the privacy page and the page for a missing file as pages of their own because they have to work
-        // without the workbench's scripts
+        // builds the page for a missing file as a page of its own because it has to work without the workbench's scripts
         rolldownOptions: {
-            input: ['index.html', 'privacy.html', '404.html'].map(name => `${import.meta.dirname}/${name}`),
+            input: ['index.html', '404.html'].map(name => `${import.meta.dirname}/${name}`),
         },
     },
     plugins: [

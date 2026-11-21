@@ -3,6 +3,7 @@ import { failed, ok, type Reply } from '../../contract/reply';
 import { writeRows } from '../../contract/rows';
 import type { EngineHandlers } from '../../contract/serve';
 import { modifiersOf } from '../../contract/symbols';
+import { createRefusals } from '../shared/refusals';
 import { cHeader, disassemblyHeader, listClassParts, writeClassDocument } from './class-document';
 import { createDocumentCache, decompileFunction } from './code';
 import { describeRow, findFullName } from './describe';
@@ -41,6 +42,7 @@ interface LoadedModule {
 
 // the views whose documents the engine writes
 const views = manifest.views.map(view => view.id);
+const refusals = createRefusals('native');
 
 // counts the files that any handlers mounted, because a module outlives its handlers in tests and each file then gets
 // a folder of its own
@@ -189,7 +191,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
     function findFile(fileId: number): Reply<NativeFile> {
         const file = files.get(fileId);
 
-        return file ? ok(file) : failed(`The native engine doesn't have an open file with the id ${fileId}.`);
+        return file ? ok(file) : refusals.file(fileId);
     }
 
     return refuseModuleErrors({
@@ -278,7 +280,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
                 return found;
             }
             if (!views.includes(view)) {
-                return failed(`The native engine doesn't have the view ${view}.`);
+                return refusals.view(view);
             }
 
             const { module, writeLanguage } = await useLoaded();
@@ -288,10 +290,10 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
             const listing = readListing(module, file);
             const index = listing.indexes.get(key);
             if (index === undefined) {
-                return failed(`${file.name} doesn't have a symbol with the key 0x${(key >>> 0).toString(16)}.`);
+                return refusals.key(file.name, `0x${(key >>> 0).toString(16)}`);
             }
             if (!modifiersOf(listing.rows[index].flags).includes('document')) {
-                return failed(`${listing.rows[index].name} doesn't have its own document.`);
+                return refusals.noDocument(listing.rows[index].name);
             }
 
             const architecture = view === 'disassembly' ? checkArchitecture(module, file.session) : ok(undefined);
@@ -326,7 +328,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
         },
         async describe(target, view, signal) {
             if (!views.includes(view)) {
-                return failed(`The native engine doesn't have the view ${view}.`);
+                return refusals.view(view);
             }
 
             const found = await findTarget(target);
@@ -348,7 +350,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
         // doesn't exist before its decompile
         async findReferences(target, view, signal) {
             if (!views.includes(view)) {
-                return failed(`The native engine doesn't have the view ${view}.`);
+                return refusals.view(view);
             }
 
             const found = await findTarget(target);

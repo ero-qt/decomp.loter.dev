@@ -1,8 +1,8 @@
 import { failed, ok, type Reply } from '../../contract/reply';
 import type { EngineHandlers } from '../../contract/serve';
 import { writeRows } from '../../contract/rows';
-import { modifiersOf } from '../../contract/symbols';
 import { toHex } from '../shared/magic';
+import { createRefusals, findDocumentRowReply } from '../shared/refusals';
 import { writeJava } from './decompile';
 import { describeTarget, resolveTarget } from './describe';
 import { type JavaFile, readFile } from './files';
@@ -41,13 +41,7 @@ function loadBytecode(): Promise<typeof import('./bytecode')> {
     return bytecodeLoad;
 }
 
-function refuseView(view: string): Reply<never> {
-    return failed(`The Java engine doesn't have the view ${view}.`);
-}
-
-function refuseFile(fileId: number): Reply<never> {
-    return failed(`The Java engine doesn't have an open file with the id ${fileId}.`);
-}
+const refusals = createRefusals('Java');
 
 // checks the major version because a fat Mach-O file starts like a class file but has a small count of architectures
 // where a class file has its major version
@@ -64,7 +58,7 @@ export function createJavaHandlers(): EngineHandlers {
     function handleFile<Value>(fileId: number, handle: (file: OpenFile) => Reply<Value>): Reply<Value> {
         const file = files.get(fileId);
 
-        return file ? handle(file) : refuseFile(fileId);
+        return file ? handle(file) : refusals.file(fileId);
     }
 
     return {
@@ -83,7 +77,7 @@ export function createJavaHandlers(): EngineHandlers {
         // reads the whole file because a JAR read in parts takes seconds for a few thousand classes
         async open(fileId, name, file, signal) {
             if (file.size > maxFileBytes) {
-                return failed(`${name} has more than ${maxFileBytes / 1024 / 1024} MB, which the engine can't open.`);
+                return refusals.largeFile(name, maxFileBytes);
             }
 
             try {
@@ -95,7 +89,7 @@ export function createJavaHandlers(): EngineHandlers {
                 return read.error === undefined ? ok(undefined) : read;
             } catch (error) {
                 if (error instanceof RangeError) {
-                    return failed(`${name} doesn't fit in the engine's memory.`);
+                    return refusals.outOfMemory(name);
                 }
 
                 throw error;
@@ -116,18 +110,13 @@ export function createJavaHandlers(): EngineHandlers {
         },
         async read(fileId, key, view, signal) {
             const file = files.get(fileId);
-            const row = file?.rows[key];
             if (!file) {
-                return refuseFile(fileId);
+                return refusals.file(fileId);
             }
-            if (!views.includes(view)) {
-                return refuseView(view);
-            }
-            if (!row) {
-                return failed(`${file.name} doesn't have a symbol with the key ${key}.`);
-            }
-            if (!modifiersOf(row.flags).includes('document')) {
-                return failed(`${row.name} doesn't have its own document.`);
+
+            const row = findDocumentRowReply(file, key, view, views, refusals);
+            if (row.error !== undefined) {
+                return row;
             }
 
             if (view !== 'bytecode') {
@@ -144,18 +133,18 @@ export function createJavaHandlers(): EngineHandlers {
             return bytecode.writeBytecode(files, fileId, file.rowKeys[key], signal);
         },
         describe(target, view) {
-            return views.includes(view) ? ok(describeTarget(files, target)) : refuseView(view);
+            return views.includes(view) ? ok(describeTarget(files, target)) : refusals.view(view);
         },
         resolve(target) {
             return ok(resolveTarget(files, target));
         },
         findReferences(target, view, signal) {
-            return views.includes(view) ? ok(findUsers(files, target, signal)) : refuseView(view);
+            return views.includes(view) ? ok(findUsers(files, target, signal)) : refusals.view(view);
         },
         async listStrings(fileId, signal) {
             const file = files.get(fileId);
 
-            return file ? ok(await listStrings(fileId, file, signal)) : refuseFile(fileId);
+            return file ? ok(await listStrings(fileId, file, signal)) : refusals.file(fileId);
         },
     };
 }

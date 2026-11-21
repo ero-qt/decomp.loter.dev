@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 - The About tab shows the site's version and commit, with links to the release and the commit on GitHub.
 - Each deploy signs the hash of every site file through GitHub's artifact attestations and serves the hashes as `checksums.txt`, which the release also has.
+- `release/verify-live.ts` checks the live site's files against `checksums.txt`.
 
 ## [1.0.2] - 2026-11-21
 

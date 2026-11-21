@@ -101,6 +101,8 @@ jobs:
         run: rm -f "$RUNNER_TEMP/key"
       - name: check the live site
         run: bun release/check-live.ts https://decomp.loter.dev
+      - name: check the live files against the checksums
+        run: bun release/verify-live.ts https://decomp.loter.dev artifacts/site/checksums.txt
 
   release:
     needs: deploy

@@ -16,6 +16,10 @@ export default defineConfig({
         outDir: '../artifacts/site',
         emptyOutDir: true,
         assetsInlineLimit: 0,
+        // builds the privacy page as a page of its own because it has to work without the workbench's scripts
+        rolldownOptions: {
+            input: [`${import.meta.dirname}/index.html`, `${import.meta.dirname}/privacy.html`],
+        },
     },
     plugins: [
         {

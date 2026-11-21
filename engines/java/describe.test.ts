@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { findRow } from '../../contract/checking';
+import { findRow, missingView } from '../../contract/checking';
 import { formatTarget } from '../../contract/document';
 import type { Engine } from '../../contract/engine';
 import { EngineError } from '../../contract/reply';
@@ -100,7 +100,7 @@ test("java engine describes nothing for a closed file's row and refuses a view t
     await engine.close(fileId);
 
     expect(await engine.describe(target, 'java')).toBeNull();
-    await expect(engine.describe(target, 'bytecode')).rejects.toBeInstanceOf(EngineError);
+    await expect(engine.describe(target, missingView)).rejects.toBeInstanceOf(EngineError);
 });
 
 test('java engine resolves symbols outside the open files to rows of any open file, through super classes', async () => {

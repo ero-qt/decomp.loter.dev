@@ -16,7 +16,7 @@ The Java engine decompiles classes with [Vineflower](https://github.com/Vineflow
 
 ## @katana-project/asm
 
-The Java engine reads class files with [@katana-project/asm](https://github.com/katana-project/asm) 0.25.4. Its copyright line is "Copyright (c) 2024 Matouš Kučera". It's under the MIT License, whose text is at the end of this file.
+The Java engine reads class files and writes their bytecode with [@katana-project/asm](https://github.com/katana-project/asm) 0.25.4. Its copyright line is "Copyright (c) 2024 Matouš Kučera". It's under the MIT License, whose text is at the end of this file.
 
 ## ICSharpCode.Decompiler
 

@@ -1,5 +1,5 @@
 import { expect, mock, setDefaultTimeout, spyOn, test } from 'bun:test';
-import { findRow } from '../../contract/checking';
+import { findRow, missingView } from '../../contract/checking';
 import { type Document, formatTarget, readTokens, type Token } from '../../contract/document';
 import type { Engine } from '../../contract/engine';
 import { EngineError } from '../../contract/reply';
@@ -112,7 +112,7 @@ test("java engine refuses to read a closed file, a view that it doesn't have, a 
     const main = findRow(rows, 'drawing.Main', fixture.file.name).key;
     const classify = findRow(rows, 'drawing.Main.classify', fixture.file.name).key;
     const refusals = [
-        engine.read(fileId, main, 'bytecode'),
+        engine.read(fileId, main, missingView),
         engine.read(fileId, rows.length, 'java'),
         engine.read(fileId, classify, 'java'),
         engine.read(fileId, findRow(rows, 'drawing', fixture.file.name).key, 'java'),

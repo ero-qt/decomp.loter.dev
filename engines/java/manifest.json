@@ -3,7 +3,10 @@
   "name": "Java",
   "extensions": [".jar", ".war", ".class"],
   "magics": ["cafebabe", "504b0304"],
-  "views": [{ "id": "java", "title": "Java", "extension": ".java", "language": "java" }],
+  "views": [
+    { "id": "java", "title": "Java", "extension": ".java", "language": "java" },
+    { "id": "bytecode", "title": "Bytecode", "extension": ".bytecode", "language": "bytecode" }
+  ],
   "hasLinkedFiles": true,
   "cancelLimitMs": 10000
 }

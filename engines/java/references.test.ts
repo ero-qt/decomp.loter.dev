@@ -1,5 +1,5 @@
 import { expect, setDefaultTimeout, test } from 'bun:test';
-import { findRow } from '../../contract/checking';
+import { findRow, missingView } from '../../contract/checking';
 import { formatTarget } from '../../contract/document';
 import type { Engine } from '../../contract/engine';
 import { EngineError } from '../../contract/reply';
@@ -71,5 +71,5 @@ test("java engine refuses to find users in a view that it doesn't have", async (
     const engine = connect();
     const targetOf = await openFile(engine, fixture.file);
 
-    await expect(engine.findReferences(targetOf('drawing.Main'), 'bytecode')).rejects.toBeInstanceOf(EngineError);
+    await expect(engine.findReferences(targetOf('drawing.Main'), missingView)).rejects.toBeInstanceOf(EngineError);
 });

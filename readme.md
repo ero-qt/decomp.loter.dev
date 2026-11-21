@@ -6,6 +6,12 @@ The site's Privacy tab is about what stays in your browser and what the server k
 
 The site ships parts of other projects, which [third-party-notices.md](third-party-notices.md) lists with their licenses.
 
+## Checking the live site
+
+The About tab shows the site's version and commit. Each deploy signs the SHA-256 hash of every file it uploads through GitHub's artifact attestations and serves the hashes as [checksums.txt](https://decomp.loter.dev/checksums.txt). The GitHub release of that version has the same file.
+
+`gh attestation verify checksums.txt -R ero-qt/decomp.loter.dev` shows that the deploy workflow signed the release's copy and which tag it built. `bun release/verify-live.ts https://decomp.loter.dev checksums.txt` then fetches every file in that copy from the live site and compares it with its hash. Both only cover what the server sent you at that moment.
+
 ## Hosting
 
 Build the site with these commands:
@@ -31,7 +37,7 @@ The tests need a JDK 21 or later with `JAVA_HOME` set because they build the Jav
 
 The native engine's tests first build its WebAssembly module from the forks of Rizin and rz-ghidra in `engines/native/vendor`, which are git submodules. Run `git submodule update --init --recursive` after you clone the repo to get them. The build needs Emscripten 6.0.9, Meson, Ninja, git and a C and C++ compiler for the host. Put them on the `PATH`, or set `NATIVE_EMSCRIPTEN`, `NATIVE_MESON` and `NATIVE_NINJA` to their folders. The first build downloads Rizin's Meson subprojects into `engines/native/vendor/rizin/subprojects`, which Rizin's git ignores. Set `NATIVE_SOURCES_SEED` to the `engines/native/vendor` folder of another clone that has them, to copy them from there without a download. `NATIVE_JOBS` sets how many compiles run at once, 2 by default, so the build stays under 1 GB of memory. The first build takes about 17 minutes with 2 jobs, and a build after a change compiles only what changed.
 
-The native engine's tests build their fixture with clang, lld and LLVM's tools like `llvm-lipo`. They take each tool from the folder in `NATIVE_LLVM` when you set it, else from the `PATH`, also under a versioned name like `ld.lld-18`, which Linux packages often use. Only a tool that's in neither comes from Emscripten's LLVM, because emsdk's LLVM builds only WebAssembly. So install a full LLVM, like Ubuntu's `clang`, `lld` and `llvm` packages.
+The native engine's tests build their fixture with clang, lld and LLVM's tools like `llvm-lipo`. They take each tool from the folder in `NATIVE_LLVM` when you set it, else from the `PATH`, also under a versioned name like `ld.lld-18`, which Linux packages often use. Only a tool that's in neither comes from Emscripten's LLVM, because emsdk's LLVM only builds WebAssembly. So install a full LLVM, like Ubuntu's `clang`, `lld` and `llvm` packages.
 
 ---
 

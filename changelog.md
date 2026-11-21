@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-11-21
+
+### Added
+
+- The About tab shows the site's version and commit, with links to the release and the commit on GitHub.
+- Each deploy signs the hash of every site file through GitHub's artifact attestations and serves the hashes as `checksums.txt`, which the release also has.
+- `release/verify-live.ts` checks the live site's files against `checksums.txt`.
+- The Support tab points to Wise and Revolut for transfers from outside the EU.
+
 ## [1.0.2] - 2026-11-21
 
 ### Fixed
@@ -37,7 +46,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 - A native engine that opens ELF, PE and Mach-O programs and libraries with Rizin and Ghidra's decompiler and shows their functions and classes as C. It also reads a PE file's PDB file for names and types and finds the classes of stripped files through their RTTI.
 - A privacy notice about what stays in your browser and what the server keeps.
 
-[Unreleased]: https://github.com/ero-qt/decomp.loter.dev/compare/1.0.2...HEAD
+[Unreleased]: https://github.com/ero-qt/decomp.loter.dev/compare/1.0.3...HEAD
+[1.0.3]: https://github.com/ero-qt/decomp.loter.dev/compare/1.0.2...1.0.3
 [1.0.2]: https://github.com/ero-qt/decomp.loter.dev/compare/1.0.1...1.0.2
 [1.0.1]: https://github.com/ero-qt/decomp.loter.dev/compare/1.0.0...1.0.1
 [1.0.0]: https://github.com/ero-qt/decomp.loter.dev/releases/tag/1.0.0

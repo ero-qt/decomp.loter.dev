@@ -2,9 +2,13 @@ import { expect, test } from 'bun:test';
 import type { Page } from 'playwright';
 import { sampleFiles } from '../contract/fake';
 import { aboutTab, closeTab, findTab, openCircle, readActiveTab, readTabs, readUntil, waitForTabs } from './editor-testing';
+import { readBuildVersion } from './build-version';
 import { runCommand, startWorkbench, testTimeoutMs } from './page-testing';
 
 const openWorkbench = startWorkbench();
+// reads the version like the build does, so a tag's CI expects the tag and a build of an older commit fails
+const { version, commit } = readBuildVersion(process.env, () => Bun.spawnSync(['git', 'rev-parse', 'HEAD']).stdout.toString().trim());
+const repository = 'https://github.com/ero-qt/decomp.loter.dev';
 
 const pageLines = [
     'decomp.loter.dev',
@@ -18,6 +22,7 @@ const pageLines = [
         + 'to a native program, and a referenced assembly lets Go to definition and Find references reach into it.',
     'Keyboard shortcuts',
     'Source on GitHub',
+    `Version ${version} (${commit.slice(0, 7)})`,
 ];
 const formatRows = [
     ['Format', 'Files', 'Views'],
@@ -134,7 +139,26 @@ test("page fits the About tab's width in an 800 by 600 window and scrolls down t
     expect(await readPageWidthFit(page)).toEqual({ insidePaneWidth: true, scrollsSideways: false });
 }, testTimeoutMs);
 
-test('source link opens in a new tab without the opener and the referrer', async () => {
+test("footer shows the version right of the source link, on the source link's line", async () => {
+    const { page } = await openWorkbench();
+
+    const [source, version] = await findAboutPage(page).locator('.links p').evaluateAll(lines =>
+        lines.map(line => {
+            const box = line.getBoundingClientRect();
+            const range = document.createRange();
+            range.selectNodeContents(line);
+            const content = range.getBoundingClientRect();
+
+            return { top: Math.round(box.top), left: content.left, right: content.right, lineRight: box.right };
+        }),
+    );
+
+    expect(version.top).toBe(source.top);
+    expect(version.left).toBeGreaterThan(source.right);
+    expect(Math.round(version.right)).toBe(Math.round(version.lineRight));
+}, testTimeoutMs);
+
+test('source and version links open in a new tab without the opener and the referrer', async () => {
     const { page } = await openWorkbench();
 
     const linkValues = await findAboutPage(page).getByRole('link').evaluateAll(links =>
@@ -142,7 +166,9 @@ test('source link opens in a new tab without the opener and the referrer', async
     );
 
     expect(linkValues).toEqual([
-        ['GitHub', 'https://github.com/ero-qt/decomp.loter.dev', '_blank', 'noopener noreferrer'],
+        ['GitHub', repository, '_blank', 'noopener noreferrer'],
+        ...(version === 'dev' ? [] : [[version, `${repository}/releases/tag/${version}`, '_blank', 'noopener noreferrer']]),
+        [commit.slice(0, 7), `${repository}/commit/${commit}`, '_blank', 'noopener noreferrer'],
     ]);
 }, testTimeoutMs);
 

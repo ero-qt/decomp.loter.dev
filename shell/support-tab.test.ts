@@ -14,7 +14,8 @@ const supportTab = { label: 'Support', isPreview: false };
 const noteLines = [
     'Support this project',
     'decomp.loter.dev runs on Uberspace for €9 a month. Uberspace is a small, owner-managed hosting company from Germany whose '
-        + "data centers run only on renewable energy. A bank transfer with the reference below pays for the server's uptime.",
+        + "data centers run only on renewable energy. A bank transfer with the reference below pays for the server's uptime. "
+        + 'From outside the EU, you can use a service like Wise or Revolut.',
     'Account holder',
     transfer.name,
     'IBAN',
@@ -237,7 +238,7 @@ test('note leaves out the balance status without an error of its own when `balan
     expect(errors).toEqual([]);
 }, testTimeoutMs);
 
-test('Uberspace and GitHub links open in a new tab without the opener and the referrer', async () => {
+test('Uberspace, Wise, Revolut and GitHub links open in a new tab without the opener and the referrer', async () => {
     const { page } = await openWorkbench();
     await openSupport(page);
 
@@ -249,6 +250,8 @@ test('Uberspace and GitHub links open in a new tab without the opener and the re
 
     expect(linkValues).toEqual([
         ['Uberspace', 'https://uberspace.de', '_blank', 'noopener noreferrer'],
+        ['Wise', 'https://wise.com', '_blank', 'noopener noreferrer'],
+        ['Revolut', 'https://www.revolut.com', '_blank', 'noopener noreferrer'],
         ['GitHub', 'https://github.com/sponsors/ero-qt', '_blank', 'noopener noreferrer'],
     ]);
 }, testTimeoutMs);

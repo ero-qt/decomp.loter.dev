@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { siteHeaders } from '../shell/headers';
 import { readLongCachePatterns } from '../host/htaccess-testing';
 import { findSiteFile } from '../shell/page-testing';
+import { listChecksums } from './checksums';
 import { checkSiteResponses } from './check-live';
 
 const siteFolder = fileURLToPath(new URL('../artifacts/site', import.meta.url));
@@ -13,20 +14,28 @@ let server: ReturnType<typeof Bun.serve> | undefined;
 afterEach(() => server?.stop());
 
 /**
- * Serves the built site like Apache with host/htaccess, with each path and text of `files` as a file of the site, after
- * `change` changed each response's status and headers. Sends `notFoundPage` for a missing file.
+ * Serves the built site like Apache with host/htaccess, with the built site's checksums and each path and text of
+ * `files` as a file of the site, or as a missing file for `undefined`, after `change` changed each response's status
+ * and headers. Sends `notFoundPage` for a missing file.
  */
 function serveLikeHtaccess(
     change: (path: string, status: number, headers: Headers) => number = (path, status) => status,
-    files: Record<string, string> = {},
+    files: Record<string, string | undefined> = {},
     notFoundPage: string | Blob = findSiteFile('/404.html', new URL(`file://${siteFolder}/`)),
 ) {
+    const served: Record<string, string | undefined> = { '/checksums.txt': listChecksums(siteFolder), ...files };
     server = Bun.serve({
         hostname: '127.0.0.1',
         port: 0,
         async fetch(request) {
             const { pathname } = new URL(request.url);
-            const file = files[pathname] ?? findSiteFile(pathname, new URL(`file://${siteFolder}/`));
+            const file = pathname in served ? served[pathname] : findSiteFile(pathname, new URL(`file://${siteFolder}/`));
+            if (file === undefined) {
+                const headers = new Headers(siteHeaders);
+
+                return new Response(notFoundPage, { status: change(pathname, 404, headers), headers });
+            }
+
             const isFound = typeof file === 'string' || (!pathname.endsWith('/assets/') && (await file.exists()));
             const headers = new Headers(siteHeaders);
             if (isFound) {
@@ -48,6 +57,20 @@ function serveLikeHtaccess(
 
 test('live check passes a host that answers like host/htaccess', async () => {
     expect(await checkSiteResponses(serveLikeHtaccess(), siteFolder)).toEqual([]);
+});
+
+test("live check finds a missing checksums file and checksums that don't match the built site", async () => {
+    const missing = serveLikeHtaccess(undefined, { '/checksums.txt': undefined });
+
+    expect(await checkSiteResponses(missing, siteFolder)).toEqual([
+        "/checksums.txt isn't the site's checksums",
+        '/checksums.txt has the status 404, not 200',
+        '/checksums.txt sends Cache-Control null, not "no-cache"',
+    ]);
+
+    const changed = serveLikeHtaccess(undefined, { '/checksums.txt': `${'0'.repeat(64)}  index.html\n` });
+
+    expect(await checkSiteResponses(changed, siteFolder)).toEqual(["/checksums.txt isn't the site's checksums"]);
 });
 
 test("live check finds a missing file without the site's headers", async () => {

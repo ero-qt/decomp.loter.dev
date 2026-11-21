@@ -108,7 +108,8 @@ test("dotnet engine's worker in the page stops a search for users once the page 
     );
     const value = formatTarget({ fileId: 1, key: findRow(await openInPage(page, assembly), 'Target.Value', assembly.name).key });
 
-    // times a search first because the worker only sees the cancel once the search passed the 50 ms between its checks
+    // times a search first because the worker only sees the cancel once the search passed the 50 ms between its checks,
+    // so a search must last past the cancel's delay and 2 checks for the cancel to stop it halfway
     const [searchMs, ...replies] = await page.evaluate(async target => {
         const { callEngine, cancelEngine } = window as unknown as TestWindow;
         const search = { method: 'findReferences', args: [target, 'csharp'] };
@@ -122,7 +123,7 @@ test("dotnet engine's worker in the page stops a search for users once the page 
         return [end - start, first.reply.value.length, second.reply.error];
     }, value);
 
-    expect(searchMs).toBeGreaterThan(200);
+    expect(searchMs).toBeGreaterThan(5 + 2 * 50);
     expect(replies).toEqual([3000, 'The call was canceled.']);
 }, testTimeoutMs * 4);
 

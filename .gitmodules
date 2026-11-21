@@ -1,0 +1,8 @@
+[submodule "engines/native/vendor/rizin"]
+	path = engines/native/vendor/rizin
+	url = https://github.com/ero-qt/rizin
+	branch = decomp
+[submodule "engines/native/vendor/rz-ghidra"]
+	path = engines/native/vendor/rz-ghidra
+	url = https://github.com/ero-qt/rz-ghidra
+	branch = decomp

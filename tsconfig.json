@@ -12,5 +12,6 @@
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true
   },
-  "include": ["contract", "engines", "host", "shell"]
+  "include": ["contract", "engines", "host", "shell"],
+  "exclude": ["engines/native/vendor"]
 }

@@ -149,6 +149,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          submodules: recursive
       - name: Set up Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
@@ -176,6 +177,9 @@ jobs:
       - name: Read the tools' versions
         id: tools
         run: echo "hash=$({ emcc --version; meson --version; ninja --version; } | sha256sum | cut -c 1-16)" >> "$GITHUB_OUTPUT"
+      - name: Read the submodules' commits
+        id: submodules
+        run: echo "hash=$(git submodule status --recursive | sha256sum | cut -c 1-16)" >> "$GITHUB_OUTPUT"
       # keeps the build of Rizin and rz-ghidra, because the first build takes about 17 minutes, and
       # restores the last build with the same tools after a change, whose stamps then rebuild only what changed
       - name: Cache the native build
@@ -183,8 +187,8 @@ jobs:
         with:
           path: artifacts/native
           key: >-
-            native-${{ runner.os }}-${{ steps.tools.outputs.hash }}-${{ hashFiles('engines/native/build/**',
-            'engines/native/src/**', 'engines/native/build.ts') }}
+            native-${{ runner.os }}-${{ steps.tools.outputs.hash }}-${{ steps.submodules.outputs.hash }}-${{
+            hashFiles('engines/native/build/**', 'engines/native/src/**', 'engines/native/build.ts') }}
           restore-keys: native-${{ runner.os }}-${{ steps.tools.outputs.hash }}-
       - name: Install packages
         run: bun install --frozen-lockfile --ignore-scripts

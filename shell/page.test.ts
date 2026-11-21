@@ -199,7 +199,7 @@ test('files that the workbench loads to start are at most 2.5 MB with brotli', a
 test("page has a description, the canonical link and Open Graph tags with the site's URL for search engines", async () => {
     const { page } = await openWorkbench();
     const readContent = (selector: string) => page.locator(selector).getAttribute('content');
-    const description = 'decomp.loter.dev is a decompiler by loter that runs entirely in your browser.';
+    const description = 'decomp.loter.dev is a decompiler that runs entirely in your browser.';
 
     expect(await readContent('meta[name=description]')).toBe(description);
     expect(await page.locator('link[rel=canonical]').getAttribute('href')).toBe('https://decomp.loter.dev/');

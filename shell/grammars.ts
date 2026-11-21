@@ -11,6 +11,8 @@ import disassemblyConfigurationUrl from './grammars/disassembly.language-configu
 import disassemblyGrammarUrl from './grammars/disassembly.tmLanguage.json?url';
 import ilConfigurationUrl from './grammars/il.language-configuration.json?url';
 import ilGrammarUrl from './grammars/il.tmLanguage.json?url';
+import listingConfigurationUrl from './grammars/listing.language-configuration.json?url';
+import listingGrammarUrl from './grammars/listing.tmLanguage.json?url';
 
 /**
  * A language's TextMate grammar and language configuration, which the workbench fetches for the language's first
@@ -33,4 +35,5 @@ export const grammars: Record<string, Grammar> = {
     disassembly: { scopeName: 'source.disassembly', grammarUrl: disassemblyGrammarUrl, configurationUrl: disassemblyConfigurationUrl },
     il: { scopeName: 'source.il', grammarUrl: ilGrammarUrl, configurationUrl: ilConfigurationUrl },
     java: { scopeName: 'source.java', grammarUrl: javaGrammarUrl, configurationUrl: javaConfigurationUrl },
+    listing: { scopeName: 'source.listing', grammarUrl: listingGrammarUrl, configurationUrl: listingConfigurationUrl },
 };

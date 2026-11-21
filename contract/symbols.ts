@@ -24,6 +24,8 @@ export const kinds = [
     'section',
     'reference',
     'resource',
+    'function',
+    'variable',
 ] as const;
 
 /**

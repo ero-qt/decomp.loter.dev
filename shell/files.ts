@@ -43,6 +43,22 @@ export function readErrorText(error: unknown, crashText: string): string {
     return crashText;
 }
 
+// the languages whose grammar and TextMate worker already started
+const warmedLanguages = new Set<string>();
+
+/**
+ * Opens an empty document in each language of the engine's views, once per language, so the workbench fetches the
+ * language's grammar and starts the TextMate worker while the engine opens the file, not after the first click.
+ */
+function warmLanguages(siteEngine: SiteEngine) {
+    for (const { language } of siteEngine.manifest.views) {
+        if (!warmedLanguages.has(language)) {
+            warmedLanguages.add(language);
+            void vscode.workspace.openTextDocument({ language, content: '' });
+        }
+    }
+}
+
 /** Keeps the open files, each in the engine that claimed the file, and the files' listings. */
 export class OpenFiles {
     // file's path -> the open file
@@ -93,6 +109,7 @@ export class OpenFiles {
                 return false;
             }
 
+            warmLanguages(file.siteEngine);
             await this.close(this.filesByPath.get(picked.path));
             file.fileId = await file.siteEngine.engine.open(picked.file.name, picked.file);
         } catch (error) {

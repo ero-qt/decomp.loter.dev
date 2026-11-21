@@ -48,17 +48,14 @@ test("dropped assembly lists its namespace and types, and a click on a type open
     expect(listOtherHostRequests(page, requests)).toEqual([]);
 }, testTimeoutMs * 2);
 
-test("workbench loads the .NET worker and runtime only after a drop, and the C# grammar only for a C# document", async () => {
+test('workbench loads the .NET worker, the runtime and the C# grammar only after a drop', async () => {
     const { page, requests } = await openWorkbench();
     const startRequests = [...requests];
 
     await dropFiles(page, { 'Drawing.dll': drawing });
     await expandRows(page, 'Drawing.dll', 'Drawing');
+    await readUntil(async () => requests.some(url => /csharp\.tmLanguage/.test(url)), true);
     const listedRequests = [...requests];
-
-    await findRow(page, 'Painter').click();
-    await waitForTabs(page, 'About', 'Painter.cs');
-    await readUntil(() => readWordColor(page, painterLine, 'public'), '#609fd2');
     const grammar = requests.filter(url => /csharp\.tmLanguage/.test(url));
 
     expect(startRequests.filter(url => dotnetFiles.test(url))).toEqual([]);
@@ -66,7 +63,7 @@ test("workbench loads the .NET worker and runtime only after a drop, and the C# 
     expect(listedRequests.some(url => url.endsWith('/engines/dotnet/_framework/dotnet.js'))).toBe(true);
     expect(listedRequests.some(url => /\/engines\/dotnet\/_framework\/.+\.wasm$/.test(url))).toBe(true);
     expect(grammar.length).toBeGreaterThanOrEqual(1);
-    expect(listedRequests.filter(url => grammar.includes(url))).toEqual([]);
+    expect(startRequests.filter(url => grammar.includes(url))).toEqual([]);
 }, testTimeoutMs * 2);
 
 test("Show IL to the Side in Painter's menu opens Painter.il beside Painter.cs with the theme's opcode color", async () => {

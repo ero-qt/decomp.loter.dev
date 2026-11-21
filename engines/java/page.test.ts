@@ -54,13 +54,14 @@ test("Java's keywords, strings and numbers have the theme's colors from the Java
 }, testTimeoutMs);
 
 test(
-    'workbench loads the Java grammar, its wasm, the TextMate worker and the Java worker only after start, and Vineflower only for a Java document',
+    'workbench loads the Java grammar, its wasm and the TextMate worker once a Java file opens, and Vineflower only for a Java document',
     async () => {
         const { page, requests } = await openWorkbench();
         const startRequests = [...requests];
 
         await dropFiles(page, { 'drawing.jar': drawing });
         await expandRows(page, 'drawing.jar', 'drawing');
+        const isGrammarLoaded = await readUntil(async () => requests.some(url => /java\.tmLanguage/.test(url)), true);
         const listedRequests = [...requests];
 
         await findRow(page, 'Main').click();
@@ -74,6 +75,7 @@ test(
         expect(textMateWorkers).toHaveLength(1);
         expect(workers.filter(url => javaWorker.test(url))).toHaveLength(1);
         expect(grammar.length).toBeGreaterThanOrEqual(2);
+        expect(isGrammarLoaded).toBe(true);
         expect(vineflower).toHaveLength(1);
         expect(listedRequests.filter(url => vineflower.includes(url))).toEqual([]);
         expect(startRequests.filter(url => [...workers, ...grammar].includes(url))).toEqual([]);

@@ -13,9 +13,11 @@ const pageLines = [
     'Drop files or folders anywhere on the page, or use Open Files and Open Folder in the Symbols view. Click a symbol to open it, '
         + 'and right-click its tab to open its other views to the side.',
     'Supported files',
+    'Missing files',
+    'A file can list the files it needs below its row in the Symbols view. Click one to load it. A PDB file adds names and types '
+        + 'to a native program, and a referenced assembly lets Go to definition and Find references reach into it.',
     'Keyboard shortcuts',
     'Source on GitHub',
-    'Privacy',
 ];
 const formatRows = [
     ['Format', 'Files', 'Views'],
@@ -87,6 +89,25 @@ test("About tab's tables list the supported files with their views and the keybo
     expect(await readTableRows(page, 'Keyboard shortcuts')).toEqual(shortcutRows);
 }, testTimeoutMs);
 
+test("Supported files table shows each file's views on one line in an 800 by 600 window", async () => {
+    const { page } = await openWorkbench();
+
+    await page.setViewportSize({ width: 800, height: 600 });
+    await page.waitForFunction(() => document.querySelector('.part.editor')!.getBoundingClientRect().width < 800);
+
+    const table = findAboutPage(page).locator('h3:text-is("Supported files") + table');
+    const lineCounts = await table.locator('td:last-child').evaluateAll(cells =>
+        cells.map(cell => {
+            const range = document.createRange();
+            range.selectNodeContents(cell);
+
+            return new Set([...range.getClientRects()].map(rect => Math.round(rect.top))).size;
+        }),
+    );
+
+    expect(lineCounts).toEqual([1, 1, 1]);
+}, testTimeoutMs);
+
 test("page fits the About tab's width in an 800 by 600 window and scrolls down to the source link in a 300 pixel high window", async () => {
     const { page } = await openWorkbench();
 
@@ -113,7 +134,7 @@ test("page fits the About tab's width in an 800 by 600 window and scrolls down t
     expect(await readPageWidthFit(page)).toEqual({ insidePaneWidth: true, scrollsSideways: false });
 }, testTimeoutMs);
 
-test('source and privacy links open in a new tab without the opener and the referrer', async () => {
+test('source link opens in a new tab without the opener and the referrer', async () => {
     const { page } = await openWorkbench();
 
     const linkValues = await findAboutPage(page).getByRole('link').evaluateAll(links =>
@@ -122,7 +143,6 @@ test('source and privacy links open in a new tab without the opener and the refe
 
     expect(linkValues).toEqual([
         ['GitHub', 'https://github.com/ero-qt/decomp.loter.dev', '_blank', 'noopener noreferrer'],
-        ['Privacy', new URL('privacy.html', page.url()).href, '_blank', 'noopener noreferrer'],
     ]);
 }, testTimeoutMs);
 

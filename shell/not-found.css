@@ -4,7 +4,6 @@
     --foreground: light-dark(#1f1f1f, #cccccc);
     --muted: light-dark(#616161, #9d9d9d);
     --background: light-dark(#ffffff, #181818);
-    --code-background: light-dark(#f0f0f0, #2b2b2b);
     --link: light-dark(#005fb8, #4daafc);
 }
 
@@ -30,22 +29,8 @@ h1 {
     font-weight: 600;
 }
 
-h2 {
-    margin: 20px 0 6px;
-    color: var(--foreground);
-    font-size: 15px;
-    font-weight: 600;
-}
-
 p {
     margin: 4px 0;
-}
-
-code {
-    padding: 1px 3px;
-    border-radius: 3px;
-    background: var(--code-background);
-    font-family: ui-monospace, monospace;
 }
 
 a {

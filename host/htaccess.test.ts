@@ -9,15 +9,21 @@ const siteFolder = new URL('../artifacts/site/', import.meta.url).pathname;
 const scriptFiles = ['a.php', 'A.PHP', 'a.php3', 'a.php8', 'a.phtml', 'a.phar', 'a.pht', 'a.cgi', 'a.pl', 'a.py', 'a.sh', 'a.shtml', 'a.inc'];
 // the files whose names stay the same from build to build
 const lastingNames = new RegExp(
-    '^/(index\\.html|privacy\\.html|robots\\.txt|sitemap\\.xml|balance\\.json|engines/index\\.json|engines/[^/]+/(manifest\\.json|worker\\.js)'
+    '^/(index\\.html|404\\.html|favicon\\.svg|robots\\.txt|sitemap\\.xml|balance\\.json'
+        + '|engines/index\\.json|engines/[^/]+/(manifest\\.json|worker\\.js)'
         + '|engines/dotnet/(_framework/dotnet\\.js|THIRD-PARTY-NOTICES\\.TXT)|engines/native/(rizin\\.mjs|rizin\\.wasm|(share|sleigh|source)/.+))$',
 );
+
+// matches a `Header` directive with its condition, its action, the header's name, its value and its `env=` condition
+const headerDirective = /^Header (?:(always|onsuccess) )?(\w+) (\S+)(?: "(.*)")?(?: env=(\S+))?$/;
 
 interface HeaderDirective {
     condition: string;
     action: string;
     name: string;
     value: string | undefined;
+    /** The environment variable that the directive needs, like `long_cache`, or `!long_cache` for its absence. */
+    env: string | undefined;
     /** The names of the blocks around the directive, like `If`, from the outside in. */
     blocks: string[];
 }
@@ -31,13 +37,13 @@ function readHeaderDirectives(): HeaderDirective[] {
     for (const line of lines) {
         const [, closed] = /^<\/(\w+)>$/.exec(line) ?? [];
         const [, opened] = /^<(\w+)[\s>]/.exec(line) ?? [];
-        const [, condition = '', action, name, value] = /^Header (?:(always|onsuccess) )?(\w+) (\S+)(?: "(.*)")?$/.exec(line) ?? [];
+        const [, condition = '', action, name, value, env] = headerDirective.exec(line) ?? [];
         if (closed) {
             blocks.pop();
         } else if (opened) {
             blocks.push(opened);
         } else if (action) {
-            directives.push({ condition, action, name, value, blocks: [...blocks] });
+            directives.push({ condition, action, name, value, env, blocks: [...blocks] });
         }
     }
 
@@ -59,14 +65,24 @@ test("htaccess sets each of the site's headers once, outside each block, with ev
     const names = Object.keys(siteHeaders);
     const securityDirectives = readHeaderDirectives().filter(({ name }) => names.includes(name));
 
-    expect(securityDirectives.map(({ condition, action, blocks }) => [condition, action, blocks])).toEqual(names.map(() => ['always', 'set', []]));
+    expect(securityDirectives.map(({ condition, action, env, blocks }) => [condition, action, env, blocks])).toEqual(
+        names.map(() => ['always', 'set', undefined, []]),
+    );
     expect(Object.fromEntries(securityDirectives.map(({ name, value }) => [name, value]))).toEqual(siteHeaders);
 });
 
-test('htaccess sends the cache header only with a found file', () => {
+// checks that each cache header sits outside each block, because Apache drops the `always` headers of a request that
+// matches an `<If>` with a `Header` inside, and that the page for a missing file, which Apache serves through a
+// redirect, doesn't get one
+test('htaccess sends the cache header only with a found file, outside each block, by the mark of a fingerprinted file', () => {
     const cacheDirectives = readHeaderDirectives().filter(({ name }) => name === 'Cache-Control');
 
-    expect(cacheDirectives.map(({ condition, action }) => [condition, action])).toEqual(Array(4).fill(['', 'set']));
+    expect(cacheDirectives.map(({ condition, action, value, env, blocks }) => [condition, action, value, env, blocks])).toEqual([
+        ['', 'set', 'public, max-age=31536000, immutable', 'long_cache', []],
+        ['', 'set', 'no-cache', '!long_cache', []],
+        ['', 'unset', undefined, 'REDIRECT_STATUS', []],
+    ]);
+    expect(lines.filter(line => /^<(Else)?If/.test(line))).toEqual([]);
 });
 
 test('htaccess keeps each file with a fingerprint for a year and lets browsers ask again for each other file of the site', async () => {
@@ -79,6 +95,11 @@ test('htaccess keeps each file with a fingerprint for a year and lets browsers a
     expect(paths.filter(path => path.startsWith('/assets/')).every(isKeptLong)).toBe(true);
     expect(paths.filter(path => /^\/engines\/dotnet\/_framework\/(?!dotnet\.js$)/.test(path)).every(isKeptLong)).toBe(true);
     expect(paths.filter(path => path.startsWith('/engines/java/vf.runtime-')).map(isKeptLong)).toEqual([true]);
+});
+
+test("htaccess answers a missing file with the site's page for it", async () => {
+    expect(lines).toContain('ErrorDocument 404 /404.html');
+    expect(await Bun.file(`${siteFolder}/404.html`).exists()).toBe(true);
 });
 
 test('htaccess sends wasm and module scripts with their types', () => {

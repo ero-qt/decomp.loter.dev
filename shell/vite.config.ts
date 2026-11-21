@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
 import darkTheme from './themes/dark.json' with { type: 'json' };
 import { deriveLightTheme } from './themes/light.ts';
@@ -16,12 +17,31 @@ export default defineConfig({
         outDir: '../artifacts/site',
         emptyOutDir: true,
         assetsInlineLimit: 0,
-        // builds the privacy page as a page of its own because it has to work without the workbench's scripts
+        // builds the page for a missing file as a page of its own because it has to work without the workbench's scripts
         rolldownOptions: {
-            input: [`${import.meta.dirname}/index.html`, `${import.meta.dirname}/privacy.html`],
+            input: ['index.html', '404.html'].map(name => `${import.meta.dirname}/${name}`),
         },
     },
     plugins: [
+        {
+            name: 'favicon',
+            // writes the logo into the site's root because browsers look for a page's icon there
+            buildStart() {
+                this.emitFile({ type: 'asset', fileName: 'favicon.svg', source: readFileSync(`${import.meta.dirname}/logo.svg`) });
+            },
+        },
+        {
+            name: 'absolute-links',
+            enforce: 'post',
+            // links the page for a missing file's files from the site's root because the host serves the page at the
+            // missing file's path, which can sit in a folder
+            generateBundle(options, bundle) {
+                const page = bundle['404.html'];
+                if (page?.type === 'asset') {
+                    page.source = String(page.source).replaceAll('="./', '="/');
+                }
+            },
+        },
         {
             name: 'built-files',
             enforce: 'pre',

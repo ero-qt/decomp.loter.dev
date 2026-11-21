@@ -2,7 +2,7 @@
 
 decomp.loter.dev is a decompiler that runs entirely in your browser.
 
-The [privacy notice](https://decomp.loter.dev/privacy.html) is about what stays in your browser and what the server keeps.
+The site's Privacy tab is about what stays in your browser and what the server keeps.
 
 The site ships parts of other projects, which [third-party-notices.md](third-party-notices.md) lists with their licenses.
 

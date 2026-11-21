@@ -14,11 +14,12 @@ afterEach(() => server?.stop());
 
 /**
  * Serves the built site like Apache with host/htaccess, with each path and text of `files` as a file of the site, after
- * `change` changed each response's status and headers.
+ * `change` changed each response's status and headers. Sends `notFoundPage` for a missing file.
  */
 function serveLikeHtaccess(
     change: (path: string, status: number, headers: Headers) => number = (path, status) => status,
     files: Record<string, string> = {},
+    notFoundPage: string | Blob = findSiteFile('/404.html', new URL(`file://${siteFolder}/`)),
 ) {
     server = Bun.serve({
         hostname: '127.0.0.1',
@@ -38,7 +39,7 @@ function serveLikeHtaccess(
 
             const status = change(pathname, isFound ? 200 : 404, headers);
 
-            return new Response(isFound ? file : null, { status, headers });
+            return new Response(isFound ? file : notFoundPage, { status, headers });
         },
     });
 
@@ -62,6 +63,15 @@ test("live check finds a missing file without the site's headers", async () => {
         `/missing sends Content-Security-Policy null, not ${JSON.stringify(siteHeaders['Content-Security-Policy'])}`,
         `/assets/missing-12345678.js sends Content-Security-Policy null, not ${JSON.stringify(siteHeaders['Content-Security-Policy'])}`,
         `/balance.json sends Content-Security-Policy null, not ${JSON.stringify(siteHeaders['Content-Security-Policy'])}`,
+    ]);
+});
+
+test("live check finds a missing file without the site's page for it, like Apache's own page", async () => {
+    const url = serveLikeHtaccess(undefined, undefined, '<h1>Object not found!</h1>');
+
+    expect(await checkSiteResponses(url, siteFolder)).toEqual([
+        "/missing isn't the built 404.html",
+        "/assets/missing-12345678.js isn't the built 404.html",
     ]);
 });
 
@@ -117,19 +127,34 @@ test("live check accepts a host with the balance and a host without it, which on
     expect(await checkSiteResponses(serveLikeHtaccess(), siteFolder)).toEqual([]);
 });
 
-test('live check finds a JSON file without its type and a missing privacy page', async () => {
+test('live check finds a JSON file without its type', async () => {
     const url = serveLikeHtaccess((path, status, headers) => {
         if (path.endsWith('.json')) {
             headers.set('Content-Type', 'text/plain');
         }
 
-        return path === '/privacy.html' ? 404 : status;
+        return status;
     });
 
     expect(await checkSiteResponses(url, siteFolder)).toEqual([
-        '/privacy.html has the status 404, not 200',
         '/engines/index.json sends Content-Type "text/plain", not application/json',
     ]);
+});
+
+test('live check finds a missing favicon and a favicon without its type', async () => {
+    const missing = serveLikeHtaccess((path, status) => (path === '/favicon.svg' ? 404 : status));
+
+    expect(await checkSiteResponses(missing, siteFolder)).toEqual(['/favicon.svg has the status 404, not 200']);
+
+    const untyped = serveLikeHtaccess((path, status, headers) => {
+        if (path === '/favicon.svg') {
+            headers.set('Content-Type', 'text/plain');
+        }
+
+        return status;
+    });
+
+    expect(await checkSiteResponses(untyped, siteFolder)).toEqual(['/favicon.svg sends Content-Type "text/plain", not image/svg+xml']);
 });
 
 test("live check finds a page that isn't the built index.html, like a page of an older release", async () => {

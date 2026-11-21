@@ -194,14 +194,20 @@ body,
 
 /* pushes the links to the bottom of the tab when the tab is taller than the page's text */
 .tab-page .links {
+    display: flex;
     margin-top: auto;
     padding-top: 32px;
 }
 
 .tab-page .links p {
+    flex: 1 0 auto;
     margin: 0;
     padding-top: 6px;
     border-top: 1px solid var(--vscode-widget-border, var(--vscode-editorWidget-border));
+}
+
+.tab-page .links p + p {
+    text-align: right;
 }
 
 .tab-page .links .codicon {

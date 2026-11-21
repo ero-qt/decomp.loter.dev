@@ -1,5 +1,7 @@
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
+import { readBuildVersion, writeVersionLine } from './build-version.ts';
 import darkTheme from './themes/dark.json' with { type: 'json' };
 import { deriveLightTheme } from './themes/light.ts';
 import { drawTransferCode } from './transfer-code.ts';
@@ -28,6 +30,19 @@ export default defineConfig({
             // writes the logo into the site's root because browsers look for a page's icon there
             buildStart() {
                 this.emitFile({ type: 'asset', fileName: 'favicon.svg', source: readFileSync(`${import.meta.dirname}/logo.svg`) });
+            },
+        },
+        {
+            name: 'version',
+            // writes the version into the About tab's template because the version comes from the build's commit
+            transformIndexHtml(html, { filename }) {
+                if (!filename.endsWith('index.html')) {
+                    return html;
+                }
+
+                const version = readBuildVersion(process.env, () => execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim());
+
+                return html.replace('<!-- version -->', writeVersionLine(version));
             },
         },
         {

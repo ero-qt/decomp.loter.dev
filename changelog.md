@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- The About tab shows the site's version and commit, with links to the release and the commit on GitHub.
+
 ## [1.0.2] - 2026-11-21
 
 ### Fixed

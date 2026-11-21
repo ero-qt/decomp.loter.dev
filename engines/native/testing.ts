@@ -30,7 +30,12 @@ export function useNativeEngine(): () => Engine {
     beforeEach(() => useInThreadWorker(() => createNativeHandlers(loadTestModule, mountInMemory), () => testModule?.readMemoryBytes() ?? 0));
     afterEach(restoreWorker);
 
-    return () => connectEngine('native.js', { timeLimitMs: 120000, cancelLimitMs: 30000 });
+    return connectNative;
+}
+
+/** Connects a test to the native engine in the in-thread worker that the test serves. */
+export function connectNative(): Engine {
+    return connectEngine('native.js', { timeLimitMs: 120000, cancelLimitMs: 30000 });
 }
 
 let moduleLoad: Promise<NativeModule> | undefined;

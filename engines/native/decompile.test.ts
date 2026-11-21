@@ -3,9 +3,10 @@ import { readTokens, type Token } from '../../contract/document';
 import type { Engine } from '../../contract/engine';
 import { readRows, type Row } from '../../contract/rows';
 import { modifiersOf } from '../../contract/symbols';
+import { LoadError } from '../shared/loading';
 import { mountInMemory } from './files';
 import { createNativeHandlers } from './handlers';
-import { ModuleError, type NativeModule } from './module';
+import type { NativeModule } from './module';
 import { loadTestModule, readFixture, useNativeEngine } from './testing';
 
 const connect = useNativeEngine();
@@ -133,7 +134,7 @@ test("a failed fetch of a processor's language becomes a failed reply, and the n
         ...module,
         async fetchFile(path) {
             if (isFailing && path.endsWith('.sla')) {
-                throw new ModuleError(`The native engine couldn't load ${path}: 503 Service Unavailable`);
+                throw new LoadError(`The native engine couldn't load ${path}: 503 Service Unavailable`);
             }
 
             return module.fetchFile(path);

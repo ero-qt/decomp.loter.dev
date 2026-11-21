@@ -1,6 +1,7 @@
 import { failed, ok, type Reply } from '../../contract/reply';
 import type { EngineHandlers } from '../../contract/serve';
 import { writeRows } from '../../contract/rows';
+import { loadOnce } from '../shared/loading';
 import { toHex } from '../shared/magic';
 import { createRefusals, findDocumentRowReply } from '../shared/refusals';
 import { writeJava } from './decompile';
@@ -28,18 +29,9 @@ const maxFileBytes = 512 * 1024 * 1024;
 // the views whose documents the engine writes
 const views = manifest.views.map(view => view.id);
 
-let bytecodeLoad: Promise<typeof import('./bytecode')> | undefined;
-
 // imports the bytecode writer with the disassembler on the first bytecode read because listing a file and its Java
 // don't need them, and imports them again after a failed import because the connection can come back
-function loadBytecode(): Promise<typeof import('./bytecode')> {
-    bytecodeLoad ??= import('./bytecode').catch(error => {
-        bytecodeLoad = undefined;
-        throw error;
-    });
-
-    return bytecodeLoad;
-}
+const loadBytecode = loadOnce<typeof import('./bytecode')>(() => import('./bytecode'));
 
 const refusals = createRefusals('Java');
 

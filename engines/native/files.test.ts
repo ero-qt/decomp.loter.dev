@@ -1,12 +1,35 @@
 import { expect, test } from 'bun:test';
+import { testLoadFailure } from '../../contract/conformance-testing';
+import { useInThreadWorker } from '../../contract/in-thread-worker';
 import { failed, ok } from '../../contract/reply';
+import { LoadError } from '../shared/loading';
 import { mountInMemory } from './files';
 import { createNativeHandlers } from './handlers';
-import { ModuleError, type NativeModule } from './module';
-import { loadTestModule, readFixture, useNativeEngine } from './testing';
+import { elfFixture } from './fixture';
+import type { NativeModule } from './module';
+import { connectNative, loadTestModule, readFixture, useNativeEngine } from './testing';
 
 const connect = useNativeEngine();
 await loadTestModule();
+
+// serves the engine with a loader that fails like a lost connection as often as `failures` and then loads the module
+function connectWithFailures(failures: number) {
+    let failed = 0;
+    async function loadFailing(): Promise<NativeModule> {
+        if (failed < failures) {
+            failed++;
+            throw new LoadError("The native engine couldn't load rizin.mjs: 503 Service Unavailable");
+        }
+
+        return loadTestModule();
+    }
+
+    useInThreadWorker(() => createNativeHandlers(loadFailing, mountInMemory));
+
+    return connectNative();
+}
+
+testLoadFailure('native engine', connectWithFailures, elfFixture, 120000);
 
 test('native engine opens elf, pe and thin and fat mach-o files and closes them', async () => {
     const engine = connect();
@@ -57,7 +80,7 @@ test('a failed load of the module becomes a failed reply, and the next call load
     const handlers = createNativeHandlers(async () => {
         loads++;
         if (loads === 1) {
-            throw new ModuleError(refusal);
+            throw new LoadError(refusal);
         }
 
         return module;
@@ -76,7 +99,7 @@ test('a failed fetch of the share files becomes a failed reply, and the next cal
         ...module,
         async fetchFile(path) {
             if (isFailing && path.startsWith('share/')) {
-                throw new ModuleError(`The native engine couldn't load ${path}: 503 Service Unavailable`);
+                throw new LoadError(`The native engine couldn't load ${path}: 503 Service Unavailable`);
             }
 
             return module.fetchFile(path);
@@ -92,8 +115,8 @@ test('a failed fetch of the share files becomes a failed reply, and the next cal
     expect(await handlers.open(1, file.name, file, signal)).toEqual(ok(undefined));
 }, 120000);
 
-test("the module's fetch of a missing file throws a module error", async () => {
+test("the module's fetch of a missing file throws a load error", async () => {
     const module = await loadTestModule();
 
-    await expect(module.fetchFile('missing.txt')).rejects.toBeInstanceOf(ModuleError);
+    await expect(module.fetchFile('missing.txt')).rejects.toBeInstanceOf(LoadError);
 }, 120000);

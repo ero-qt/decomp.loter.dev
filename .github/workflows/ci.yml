@@ -21,12 +21,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: set up Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version: 1.4.4
-      - name: install packages
-        run: bun install --frozen-lockfile --ignore-scripts
+      - name: set up Bun and packages
+        uses: ./.github/actions/bun
       - name: type check
         run: bun run check
 
@@ -39,12 +35,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: set up Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version: 1.4.4
-      - name: install packages
-        run: bun install --frozen-lockfile --ignore-scripts
+      - name: set up Bun and packages
+        uses: ./.github/actions/bun
       - name: run the tests
         run: |
           for file in contract/*.test.ts; do
@@ -60,18 +52,10 @@ jobs:
         with:
           persist-credentials: false
           submodules: recursive
-      - name: set up Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version: 1.4.4
-      - name: set up Emscripten
-        uses: mymindstorm/setup-emsdk@4528d102f7230f0e7b276855c01ea1159be0e984 # v16
-        with:
-          version: 6.0.9
-      - name: install Meson and Ninja
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y meson ninja-build
+      - name: set up Bun and packages
+        uses: ./.github/actions/bun
+      - name: set up the native tools
+        uses: ./.github/actions/native-tools
       - name: read the tools' versions
         id: tools
         run: echo "hash=$({ emcc --version; meson --version; ninja --version; } | sha256sum | cut -c 1-16)" >> "$GITHUB_OUTPUT"
@@ -88,8 +72,6 @@ jobs:
             native-${{ runner.os }}-${{ steps.tools.outputs.hash }}-${{ steps.submodules.outputs.hash }}-${{
             hashFiles('engines/native/build/**', 'engines/native/src/**', 'engines/native/build.ts') }}
           restore-keys: native-${{ runner.os }}-${{ steps.tools.outputs.hash }}-
-      - name: install packages
-        run: bun install --frozen-lockfile --ignore-scripts
       - name: build the native module
         run: bun --eval "import { buildModule } from './engines/native/build/link'; await buildModule();"
       - name: upload the native module
@@ -108,21 +90,10 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: set up Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version: 1.4.4
+      - name: set up Bun and packages
+        uses: ./.github/actions/bun
       - name: set up .NET SDK
-        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
-        with:
-          global-json-file: engines/dotnet/global.json
-      - name: cache NuGet packages
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('engines/dotnet/global.json', 'engines/dotnet/src/Decomp.Dotnet.csproj') }}
-      - name: install packages
-        run: bun install --frozen-lockfile --ignore-scripts
+        uses: ./.github/actions/dotnet
       - name: download the native module
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -158,10 +129,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: set up Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version: 1.4.4
+      - name: set up Bun and packages
+        uses: ./.github/actions/bun
       - name: set up JDK 21
         if: matrix.folder == 'engines/java'
         uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
@@ -170,24 +139,9 @@ jobs:
           java-version: 21
       - name: set up .NET SDK
         if: matrix.folder == 'engines/dotnet'
-        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
-        with:
-          global-json-file: engines/dotnet/global.json
-      - name: cache NuGet packages
-        if: matrix.folder == 'engines/dotnet'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('engines/dotnet/global.json', 'engines/dotnet/src/Decomp.Dotnet.csproj') }}
-      - name: install packages
-        run: bun install --frozen-lockfile --ignore-scripts
-      - name: install Chromium
-        run: bunx playwright install --with-deps chromium
-      - name: download the site
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: site
-          path: artifacts/site
+        uses: ./.github/actions/dotnet
+      - name: set up the page tests
+        uses: ./.github/actions/page-tests
       - name: run the tests
         env:
           FOLDER: ${{ matrix.folder }}
@@ -208,19 +162,13 @@ jobs:
         with:
           persist-credentials: false
           submodules: recursive
-      - name: set up Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version: 1.4.4
-      - name: set up Emscripten
-        uses: mymindstorm/setup-emsdk@4528d102f7230f0e7b276855c01ea1159be0e984 # v16
-        with:
-          version: 6.0.9
+      - name: set up Bun and packages
+        uses: ./.github/actions/bun
       # installs the clang and LLVM's tools that build the fixture, because Emscripten's LLVM builds only WebAssembly
-      - name: install Meson, Ninja, clang and LLVM's tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y meson ninja-build clang lld llvm
+      - name: set up the native tools
+        uses: ./.github/actions/native-tools
+        with:
+          packages: clang lld llvm
       # takes the newest LLVM folder with the fixture's tools, because the runner has more than one
       - name: find LLVM's folder
         run: |
@@ -232,21 +180,14 @@ jobs:
           done
           echo "No folder in /usr/lib has clang++, ld.lld and llvm-lipo." >&2
           exit 1
-      - name: install packages
-        run: bun install --frozen-lockfile --ignore-scripts
-      - name: install Chromium
-        run: bunx playwright install --with-deps chromium
+      - name: set up the page tests
+        uses: ./.github/actions/page-tests
       # takes the module with its stamp, which matches the same commit and tools, so the tests don't build it again
       - name: download the native module
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: native
           path: artifacts/native/out
-      - name: download the site
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: site
-          path: artifacts/site
       - name: run the tests
         run: |
           for file in engines/native/*.test.ts; do

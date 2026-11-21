@@ -33,7 +33,7 @@ const formatRows = [
 const shortcutRows = [
     ['Go to definition', 'F12 or Ctrl+click'],
     ['Find references', 'Shift+F12'],
-    ['Find symbol', 'Ctrl+T'],
+    ['Find symbol', 'Ctrl+P, then #'],
     ['Find string', 'Ctrl+Shift+F'],
     ['Command palette', 'F1'],
     ['Change shortcuts', 'Ctrl+K Ctrl+S'],

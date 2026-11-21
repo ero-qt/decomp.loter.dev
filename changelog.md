@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- The About tab lists Ctrl+P, then # for the symbol search, because browsers open a new tab on Ctrl+T.
+
 ## [1.0.3] - 2026-11-21
 
 ### Added

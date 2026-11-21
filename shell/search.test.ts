@@ -48,9 +48,10 @@ function serveStringsEngine() {
     postMessage({ ready: true });
 }
 
+// opens Go to File with the `#` prefix of symbols because the browser opens a new tab on Ctrl+T, Go to Symbol's key
 async function searchSymbols(page: Page, query: string) {
-    await page.keyboard.press('Control+T');
-    await page.keyboard.insertText(query);
+    await page.keyboard.press('Control+P');
+    await page.keyboard.insertText(`#${query}`);
 }
 
 /** Reads each result's icon, label and description, like `symbol-method Area Shape • shapes.fake`. */

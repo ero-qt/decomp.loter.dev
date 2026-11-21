@@ -10,5 +10,6 @@
   "hasLinkedFiles": true,
   "memoryLimitBytes": 536870912,
   "cancelLimitMs": 10000,
-  "priority": 10
+  "priority": 10,
+  "formats": ".NET assemblies"
 }

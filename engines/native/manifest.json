@@ -8,5 +8,7 @@
     { "id": "disassembly", "title": "Disassembly", "extension": ".asm", "language": "disassembly" }
   ],
   "memoryLimitBytes": 1073741824,
-  "cancelLimitMs": 2000
+  "cancelLimitMs": 2000,
+  "formats": "Native programs and libraries",
+  "fileNote": "and files without an extension"
 }

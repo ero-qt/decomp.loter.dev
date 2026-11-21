@@ -14,5 +14,7 @@ test("native engine's JSON manifest names the C and disassembly views, ELF, PE a
         ],
         memoryLimitBytes: 1073741824,
         cancelLimitMs: 2000,
+        formats: 'Native programs and libraries',
+        fileNote: 'and files without an extension',
     });
 });

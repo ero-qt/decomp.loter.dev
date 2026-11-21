@@ -1,12 +1,13 @@
 {
   "id": "java",
   "name": "Java",
-  "extensions": [".jar", ".war", ".class"],
+  "extensions": [".class", ".jar", ".war"],
   "magics": ["cafebabe", "504b0304"],
   "views": [
     { "id": "java", "title": "Java", "extension": ".java", "language": "java" },
     { "id": "bytecode", "title": "Bytecode", "extension": ".bytecode", "language": "bytecode" }
   ],
   "hasLinkedFiles": true,
-  "cancelLimitMs": 10000
+  "cancelLimitMs": 10000,
+  "formats": "Java classes and archives"
 }

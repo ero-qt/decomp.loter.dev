@@ -1,7 +1,9 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
+import { type Manifest, readManifest } from '../contract/manifest.ts';
 import { readBuildVersion, writeVersionLine } from './build-version.ts';
+import { writeSupportedFiles } from './supported-files.ts';
 import darkTheme from './themes/dark.json' with { type: 'json' };
 import { deriveLightTheme } from './themes/light.ts';
 import { drawTransferCode } from './transfer-code.ts';
@@ -11,6 +13,16 @@ const builtFiles: Record<string, () => string> = {
     'light.json': () => `${JSON.stringify(deriveLightTheme(darkTheme), null, 2)}\n`,
     'support-code.svg': drawTransferCode,
 };
+
+// reads the manifests of the engines that the site's build serves, which leaves out the fake engine because only the
+// tests use it
+function readManifests(): Manifest[] {
+    const engines = new URL('../engines/', import.meta.url);
+
+    return readdirSync(engines, { withFileTypes: true })
+        .filter(entry => entry.isDirectory() && entry.name !== 'fake' && existsSync(new URL(`${entry.name}/manifest.json`, engines)))
+        .map(entry => readManifest(JSON.parse(readFileSync(new URL(`${entry.name}/manifest.json`, engines), 'utf8'))));
+}
 
 export default defineConfig({
     root: import.meta.dirname,
@@ -75,6 +87,16 @@ export default defineConfig({
 
                     return `export default import.meta.ROLLUP_FILE_URL_${fileId}`;
                 }
+            },
+        },
+        {
+            name: 'supported-files',
+            // fills the About tab's table of supported files from the manifests, because the table then shows before
+            // the engines load and when they don't load
+            transformIndexHtml(html) {
+                const rows = writeSupportedFiles(readManifests());
+
+                return html.replace('<tbody class="supported-files"></tbody>', `<tbody class="supported-files">${rows}</tbody>`);
             },
         },
     ],

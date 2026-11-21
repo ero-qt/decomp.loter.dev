@@ -1,6 +1,7 @@
 import { readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { siteHeaders } from '../shell/headers';
+import { listChecksums } from './checksums';
 
 const longCache = 'public, max-age=31536000, immutable';
 
@@ -19,6 +20,7 @@ function listExpectedResponses(siteFolder: string): ExpectedResponse[] {
     return [
         { path: '/', status: 200, cacheControl: 'no-cache' },
         { path: '/favicon.svg', status: 200, cacheControl: 'no-cache', contentType: 'image/svg+xml' },
+        { path: '/checksums.txt', status: 200, cacheControl: 'no-cache' },
         { path: '/missing', status: 404, cacheControl: null },
         { path: '/assets/missing-12345678.js', status: 404, cacheControl: null },
         { path: `/assets/${asset}`, status: 200, cacheControl: longCache },
@@ -56,7 +58,8 @@ function checkResponse(response: Response, { path, status, cacheControl, content
 /**
  * Lists each response of the site at the URL that differs from host/htaccess, for a few files of the built site in the
  * folder and for missing files. Also checks that the site's page is the built `index.html`, so a deploy that didn't
- * switch the site shows. Checks too that a missing file gets the built `404.html`, not the host's own page.
+ * switch the site shows. Checks too that a missing file gets the built `404.html`, not the host's own page, and that
+ * the site's `checksums.txt` lists the built site's files.
  */
 export async function checkSiteResponses(siteUrl: URL, siteFolder: string): Promise<string[]> {
     const problems: string[] = [];
@@ -64,7 +67,11 @@ export async function checkSiteResponses(siteUrl: URL, siteFolder: string): Prom
     for (const expected of listExpectedResponses(siteFolder)) {
         const response = await fetch(new URL(expected.path, siteUrl), { redirect: 'manual' });
         const page = expected.path === '/' ? 'index.html' : expected.status === 404 ? '404.html' : undefined;
-        if (!page) {
+        if (expected.path === '/checksums.txt') {
+            if ((await response.text()) !== listChecksums(siteFolder)) {
+                problems.push("/checksums.txt isn't the site's checksums");
+            }
+        } else if (!page) {
             await response.body?.cancel();
         } else if ((await response.text()) !== (await Bun.file(`${siteFolder}/${page}`).text())) {
             problems.push(`${expected.path} isn't the built ${page}`);

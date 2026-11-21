@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- The site's description in link previews leaves out who made the site.
+
 ## [1.0.1] - 2026-11-21
 
 ### Changed
@@ -17,7 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 - A missing file gets the site's own page with the site's headers, not the host's page without them.
 - Files with a fingerprint in their name get the Content Security Policy and the referrer policy too.
-- The site shows the loter logo as its icon, so browsers don't keep showing the host's old icon.
+- The site shows its own logo as its icon, so browsers don't keep showing the host's icon.
 
 ## [1.0.0] - 2026-11-21
 

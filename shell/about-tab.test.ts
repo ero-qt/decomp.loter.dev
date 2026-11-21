@@ -15,6 +15,7 @@ const pageLines = [
     'Supported files',
     'Keyboard shortcuts',
     'Source on GitHub',
+    'Privacy',
 ];
 const formatRows = [
     ['Format', 'Files', 'Views'],
@@ -112,14 +113,17 @@ test("page fits the About tab's width in an 800 by 600 window and scrolls down t
     expect(await readPageWidthFit(page)).toEqual({ insidePaneWidth: true, scrollsSideways: false });
 }, testTimeoutMs);
 
-test('source link opens in a new tab without the opener and the referrer', async () => {
+test('source and privacy links open in a new tab without the opener and the referrer', async () => {
     const { page } = await openWorkbench();
 
     const linkValues = await findAboutPage(page).getByRole('link').evaluateAll(links =>
-        links.map(link => [link.textContent, link.getAttribute('href'), link.getAttribute('target'), link.getAttribute('rel')]),
+        links.map(link => [link.textContent, (link as HTMLAnchorElement).href, link.getAttribute('target'), link.getAttribute('rel')]),
     );
 
-    expect(linkValues).toEqual([['GitHub', 'https://github.com/ero-qt/decomp.loter.dev', '_blank', 'noopener noreferrer']]);
+    expect(linkValues).toEqual([
+        ['GitHub', 'https://github.com/ero-qt/decomp.loter.dev', '_blank', 'noopener noreferrer'],
+        ['Privacy', new URL('privacy.html', page.url()).href, '_blank', 'noopener noreferrer'],
+    ]);
 }, testTimeoutMs);
 
 test("About tab's hover shows the site's name", async () => {

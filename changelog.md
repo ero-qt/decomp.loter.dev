@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 - The About tab lists Ctrl+P, then # for the symbol search, because browsers open a new tab on Ctrl+T.
 - The About, Support and Privacy tabs scroll with a swipe on touch screens.
+- Keywords, strings and numbers get their colors sooner, because the site loads an engine's grammars while the engine opens the first file.
 
 ## [1.0.3] - 2026-11-21
 

@@ -29,12 +29,13 @@ test("dropped elf file lists its namespace and classes, and a click on a class o
     expect(listOtherHostRequests(page, requests)).toEqual([]);
 }, nativeTimeoutMs);
 
-test('workbench loads the native worker and module only after a drop, and the language and C grammar only for a C document', async () => {
+test('workbench loads the native worker, the module and the C grammar only after a drop, and the language only for a C document', async () => {
     const { page, requests } = await openWorkbench();
     const startRequests = [...requests];
 
     await dropFiles(page, { 'shapes-x64.so': shapes });
     await expandRows(page, 'shapes-x64.so', 'geometry');
+    await readUntil(async () => requests.some(url => /\/c\.tmLanguage/.test(url)), true);
     const listedRequests = [...requests];
 
     await findRow(page, 'Rect').click();
@@ -49,7 +50,8 @@ test('workbench loads the native worker and module only after a drop, and the la
     expect(listedRequests.some(url => url.endsWith('/engines/native/rizin.wasm'))).toBe(true);
     expect(language.length).toBeGreaterThanOrEqual(1);
     expect(grammar.length).toBeGreaterThanOrEqual(1);
-    expect(listedRequests.filter(url => language.includes(url) || grammar.includes(url))).toEqual([]);
+    expect(startRequests.filter(url => grammar.includes(url))).toEqual([]);
+    expect(listedRequests.filter(url => language.includes(url))).toEqual([]);
 }, nativeTimeoutMs);
 
 test("dropped dll shows its missing pdb, and the pdb picked from the missing file's row adds the dll's static functions", async () => {

@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Java classes get a Bytecode view. It shows each method's instructions below Java-like declarations of the class and its members, with the instructions and keywords in color.
+- Native functions and classes get a Disassembly view with each instruction after its address and the mnemonics and registers in color. A call has the name of the function it calls. A jump inside the function has a label that takes you to the line it jumps to.
+
 ## [1.0.4] - 2026-11-21
 
 ### Fixed

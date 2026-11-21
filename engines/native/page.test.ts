@@ -1,4 +1,5 @@
 import { expect, test } from 'bun:test';
+import type { Page } from 'playwright';
 import { readLines, readUntil, readWordColor, waitForTabs } from '../../shell/editor-testing';
 import { listOtherHostRequests, startWorkbench, testTimeoutMs } from '../../shell/page-testing';
 import { dropFiles, expandRows, findRow, readRowTexts } from '../../shell/tree-testing';
@@ -11,6 +12,13 @@ const pdb = await (await readFixture('shapes.pdb')).bytes();
 const nativeFiles = /\/engines\/native\/(?!manifest\.json)/;
 // waits longer than the other page tests because the worker compiles a 10 MB module and Ghidra loads its language
 const nativeTimeoutMs = testTimeoutMs * 4;
+
+// picks the item with the keyboard once the menu shows the item as focused because the menu can miss an early click
+async function pickMenuItem(page: Page, label: string) {
+    await page.getByRole('menuitem', { name: label }).hover();
+    await page.locator('.context-view .action-item.focused').filter({ hasText: label }).waitFor();
+    await page.keyboard.press('Enter');
+}
 
 test("dropped elf file lists its namespace and classes, and a click on a class opens its C with the theme's colors", async () => {
     const { page, violations, requests } = await openWorkbench();
@@ -70,4 +78,23 @@ test("dropped dll shows its missing pdb, and the pdb picked from the missing fil
     expect(before).toContain('shapes.pdb not loaded');
     expect(before).not.toContain('classify');
     expect(await readRowTexts(page)).toContain('geometry');
+}, nativeTimeoutMs);
+
+test("Show Disassembly to the Side in rect_area's menu opens rect_area.asm with the theme's mnemonic and register colors", async () => {
+    const { page, violations, requests } = await openWorkbench();
+    await dropFiles(page, { 'shapes-x64.so': shapes });
+    await expandRows(page, 'shapes-x64.so');
+
+    await findRow(page, 'rect_area').click({ button: 'right' });
+    await pickMenuItem(page, 'Show Disassembly to the Side');
+    const disassemblyTab = page.locator('.tab .label-name').getByText('rect_area.asm', { exact: true });
+    await disassemblyTab.waitFor();
+    await page.locator('.editor-group-container').filter({ has: disassemblyTab }).locator('.view-line').first().click();
+    const moveLine = '00001a49  mov ebx, edi';
+
+    expect(await readUntil(() => readWordColor(page, moveLine, 'mov'), '#d48aad')).toBe('#d48aad');
+    expect(await readUntil(() => readWordColor(page, moveLine, 'edi'), '#569cd6')).toBe('#569cd6');
+    expect(requests.filter(url => /disassembly\.tmLanguage/.test(url)).length).toBeGreaterThanOrEqual(1);
+    expect(violations).toEqual([]);
+    expect(listOtherHostRequests(page, requests)).toEqual([]);
 }, nativeTimeoutMs);

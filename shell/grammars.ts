@@ -7,6 +7,8 @@ import javaGrammarUrl from '@codingame/monaco-vscode-java-default-extension/reso
 import javaConfigurationUrl from '@codingame/monaco-vscode-java-default-extension/resources/language-configuration.json?url';
 import bytecodeConfigurationUrl from './grammars/bytecode.language-configuration.json?url';
 import bytecodeGrammarUrl from './grammars/bytecode.tmLanguage.json?url';
+import disassemblyConfigurationUrl from './grammars/disassembly.language-configuration.json?url';
+import disassemblyGrammarUrl from './grammars/disassembly.tmLanguage.json?url';
 import ilConfigurationUrl from './grammars/il.language-configuration.json?url';
 import ilGrammarUrl from './grammars/il.tmLanguage.json?url';
 
@@ -28,6 +30,7 @@ export const grammars: Record<string, Grammar> = {
     bytecode: { scopeName: 'source.bytecode', grammarUrl: bytecodeGrammarUrl, configurationUrl: bytecodeConfigurationUrl },
     c: { scopeName: 'source.c', grammarUrl: cGrammarUrl, configurationUrl: cConfigurationUrl },
     csharp: { scopeName: 'source.cs', grammarUrl: csharpGrammarUrl, configurationUrl: csharpConfigurationUrl },
+    disassembly: { scopeName: 'source.disassembly', grammarUrl: disassemblyGrammarUrl, configurationUrl: disassemblyConfigurationUrl },
     il: { scopeName: 'source.il', grammarUrl: ilGrammarUrl, configurationUrl: ilConfigurationUrl },
     java: { scopeName: 'source.java', grammarUrl: javaGrammarUrl, configurationUrl: javaConfigurationUrl },
 };

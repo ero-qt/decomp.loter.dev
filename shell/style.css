@@ -92,6 +92,12 @@ body,
     border-collapse: collapse;
 }
 
+/* keeps a row's last cell, like a file's views or a shortcut's keys, on one line so its column takes the width it needs */
+.tab-page th:last-child,
+.tab-page td:last-child {
+    white-space: nowrap;
+}
+
 .tab-page th {
     color: var(--vscode-foreground);
     font-weight: 600;

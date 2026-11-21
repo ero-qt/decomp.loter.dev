@@ -19,6 +19,8 @@ The build needs the .NET SDK 11.0.100-rc.3.26522.148 on the `PATH` because it pu
 
 The build puts the site in `artifacts/site`. Serve that folder with a web server. The web server has to send the headers in `shell/headers.ts` with every response, also with a missing file. For Apache, `host/htaccess` sends them and the cache headers. Put it into the site as `.htaccess`, like the deploy does. `bun release/check-live.ts <site's URL>` then checks a few of the server's responses against `host/htaccess`.
 
+How this site is hosted on Uberspace is in [host/readme.md](host/readme.md).
+
 The web server also has to send `.wasm` files as `application/wasm`, because the browser only compiles them while they load with that type. The .NET engine's `engines/dotnet/_framework/dotnet.js` keeps its name from build to build. The other files there get a new name when they change, so browsers can cache them for a long time, but not `dotnet.js`.
 
 The build also builds the native engine's WebAssembly module, so it needs the submodules and the tools that the native engine's tests need, listed below. If you built the module before, set `NATIVE_MODULE` to its folder, like `artifacts/native/out`, and the build copies it without these tools. The CI does that with the module of its native job. The native engine's `rizin.mjs`, `rizin.wasm` and the files in its `share` and `sleigh` folders keep their names from build to build, so browsers shouldn't cache them for long. Its `source` folder has the versions, glue and build scripts that the module was built from, with links to the commits of the forks of Rizin and rz-ghidra. Keep serving that folder with the module, because the LGPL of Rizin asks for it.

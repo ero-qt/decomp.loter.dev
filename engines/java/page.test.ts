@@ -15,6 +15,13 @@ const textMateWorkerText = 'textMateWorkerHost';
 const javaWorker = /\/engines\/java\/worker\.js$/;
 const vineflowerChunk = /\/engines\/java\/vf\.runtime-[^/]+\.js$/;
 
+// picks the item with the keyboard once the menu shows the item as focused because the menu can miss an early click
+async function pickMenuItem(page: Page, label: string) {
+    await page.getByRole('menuitem', { name: label }).hover();
+    await page.locator('.context-view .action-item.focused').filter({ hasText: label }).waitFor();
+    await page.keyboard.press('Enter');
+}
+
 // returns the workers whose code has the text, because the URLs of most workers only have a hash after a generic name
 async function findWorkers(page: Page, urls: string[], text: string): Promise<string[]> {
     const codes = await Promise.all(urls.map(url => page.evaluate(async workerUrl => (await fetch(workerUrl)).text(), url)));
@@ -82,3 +89,24 @@ test(
     },
     testTimeoutMs,
 );
+
+test("Show Bytecode to the Side in Named's menu opens Named.bytecode beside Named.java with the theme's instruction and keyword colors", async () => {
+    const { page, violations, requests } = await openWorkbench();
+    await dropFiles(page, { 'drawing.jar': drawing });
+    await expandRows(page, 'drawing.jar', 'drawing');
+    await findRow(page, 'Named').click();
+    await waitForTabs(page, 'About', 'Named.java');
+
+    await findRow(page, 'Named').click({ button: 'right' });
+    await pickMenuItem(page, 'Show Bytecode to the Side');
+    const bytecodeTab = page.locator('.tab .label-name').getByText('Named.bytecode', { exact: true });
+    await bytecodeTab.waitFor();
+    await page.locator('.editor-group-container').filter({ has: bytecodeTab }).locator('.view-line').first().click();
+    const callLine = 'invokevirtual java/lang/String toLowerCase';
+
+    expect(await readUntil(() => readWordColor(page, callLine, 'invokevirtual'), '#d48aad')).toBe('#d48aad');
+    expect(await readUntil(() => readWordColor(page, 'interface Named', 'interface'), '#609fd2')).toBe('#609fd2');
+    expect(requests.filter(url => /bytecode\.tmLanguage/.test(url)).length).toBeGreaterThanOrEqual(1);
+    expect(violations).toEqual([]);
+    expect(listOtherHostRequests(page, requests)).toEqual([]);
+}, testTimeoutMs * 2);

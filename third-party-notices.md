@@ -725,7 +725,7 @@ vscode-oniguruma's `onig.wasm` is [Oniguruma](https://github.com/kkos/oniguruma)
 
 ## Java grammar
 
-Java code gets its colors from the Java grammar of VS Code's Java extension, which the site takes from [@codingame/monaco-vscode-java-default-extension](https://github.com/CodinGame/monaco-vscode-api) 39.0.4. The extension's package file lists the MIT License under VS Code's copyright above. VS Code converted the grammar from the grammar of [redhat-developer/vscode-java](https://github.com/redhat-developer/vscode-java), as a note in the grammar's file tells.
+Java code and the declarations in bytecode get their colors from the Java grammar of VS Code's Java extension, which the site takes from [@codingame/monaco-vscode-java-default-extension](https://github.com/CodinGame/monaco-vscode-api) 39.0.4. The extension's package file lists the MIT License under VS Code's copyright above. VS Code converted the grammar from the grammar of [redhat-developer/vscode-java](https://github.com/redhat-developer/vscode-java), as a note in the grammar's file tells.
 
 ## C# grammar
 

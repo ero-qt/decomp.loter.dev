@@ -1,0 +1,42 @@
+{
+  "name": "Java bytecode",
+  "scopeName": "source.bytecode",
+  "patterns": [
+    {
+      "include": "source.java"
+    }
+  ],
+  "injections": {
+    "L:source.bytecode -comment -string": {
+      "patterns": [
+        {
+          "match": "^\\s*(//\\s*\\d+:)\\s+(\\w+)(.*)$",
+          "captures": {
+            "1": {
+              "name": "comment.line.offset.bytecode"
+            },
+            "2": {
+              "name": "keyword.control.instruction.bytecode"
+            },
+            "3": {
+              "patterns": [
+                {
+                  "match": "\"(?:[^\"\\\\]|\\\\.)*\"",
+                  "name": "string.quoted.double.bytecode"
+                },
+                {
+                  "match": "[\\w$]+(?:/[\\w$]+)+",
+                  "name": "entity.name.type.bytecode"
+                },
+                {
+                  "match": "(?<![\\w$])-?\\d+(?:\\.\\d+)?(?![\\w$])",
+                  "name": "constant.numeric.bytecode"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

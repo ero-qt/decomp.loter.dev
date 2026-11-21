@@ -5,6 +5,8 @@ import csharpGrammarUrl from '@codingame/monaco-vscode-csharp-default-extension/
 import csharpConfigurationUrl from '@codingame/monaco-vscode-csharp-default-extension/resources/language-configuration.json?url';
 import javaGrammarUrl from '@codingame/monaco-vscode-java-default-extension/resources/java.tmLanguage.json?url';
 import javaConfigurationUrl from '@codingame/monaco-vscode-java-default-extension/resources/language-configuration.json?url';
+import bytecodeConfigurationUrl from './grammars/bytecode.language-configuration.json?url';
+import bytecodeGrammarUrl from './grammars/bytecode.tmLanguage.json?url';
 import ilConfigurationUrl from './grammars/il.language-configuration.json?url';
 import ilGrammarUrl from './grammars/il.tmLanguage.json?url';
 
@@ -23,6 +25,7 @@ export interface Grammar {
  * URLs from a default extension because its module would add snippets and texts to the start.
  */
 export const grammars: Record<string, Grammar> = {
+    bytecode: { scopeName: 'source.bytecode', grammarUrl: bytecodeGrammarUrl, configurationUrl: bytecodeConfigurationUrl },
     c: { scopeName: 'source.c', grammarUrl: cGrammarUrl, configurationUrl: cConfigurationUrl },
     csharp: { scopeName: 'source.cs', grammarUrl: csharpGrammarUrl, configurationUrl: csharpConfigurationUrl },
     il: { scopeName: 'source.il', grammarUrl: ilGrammarUrl, configurationUrl: ilConfigurationUrl },

@@ -173,8 +173,10 @@ test('files that the workbench loads to start are at most 2.5 MB with brotli', a
     const { requests } = await openWorkbench();
     let size = 0;
 
-    // leaves out `balance.json` because only the host writes the file into the site
-    for (const url of new Set(requests.filter(url => !url.endsWith('/balance.json')))) {
+    // leaves out `balance.json` because only the host writes the file into the site, and the fake engine's files
+    // because only the tests serve them
+    const siteRequests = requests.filter(url => !url.endsWith('/balance.json') && !new URL(url).pathname.startsWith('/engines/fake/'));
+    for (const url of new Set(siteRequests)) {
         const bytes = await findSiteFile(new URL(url).pathname).bytes();
         // compresses with quality 9 because the default quality 11 takes 20 times longer for a size 10 percent smaller
         size += brotliCompressSync(bytes, { params: { [constants.BROTLI_PARAM_QUALITY]: 9 } }).length;

@@ -130,8 +130,8 @@ export function createJavaHandlers(): EngineHandlers {
         resolve(target) {
             return ok(resolveTarget(files, target));
         },
-        findReferences(target, view, signal) {
-            return views.includes(view) ? ok(findUsers(files, target, signal)) : refusals.view(view);
+        async findReferences(target, view, signal) {
+            return views.includes(view) ? ok(await findUsers(files, target, signal)) : refusals.view(view);
         },
         async listStrings(fileId, signal) {
             const file = files.get(fileId);

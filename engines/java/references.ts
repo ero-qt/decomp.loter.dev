@@ -1,5 +1,6 @@
 import { formatTarget, parseTarget } from '../../contract/document';
 import type { Reference } from '../../contract/engine';
+import { createYielder } from '../shared/yielding';
 import { type OpenFiles, splitMemberKey } from './describe';
 import { findTop, type JavaClass } from './files';
 
@@ -85,9 +86,10 @@ function usesMember(files: OpenFiles, { uses }: JavaClass, keys: string[]): bool
 /**
  * Finds the top classes of the open files whose code uses a target's symbol, each as 1 user without places. Matches a
  * class by its name and a member by its name, descriptor and owner. Leaves out a class whose top class doesn't have a
- * row. Throws for a signal that aborted before the search, which runs without a pause that the signal could abort in.
+ * row. Gives the worker's message loop a turn between classes and throws once the signal aborts.
  */
-export function findUsers(files: OpenFiles, target: string, signal: AbortSignal): Reference[] {
+export async function findUsers(files: OpenFiles, target: string, signal: AbortSignal): Promise<Reference[]> {
+    const yieldTurn = createYielder(signal);
     signal.throwIfAborted();
 
     const { keys, isMember } = readTargetKeys(files, target);
@@ -95,6 +97,8 @@ export function findUsers(files: OpenFiles, target: string, signal: AbortSignal)
 
     for (const [fileId, file] of files) {
         for (const [name, found] of file.classes) {
+            await yieldTurn();
+
             const top = file.keys.get(findTop(file, name));
             const uses = isMember ? usesMember(files, found, keys) : keys.some(key => found.uses.classes.has(key));
             if (uses && top !== undefined) {

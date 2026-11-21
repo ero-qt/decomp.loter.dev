@@ -1,6 +1,7 @@
 import { type Document, formatTarget, type Token, writeTokens } from '../../contract/document';
 import { failed, ok, type Reply } from '../../contract/reply';
 import { flagsOf, type Kind } from '../../contract/symbols';
+import { createYielder } from '../shared/yielding';
 import type { CodeRows } from './code';
 import type { NativeModule } from './module';
 import { readArchitecture } from './sleigh';
@@ -54,15 +55,9 @@ function readJson<T>(text: string): T {
     return JSON.parse(quoted || 'null', (key, value) => (addressKeys.includes(key) ? BigInt.asUintN(64, BigInt(value)) : value));
 }
 
-// waits for other tasks, so a cancel can arrive, and throws once the signal aborts
-async function yieldTo(signal: AbortSignal) {
-    await new Promise(resolve => setTimeout(resolve));
-    signal.throwIfAborted();
-}
-
 /**
  * Lists the instructions of a function's blocks in address order until the instructions would pass `maxBytes`.
- * Decodes each block by its bytes in chunks and yields after each chunk.
+ * Decodes each block by its bytes in chunks and gives the worker's message loop a turn between chunks.
  */
 async function listInstructions(
     module: NativeModule,
@@ -71,6 +66,7 @@ async function listInstructions(
     maxBytes: number,
     signal: AbortSignal,
 ): Promise<Instruction[]> {
+    const yieldTurn = createYielder(signal);
     const blocks = readJson<Block[]>(module.runCommand(session, `afbj @ 0x${address.toString(16)}`)) ?? [];
     blocks.sort((first, second) => (first.addr < second.addr ? -1 : first.addr > second.addr ? 1 : 0));
 
@@ -79,7 +75,7 @@ async function listInstructions(
     for (const block of blocks) {
         const end = block.addr + BigInt(block.size);
         for (let at = block.addr; at < end; ) {
-            await yieldTo(signal);
+            await yieldTurn();
 
             const chunkEnd = at + BigInt(Math.min(chunkBytes, Number(end - at)));
             const decoded = readJson<Instruction[]>(module.runCommand(session, `pDj ${chunkEnd - at} @ 0x${at.toString(16)}`)) ?? [];

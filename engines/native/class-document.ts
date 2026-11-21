@@ -32,6 +32,20 @@ export interface ClassParts {
     methods: ClassMethod[];
 }
 
+/** How a view writes a class's header, which is C code in the C view and comment lines in the Disassembly view. */
+export interface HeaderStyle {
+    /** The text in front of each line of the class's definition and static members, like `; `. */
+    linePrefix: string;
+    /** The text in front of a comment, like `// `. */
+    comment: string;
+}
+
+/** Writes the header as C code with C comments. */
+export const cHeader: HeaderStyle = { linePrefix: '', comment: '// ' };
+
+/** Writes the header as assembly comments, which the disassembly grammar colors as comments. */
+export const disassemblyHeader: HeaderStyle = { linePrefix: '; ', comment: '; ' };
+
 const declaration = flagsOf('', 'declaration');
 
 /** Returns a global's type from its size like Ghidra does, because the debug information doesn't give its type. */
@@ -40,21 +54,22 @@ export function describeType(size: number): string {
 }
 
 // writes the class's definition, else a comment with its name, and a line for each static member
-function writeHeader({ fileId, key, fullName, definition, statics }: ClassParts): Document {
+function writeHeader({ fileId, key, fullName, definition, statics }: ClassParts, { linePrefix, comment }: HeaderStyle): Document {
     const tokens: Token[] = [];
     let text: string;
     if (definition) {
-        text = definition.text.replace(/^\t+/gm, tabs => '    '.repeat(tabs.length));
+        text = definition.text.replace(/^\t+/gm, tabs => '    '.repeat(tabs.length)).replace(/^(?=.)/gm, linePrefix);
         const start = text.indexOf(`struct ${definition.name}`) + 'struct '.length;
         tokens.push({ start, length: definition.name.length, kind: 'class', flags: declaration, target: formatTarget({ fileId, key }) });
     } else {
-        text = `// class ${fullName}\n`;
-        tokens.push({ start: '// class '.length, length: fullName.length, kind: 'class', flags: declaration, target: formatTarget({ fileId, key }) });
+        text = `${comment}class ${fullName}\n`;
+        const target = formatTarget({ fileId, key });
+        tokens.push({ start: `${comment}class `.length, length: fullName.length, kind: 'class', flags: declaration, target });
     }
 
     for (const member of statics) {
         const name = `${fullName}::${member.name}`;
-        const prefix = `extern ${describeType(member.size)} `;
+        const prefix = `${linePrefix}extern ${describeType(member.size)} `;
         const target = formatTarget({ fileId, key: member.key });
         tokens.push({ start: text.length + prefix.length, length: name.length, kind: 'field', flags: declaration, target });
         text += `${prefix}${name}; // 0x${member.address.toString(16)}\n`;
@@ -120,29 +135,31 @@ export function listClassParts(
     return { fileId, key: rows[index].key, fullName, definition, statics, methods };
 }
 
-// writes a comment with the error of a method that can't be decompiled, whose name declares the method's row
-function writeFailedMethod({ fileId, fullName }: ClassParts, { key, name, kind }: ClassMethod, error: string): Document {
+// writes a comment with the error of a method that the view can't write, whose name declares the method's row
+function writeFailedMethod({ fileId, fullName }: ClassParts, { key, name, kind }: ClassMethod, error: string, comment: string): Document {
     const fullMethodName = `${fullName}::${name}`;
-    const token: Token = { start: '// '.length, length: fullMethodName.length, kind, flags: declaration, target: formatTarget({ fileId, key }) };
+    const token: Token = { start: comment.length, length: fullMethodName.length, kind, flags: declaration, target: formatTarget({ fileId, key }) };
 
-    return writeTokens(`// ${fullMethodName}: ${error}\n`, [token], []);
+    return writeTokens(`${comment}${fullMethodName}: ${error}\n`, [token], []);
 }
 
 /**
- * Writes a class's document with the class's definition or name, a line for each static member, then the C of each
- * method in address order. Decompiles 1 method per call of `readMethod` and yields to other tasks after each method,
- * so a cancel stops the document between 2 methods. A method that can't be decompiled gets a comment with the error.
+ * Writes a class's document with the class's definition or name, a line for each static member, then each method's
+ * document from `readMethod` in address order. Reads 1 method per call of `readMethod` and yields to other tasks after
+ * each method, so a cancel stops the document between 2 methods. A method that the view can't write gets a comment
+ * with the error.
  */
 export async function writeClassDocument(
     parts: ClassParts,
-    readMethod: (key: number) => Reply<Document>,
+    readMethod: (key: number) => Reply<Document> | Promise<Reply<Document>>,
     signal: AbortSignal,
+    style: HeaderStyle = cHeader,
 ): Promise<Reply<Document>> {
-    const documents = [writeHeader(parts)];
+    const documents = [writeHeader(parts, style)];
     for (const method of parts.methods) {
         signal.throwIfAborted();
-        const read = readMethod(method.key);
-        documents.push(read.error === undefined ? read.value : writeFailedMethod(parts, method, read.error));
+        const read = await readMethod(method.key);
+        documents.push(read.error === undefined ? read.value : writeFailedMethod(parts, method, read.error, style.comment));
         await new Promise(resolve => setTimeout(resolve));
     }
 

@@ -5,8 +5,8 @@ import type { NativeRows } from './rows';
 const functionKinds = ['method', 'constructor', 'operator'];
 const scopeKinds = ['namespace', 'class'];
 
-// returns a row's name with the names of the namespaces and classes around it, like `geometry::Rect::area`
-function findFullName({ rows }: NativeRows, index: number): string {
+/** Returns a row's name with the names of the namespaces and classes around it, like `geometry::Rect::area`. */
+export function findFullName({ rows }: NativeRows, index: number): string {
     const names = [rows[index].name];
     for (let at = rows[index].parent; at >= 0 && scopeKinds.includes(rows[at].kind); at = rows[at].parent) {
         names.unshift(rows[at].name);

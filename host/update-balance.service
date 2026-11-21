@@ -1,0 +1,6 @@
+[Unit]
+Description=Write the Asteroid's balance into the site
+
+[Service]
+Type=oneshot
+ExecStart=%h/bin/update-balance %h/.config/decomp/dashboard-cookie /var/www/virtual/decomp/html

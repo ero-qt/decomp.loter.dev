@@ -1,0 +1,111 @@
+name: deploy
+
+on:
+  push:
+    tags: ['[0-9]+.[0-9]+.[0-9]+']
+
+permissions: {}
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      # stops a tag like 1.0 or 01.0.0, which the trigger's pattern can't rule out, and a tag off main
+      - name: check the tag
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          [[ $TAG =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+      - name: set up Bun and packages
+        uses: ./.github/actions/bun
+      - name: read the release notes
+        env:
+          TAG: ${{ github.ref_name }}
+        run: bun release/notes.ts "$TAG" > notes.md
+      - name: upload the release notes
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: notes
+          path: notes.md
+          retention-days: 3
+
+  # runs the whole CI again on the tag's commit, so the deploy uploads the site that the tests opened
+  ci:
+    needs: tag
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    # runs one deploy at a time and doesn't cancel a running deploy. The group sits on this job only, so a tag's CI
+    # starts right away. GitHub keeps one waiting run per group, so a third tag replaces the second while it waits.
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    # waits for the owner's approval, which also hands over the environment's key
+    environment:
+      name: production
+      url: https://decomp.loter.dev
+    steps:
+      - name: check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: set up Bun and packages
+        uses: ./.github/actions/bun
+      - name: download the site
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: site
+          path: artifacts/site
+      - name: write the key and the host's key
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ vars.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 600 /dev/null "$RUNNER_TEMP/key"
+          printf '%s\n' "$SSH_KEY" > "$RUNNER_TEMP/key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/known_hosts"
+      - name: upload and switch to the release
+        env:
+          SSH_HOST: ${{ vars.SSH_HOST }}
+          SSH_USER: ${{ vars.SSH_USER }}
+          TAG: ${{ github.ref_name }}
+        run: release/deploy.sh "$TAG" artifacts/site "$RUNNER_TEMP/key" "$RUNNER_TEMP/known_hosts"
+      - name: remove the key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/key"
+      - name: check the live site
+        run: bun release/check-live.ts https://decomp.loter.dev
+
+  release:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: download the release notes
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: notes
+      - name: publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" --verify-tag --title "$TAG" --notes-file notes.md

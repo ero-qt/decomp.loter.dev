@@ -7,6 +7,7 @@
     "package.json": "bun.lock, tsconfig.json, justfile",
     // leaves editor-testing.ts and page-testing.ts at the top because many test files share them
     "*.ts": "${capture}.test.ts, ${capture}-*.test.ts, ${capture}.perf.ts, ${capture}-testing.ts",
+    "*.sh": "${capture}.test.ts, ${capture}.service, ${capture}.timer",
   },
   "files.exclude": {
     "artifacts/": true,

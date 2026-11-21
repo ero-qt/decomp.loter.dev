@@ -124,6 +124,7 @@ jobs:
           - engines/dotnet
           - engines/fake
           - engines/java
+          - engines/shared
           - host
           - release
           - shell

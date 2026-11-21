@@ -2,7 +2,7 @@ import type { Document } from '../../contract/document';
 import type { Description, Listing, StringUse } from '../../contract/engine';
 import { failed, ok, type Reply } from '../../contract/reply';
 import type { EngineHandlers } from '../../contract/serve';
-import { hasCliHeader } from '../pe';
+import { hasCliHeader } from '../shared/pe';
 import manifest from './manifest.json' with { type: 'json' };
 import { readInt32s, readReply, readVoidReply } from './replies';
 import type { DotnetExports, DotnetRuntime } from './runtime';

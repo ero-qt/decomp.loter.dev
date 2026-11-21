@@ -1,4 +1,4 @@
-import { hasCliHeader, isPeFile } from '../pe';
+import { hasCliHeader, isPeFile } from '../shared/pe';
 
 const elfClasses = [1, 2];
 const elfByteOrders = [1, 2];

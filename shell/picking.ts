@@ -7,7 +7,7 @@ export interface PickedFile {
 
 /**
  * Returns the warning for the picked files that no engine opened, or `undefined` when each file opened. The warning
- * lists each unopened file outside a folder, but a folder gets a warning only when none of the folder's files opened,
+ * lists each unopened file outside a folder, but a folder only gets a warning when none of the folder's files opened,
  * because a folder often has files that no engine opens.
  */
 export function formatUnopenedText(pickedFiles: PickedFile[], unopened: PickedFile[]): string | undefined {

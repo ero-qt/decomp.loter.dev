@@ -24,7 +24,7 @@ test('Ctrl+, opens the Settings editor, whose font size changed to 20 stays afte
 
     await findFontSizeInput(page).fill('20');
     await page.keyboard.press('Tab');
-    // reloads only after the workbench stored the setting because the Settings editor writes it after a short delay
+    // only reloads after the workbench stored the setting because the Settings editor writes it after a short delay
     const storedSize = async () => (await readStoredUserFile(page, '/User/settings.json'))?.includes('"editor.fontSize": 20') ?? false;
     await readUntil(storedSize, true);
     await page.reload();

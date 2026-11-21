@@ -98,7 +98,7 @@ function listSeedUrls(seed: string, versions: Versions): Map<string, string> {
 }
 
 // rewrites the upstream URLs with git's `insteadOf` through the environment, which writes no config file, and lets git
-// use only local repos, so a URL that the seed doesn't serve stops the fetch in place of a download
+// only use local repos, so a URL that the seed doesn't serve stops the fetch in place of a download
 function seedEnvironment(seed: string, versions: Versions): Record<string, string> {
     const environment: Record<string, string> = { GIT_ALLOW_PROTOCOL: 'file' };
     const urls = [...listSeedUrls(seed, versions)];
@@ -180,7 +180,7 @@ function checkSubprojects(folder: string, versions: Versions) {
 /**
  * Fetches the Meson subprojects of Rizin's checkout into its `subprojects` folder, which Rizin's git ignores, and
  * checks each one against its pin. Fetches them again after a change of the wraps or their package files, because
- * Meson applies those only to a new download. Takes the subprojects from the seed when one is given or
+ * Meson only applies those to a new download. Takes the subprojects from the seed when one is given or
  * `NATIVE_SOURCES_SEED` points at one, else from the upstream URLs.
  */
 export async function fetchSubprojects(

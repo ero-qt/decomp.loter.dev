@@ -8,7 +8,7 @@ const ids: string[] = [];
 rmSync(site, { recursive: true, force: true });
 for (const folder of readdirSync(new URL('.', import.meta.url), { withFileTypes: true })) {
     const source = new URL(`${folder.name}/`, import.meta.url);
-    // skips an engine's folder without a manifest because the site lists an engine only once it's whole
+    // skips an engine's folder without a manifest because the site only lists an engine once it's whole
     if (!folder.isDirectory() || !existsSync(new URL('manifest.json', source))) {
         continue;
     }

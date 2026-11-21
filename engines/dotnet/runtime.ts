@@ -31,7 +31,7 @@ interface DotnetModule {
     };
 }
 
-// keeps one runtime for each URL because `dotnet.js` loads its native module only once in a process
+// keeps one runtime for each URL because `dotnet.js` only loads its native module once in a process
 const runtimes = new Map<string, Promise<DotnetRuntime>>();
 
 async function startRuntime(dotnetUrl: string): Promise<DotnetRuntime> {

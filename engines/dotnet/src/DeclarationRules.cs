@@ -45,7 +45,7 @@ internal static class DeclarationRules
             && !IsDefaultConstructor(file, member);
     }
 
-    // leaves out the accessors because their property or event shows, an enum's value field because C# shows only the
+    // leaves out the accessors because their property or event shows, an enum's value field because C# only shows the
     // constants, and a delegate's members because C# declares a delegate without a body
     private static bool IsWrittenElsewhere(IMember member)
     {
@@ -54,7 +54,7 @@ internal static class DeclarationRules
             or { DeclaringTypeDefinition.Kind: TypeKind.Delegate };
     }
 
-    // leaves out the static constructor of a `beforefieldinit` type because C# then made it only for field
+    // leaves out the static constructor of a `beforefieldinit` type because C# then only made it for field
     // initializers, which the decompiler moves to the fields
     private static bool IsFieldInitializer(MetadataFile file, IMember member)
     {

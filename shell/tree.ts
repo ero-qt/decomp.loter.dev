@@ -70,7 +70,7 @@ export class SymbolsTree implements TreeDataProvider<ViewRow> {
             });
             this.fileRows.set(file, fileRow);
         }
-        // takes a failed `provide` call's text here too because the workbench lists a collapsed file's rows only once
+        // takes a failed `provide` call's text here too because the workbench only lists a collapsed file's rows once
         // the row expands
         if (file.errorText !== undefined) {
             fileRow.description = file.errorText;
@@ -100,7 +100,7 @@ export class SymbolsTree implements TreeDataProvider<ViewRow> {
             return [...missingFileRows, ...createViewRows(file, rows, rowsBelow, -1)];
         } catch (error) {
             fileRow.description = readErrorText(error, 'The engine crashed while it listed the file.');
-            // gives the file's row a new id because the workbench lists an expanded row again only as a new, collapsed
+            // gives the file's row a new id because the workbench only lists an expanded row again as a new, collapsed
             // row
             fileRow.id = `failed listing ${++failedListingCount}`;
             this.changed.fire(undefined);

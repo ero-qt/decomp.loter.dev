@@ -63,7 +63,7 @@ jobs:
         id: submodules
         run: echo "hash=$(git submodule status --recursive | sha256sum | cut -c 1-16)" >> "$GITHUB_OUTPUT"
       # keeps the build of Rizin and rz-ghidra, because the first build takes about 17 minutes, and
-      # restores the last build with the same tools after a change, whose stamps then rebuild only what changed
+      # restores the last build with the same tools after a change, whose stamps then only rebuild what changed
       - name: cache the native build
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -164,7 +164,7 @@ jobs:
           submodules: recursive
       - name: set up Bun and packages
         uses: ./.github/actions/bun
-      # installs the clang and LLVM's tools that build the fixture, because Emscripten's LLVM builds only WebAssembly
+      # installs the clang and LLVM's tools that build the fixture, because Emscripten's LLVM only builds WebAssembly
       - name: set up the native tools
         uses: ./.github/actions/native-tools
         with:

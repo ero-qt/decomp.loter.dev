@@ -63,7 +63,7 @@ viewsRegistry.onViewsRegistered(registered => {
 
 /**
  * Adds the empty Symbols view's text through the views registry, because the workbench doesn't read an extension's
- * `viewsWelcome` contribution. The buttons work only after the commands that open files are registered. Each error text
+ * `viewsWelcome` contribution. The buttons only work after the commands that open files are registered. Each error text
  * shows below the buttons.
  */
 export function addSymbolsWelcome(errorTexts: string[]) {

@@ -65,8 +65,8 @@ function findFileId(method: keyof Engine, [first]: unknown[]): QueuedCall['fileI
  * Returns an engine whose calls run one at a time in a module worker that starts with the first call. A call that
  * crashes the worker or runs longer than the time limit rejects. The calls after that call run in a new worker, which
  * opens a file again under the same id before the first call for that file, so the page's file ids and targets stay
- * valid. The worker stops after a call that leaves neither an open file nor a claimed file. A claimed file keeps the
- * worker only until the time limit. A call whose signal aborts rejects at once with a `CanceledError`. A canceled call
+ * valid. The worker stops after a call that leaves neither an open file nor a claimed file. A claimed file only keeps
+ * the worker until the time limit. A call whose signal aborts rejects at once with a `CanceledError`. A canceled call
  * that runs past the cancel limit while another call waits stops the worker like a call past the time limit.
  */
 export function connectEngine(workerUrl: string | URL | TrustedScriptURL, options: ConnectOptions): Engine {
@@ -88,7 +88,7 @@ export function connectEngine(workerUrl: string | URL | TrustedScriptURL, option
     let hasClaimedFile = false;
 
     function start() {
-        // casts a trusted URL because TypeScript's `Worker` takes a string or a `URL` only
+        // casts a trusted URL because TypeScript's `Worker` only takes a string or a `URL`
         const startedWorker = new Worker(workerUrl as string | URL, { type: 'module' });
         worker = startedWorker;
         // limits the time until `ready` because a worker that never gets ready would leave every call pending
@@ -206,7 +206,7 @@ export function connectEngine(workerUrl: string | URL | TrustedScriptURL, option
 
         const lostError = lostFiles.get(fileId);
         if (method === 'close') {
-            // forgets a file only when its close is sent because the calls queued before the close still need the file
+            // only forgets a file when its close is sent because the calls queued before the close still need the file
             openFiles.delete(fileId);
             lostFiles.delete(fileId);
             if (openedFileIds.delete(fileId)) {

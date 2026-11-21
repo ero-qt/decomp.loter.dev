@@ -86,7 +86,7 @@ internal static class MissingFiles
     }
 
     // follows a type reference through the open facades that forward its type, because a facade like netstandard
-    // forwards types to about 80 assemblies and the file's C# needs only the assemblies of the types that it uses
+    // forwards types to about 80 assemblies and the file's C# only needs the assemblies of the types that it uses
     private static IEnumerable<(string Name, string Version)> FollowForwarders(
         MetadataReader metadata,
         TypeReferenceHandle handle,

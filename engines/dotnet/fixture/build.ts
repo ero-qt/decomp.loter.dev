@@ -44,7 +44,7 @@ function runSdk(dotnet: string, args: string[]): string {
     return stdout.toString().trim();
 }
 
-// checks the assemblies against the stamp of their build, and checks the SDK and its reference pack only with an SDK
+// checks the assemblies against the stamp of their build, and only checks the SDK and its reference pack with an SDK
 // because a test without one keeps the assemblies of any SDK
 function isFresh(output: string, dotnet: string | undefined): boolean {
     const stamp = join(output, stampName);

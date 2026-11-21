@@ -133,7 +133,7 @@ static void mark_parameters(RzAnalysisFunction *fcn, RzCallable *callable) {
 /**
  * \brief Adds the names and types of the DWARF information to a function.
  *
- * Rizin adds them only in the analysis of the whole binary, so this runs that step on a table with only this function.
+ * Rizin only adds them in the analysis of the whole binary, so this runs that step on a table with only this function.
  * Sets the parameters from the signature in the type database, because a parameter's DWARF location is often right
  * only at the start of the function.
  */

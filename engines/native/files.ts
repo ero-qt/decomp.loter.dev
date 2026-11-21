@@ -25,7 +25,7 @@ export async function mountInMemory(fs: ModuleFileSystem, folder: string, name: 
 }
 
 /**
- * Mounts a Blob into the module's file system with Emscripten's WORKERFS, which reads only the parts of the Blob that
+ * Mounts a Blob into the module's file system with Emscripten's WORKERFS, which only reads the parts of the Blob that
  * Rizin reads, so a large file isn't copied into the module's memory.
  */
 export async function mountInWorker(fs: ModuleFileSystem, folder: string, name: string, file: Blob): Promise<MountedFile> {

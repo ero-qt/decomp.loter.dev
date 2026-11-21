@@ -20,7 +20,7 @@ function findViewButton(page: Page, label: string, title: string): Locator {
     return findGroup(page, label).locator('.editor-actions .action-label').getByText(title, { exact: true });
 }
 
-// reads only the buttons with a text because the editor's other buttons show an icon
+// only reads the buttons with a text because the editor's other buttons show an icon
 async function readViewButtons(page: Page, label: string): Promise<string[]> {
     const texts = await findGroup(page, label).locator('.editor-actions .action-label').allTextContents();
 

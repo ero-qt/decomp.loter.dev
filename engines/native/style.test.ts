@@ -35,7 +35,7 @@ test('c files stay within 150 columns', () => {
     expect(wideLines).toEqual([]);
 });
 
-// checks the format only where clang-format is there, because the build doesn't need it
+// only checks the format where clang-format is there, because the build doesn't need it
 test.skipIf(findClangFormat() === undefined)("c files keep Rizin's clang-format style", () => {
     const command = [findClangFormat()!, '--dry-run', '-Werror', ...glueFiles];
     const { exitCode, stderr } = Bun.spawnSync(command, { cwd: glueFolder });

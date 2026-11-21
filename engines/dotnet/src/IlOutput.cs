@@ -24,7 +24,7 @@ internal sealed class IlOutput : ITextOutput, IDisposable
     private readonly DocumentTokens _tokens;
     private readonly MetadataModule _module;
 
-    // label -> the indexes of its tokens, because a label gets a target only once a branch uses it and a branch can
+    // label -> the indexes of its tokens, because a label only gets a target once a branch uses it and a branch can
     // come after the label
     private readonly Dictionary<(Handle Method, int Offset), List<int>> _labelTokens = [];
     private readonly HashSet<(Handle Method, int Offset)> _branchTargets = [];

@@ -37,7 +37,7 @@ EMSCRIPTEN_KEEPALIVE char *session_references(Session *session, const char *addr
  * \brief Returns the first max strings of the binary with their addresses as hex strings, each cut after max_bytes, as
  * JSON.
  *
- * Cuts a string only between 2 characters of UTF-8. The caller frees the result with free().
+ * Only cuts a string between 2 characters of UTF-8. The caller frees the result with free().
  */
 EMSCRIPTEN_KEEPALIVE char *session_strings(Session *session, size_t max, size_t max_bytes) {
 	RzBinObject *object = rz_bin_cur_object(session_use(session)->bin);

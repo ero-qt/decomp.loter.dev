@@ -25,7 +25,7 @@ async function startWorker(page: Page) {
     return page.evaluate(() => {
         // makes the URL a trusted one because the site's policy requires trusted types for a worker's script
         const trusted = window.trustedTypes!.createPolicy('worker.test', { createScriptURL: url => url });
-        // casts the trusted URL because TypeScript's `Worker` takes a string or a `URL` only
+        // casts the trusted URL because TypeScript's `Worker` only takes a string or a `URL`
         const worker = new Worker(trusted.createScriptURL('engines/dotnet/worker.js') as unknown as URL, { type: 'module' });
         const nextMessage = () =>
             new Promise(resolve => worker.addEventListener('message', event => resolve(event.data), { once: true }));
@@ -108,7 +108,7 @@ test("dotnet engine's worker in the page stops a search for users once the page 
     );
     const value = formatTarget({ fileId: 1, key: findRow(await openInPage(page, assembly), 'Target.Value', assembly.name).key });
 
-    // times a search first because the worker sees the cancel only once the search passed the 50 ms between its checks
+    // times a search first because the worker only sees the cancel once the search passed the 50 ms between its checks
     const [searchMs, ...replies] = await page.evaluate(async target => {
         const { callEngine, cancelEngine } = window as unknown as TestWindow;
         const search = { method: 'findReferences', args: [target, 'csharp'] };

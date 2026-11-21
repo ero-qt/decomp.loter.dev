@@ -112,7 +112,7 @@ function findOnPath(name: string, path: string): string | undefined {
 
 /**
  * Finds an LLVM tool, like `ld.lld`, in NATIVE_LLVM's folder, else on the PATH, else in Emscripten's LLVM. Takes
- * Emscripten's LLVM last because the one of emsdk builds only WebAssembly. Throws a text with the tool's name when
+ * Emscripten's LLVM last because the one of emsdk only builds WebAssembly. Throws a text with the tool's name when
  * none of them has it.
  */
 export function findLlvmTool(name: string, { llvm, emscripten }: LlvmFolders, path = process.env.PATH ?? ''): string {

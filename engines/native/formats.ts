@@ -19,7 +19,7 @@ function claimsElf(start: Uint8Array): boolean {
     return start.length >= 6 && elfClasses.includes(start[4]) && elfByteOrders.includes(start[5]);
 }
 
-// checks the count of slices and that the first slice lies inside the file, which reads only the first slice's entry
+// checks the count of slices and that the first slice lies inside the file, which only reads the first slice's entry
 async function claimsFatMacho(file: Blob): Promise<boolean> {
     const header = new DataView((await file.slice(0, fatHeaderSize + fatEntrySize).bytes()).buffer);
     if (header.byteLength < fatHeaderSize + fatEntrySize) {

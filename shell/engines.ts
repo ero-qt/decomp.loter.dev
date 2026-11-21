@@ -114,7 +114,7 @@ export function listExtensions(engines: SiteEngine[]): string[] {
  */
 export async function findEngine(engines: SiteEngine[], file: File): Promise<SiteEngine | undefined> {
     const empty = new Uint8Array();
-    // matches only extensions for a file whose start can't be read because no engine opens such a file by its magic
+    // only matches extensions for a file whose start can't be read because no engine opens such a file by its magic
     const start = hasMagics(engines) ? await readStart(file).catch(() => empty) : empty;
     for (const candidate of engines) {
         if (matchesFile(candidate.manifest, file.name, start) && (await candidate.engine.claims(file.name, file))) {

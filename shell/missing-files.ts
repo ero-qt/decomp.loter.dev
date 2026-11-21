@@ -14,7 +14,7 @@ export function findMissingFileExtensions(name: string): string[] {
 
 /**
  * Appends the markdown link that runs `loadMissingFileCommand` with a missing file's name and the open file's path, and
- * trusts only that command.
+ * only trusts that command.
  */
 export function appendLoadLink(markdown: MarkdownString, name: string, path: string): MarkdownString {
     // writes `%`, `(` and `)` as JSON escapes because the link goes through markdown, which ends a link at `)`, and

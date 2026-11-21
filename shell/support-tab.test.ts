@@ -10,7 +10,7 @@ const openWorkbench = startWorkbench();
 const balanceFile = { balance: '12.50', price: '9.00', asOf: '2026-11-19T08:00+00:00' };
 const supportTab = { label: 'Support', isPreview: false };
 
-// the note's lines without the balance status, which shows only with a `balance.json`
+// the note's lines without the balance status, which only shows with a `balance.json`
 const noteLines = [
     'Support this project',
     'decomp.loter.dev runs on Uberspace for €9 a month. Uberspace is a small, owner-managed hosting company from Germany whose '

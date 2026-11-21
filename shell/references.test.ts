@@ -262,7 +262,7 @@ test("cursor move during Shift+F12 stops the reads of further users and cancels 
     await page.keyboard.press('Shift+F12');
     expect(await readUntil(async () => Math.min(await countUserReads(page), 2), 2)).toBe(2);
     await page.keyboard.press('ArrowDown');
-    // waits for the read that started before the move because the search stops only between users. A search that goes
+    // waits for the read that started before the move because the search only stops between users. A search that goes
     // on sends the next user's read in the task of the last reply, so the page then never has a reply for each read.
     await waitForEngineReplies(page, 'read');
 

@@ -45,7 +45,7 @@ const views = manifest.views.map(view => view.id);
 // a folder of its own
 let mountCount = 0;
 
-// checks whether a binary imports only from mscoree.dll, like a .NET assembly without its CLI header
+// checks whether a binary only imports from mscoree.dll, like a .NET assembly without its CLI header
 function isManagedStub(module: NativeModule, session: number): boolean {
     const imports: { libname?: string }[] = JSON.parse(module.runCommand(session, 'iij') || '[]');
 
@@ -89,7 +89,7 @@ function refuseModuleErrors(handlers: EngineHandlers): EngineHandlers {
 
 /**
  * Returns the native engine's handlers, which load the module with the first call that needs it, because `claims` then
- * reads only the file's headers. Each open file gets a Rizin session. `mountFile` puts the file's bytes where the
+ * only reads the file's headers. Each open file gets a Rizin session. `mountFile` puts the file's bytes where the
  * session reads them.
  */
 export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mountFile: MountFile): EngineHandlers {
@@ -175,7 +175,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
         return index === undefined ? undefined : { fileId: parsed.fileId, file, listing, index };
     }
 
-    // searches a file's code for references once, because Rizin finds a reference only in searched code
+    // searches a file's code for references once, because Rizin only finds a reference in searched code
     function searchCode(module: NativeModule, file: NativeFile) {
         if (!file.isSearched) {
             module.runCommand(file.session, 'aar');

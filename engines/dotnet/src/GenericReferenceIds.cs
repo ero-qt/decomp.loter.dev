@@ -10,7 +10,7 @@ namespace Decomp.Dotnet;
 /// <summary>
 ///     Writes the ID strings of the methods that a file calls on instances of generic types, both with the type
 ///     arguments in place of the type parameters, like <c>Lib.Box{System.Int32}.Put(System.Int32)</c>, and like the
-///     definition, like <c>Lib.Box`1.Put(`0)</c>. The decompiler's method of a type outside the open files has only the
+///     definition, like <c>Lib.Box`1.Put(`0)</c>. The decompiler's method of a type outside the open files only has the
 ///     first, because it puts the type arguments into the parameters.
 /// </summary>
 internal static class GenericReferenceIds

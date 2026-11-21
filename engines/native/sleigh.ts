@@ -26,7 +26,7 @@ export function findProcessor(module: NativeModule, session: number): Reply<stri
 /**
  * Returns the function that writes a processor's compiled languages into the module's file system before its first
  * decompile. Writes the small specification files of every processor with the first call, even without a processor,
- * because Ghidra reads them all to list its languages. Marks a processor and the list only after their writes, so a
+ * because Ghidra reads them all to list its languages. Only marks a processor and the list after their writes, so a
  * failed fetch tries again with the next call.
  */
 export function createLanguageWriter(module: NativeModule): (processor?: string) => Promise<void> {

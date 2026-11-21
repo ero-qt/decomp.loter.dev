@@ -176,7 +176,7 @@ static void name_parts(Session *session, RzAnalysisFunction *fcn) {
 }
 
 /**
- * \brief Analyzes the function at an address on the first request for it, keeps only its own blocks and adds its debug
+ * \brief Analyzes the function at an address on the first request for it, only keeps its own blocks and adds its debug
  * information.
  */
 static RzAnalysisFunction *prepare(Session *session, ut64 addr) {

@@ -27,7 +27,7 @@ internal sealed class CSharpOutput : ITextOutput, IDisposable
     private readonly DocumentTokens _tokens;
     private readonly CSharpFormattingOptions _formattingOptions;
 
-    // keeps a token only while the token writer writes a name, because the decompiler also passes the symbols of
+    // only keeps a token while the token writer writes a name, because the decompiler also passes the symbols of
     // keywords like `string` and of punctuation like the `;` of an accessor
     private bool _isWritingName;
 

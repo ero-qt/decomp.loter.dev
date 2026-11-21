@@ -11,7 +11,7 @@ const document = { text: '', tokens: new Int32Array(), targets: [], locals: [] }
 // the functions that finish the reads that the workers run, in the order of the reads
 let finishReads: (() => void)[];
 
-// serves handlers that ignore their signal, like an engine whose call runs in wasm, and finish a read only through
+// serves handlers that ignore their signal, like an engine whose call runs in wasm, and only finish a read through
 // `finishReads`
 function createHandlers(): EngineHandlers {
     return {

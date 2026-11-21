@@ -48,8 +48,8 @@ async function findFakeEngineFile(pathname: string, root: URL): Promise<Blob | u
 }
 
 /**
- * Serves the built site like a static host on a free port, with the site's headers on every response. Adds the fake
- * engine, which only the tests use, to the site's engines.
+ * Serves the built site like a static host on a free port, with the site's headers on every response and the site's
+ * page for a missing file. Adds the fake engine, which only the tests use, to the site's engines.
  */
 export function startSiteServer(root = siteRoot) {
     if (!existsSync(new URL('index.html', root))) {
@@ -68,7 +68,7 @@ export function startSiteServer(root = siteRoot) {
 
             const file = findSiteFile(pathname, root);
             if (!(await file.exists())) {
-                return new Response(null, { status: 404, headers: siteHeaders });
+                return new Response(findSiteFile('/404.html', root), { status: 404, headers: siteHeaders });
             }
 
             return new Response(file, { headers: siteHeaders });

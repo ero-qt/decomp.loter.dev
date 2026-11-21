@@ -56,17 +56,18 @@ function checkResponse(response: Response, { path, status, cacheControl, content
 /**
  * Lists each response of the site at the URL that differs from host/htaccess, for a few files of the built site in the
  * folder and for missing files. Also checks that the site's page is the built `index.html`, so a deploy that didn't
- * switch the site shows.
+ * switch the site shows. Checks too that a missing file gets the built `404.html`, not the host's own page.
  */
 export async function checkSiteResponses(siteUrl: URL, siteFolder: string): Promise<string[]> {
     const problems: string[] = [];
 
     for (const expected of listExpectedResponses(siteFolder)) {
         const response = await fetch(new URL(expected.path, siteUrl), { redirect: 'manual' });
-        if (expected.path !== '/') {
+        const page = expected.path === '/' ? 'index.html' : expected.status === 404 ? '404.html' : undefined;
+        if (!page) {
             await response.body?.cancel();
-        } else if ((await response.text()) !== (await Bun.file(`${siteFolder}/index.html`).text())) {
-            problems.push("/ isn't the built index.html");
+        } else if ((await response.text()) !== (await Bun.file(`${siteFolder}/${page}`).text())) {
+            problems.push(`${expected.path} isn't the built ${page}`);
         }
 
         problems.push(...checkResponse(response, expected));

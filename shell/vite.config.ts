@@ -16,12 +16,25 @@ export default defineConfig({
         outDir: '../artifacts/site',
         emptyOutDir: true,
         assetsInlineLimit: 0,
-        // builds the privacy page as a page of its own because it has to work without the workbench's scripts
+        // builds the privacy page and the page for a missing file as pages of their own because they have to work
+        // without the workbench's scripts
         rolldownOptions: {
-            input: [`${import.meta.dirname}/index.html`, `${import.meta.dirname}/privacy.html`],
+            input: ['index.html', 'privacy.html', '404.html'].map(name => `${import.meta.dirname}/${name}`),
         },
     },
     plugins: [
+        {
+            name: 'absolute-links',
+            enforce: 'post',
+            // links the page for a missing file's files from the site's root because the host serves the page at the
+            // missing file's path, which can sit in a folder
+            generateBundle(options, bundle) {
+                const page = bundle['404.html'];
+                if (page?.type === 'asset') {
+                    page.source = String(page.source).replaceAll('="./', '="/');
+                }
+            },
+        },
         {
             name: 'built-files',
             enforce: 'pre',

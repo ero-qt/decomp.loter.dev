@@ -18,6 +18,8 @@ interface HeaderDirective {
     action: string;
     name: string;
     value: string | undefined;
+    /** The environment variable that the directive needs, like `long_cache`, or `!long_cache` for its absence. */
+    env: string | undefined;
     /** The names of the blocks around the directive, like `If`, from the outside in. */
     blocks: string[];
 }
@@ -31,13 +33,13 @@ function readHeaderDirectives(): HeaderDirective[] {
     for (const line of lines) {
         const [, closed] = /^<\/(\w+)>$/.exec(line) ?? [];
         const [, opened] = /^<(\w+)[\s>]/.exec(line) ?? [];
-        const [, condition = '', action, name, value] = /^Header (?:(always|onsuccess) )?(\w+) (\S+)(?: "(.*)")?$/.exec(line) ?? [];
+        const [, condition = '', action, name, value, env] = /^Header (?:(always|onsuccess) )?(\w+) (\S+)(?: "(.*)")?(?: env=(\S+))?$/.exec(line) ?? [];
         if (closed) {
             blocks.pop();
         } else if (opened) {
             blocks.push(opened);
         } else if (action) {
-            directives.push({ condition, action, name, value, blocks: [...blocks] });
+            directives.push({ condition, action, name, value, env, blocks: [...blocks] });
         }
     }
 
@@ -59,14 +61,22 @@ test("htaccess sets each of the site's headers once, outside each block, with ev
     const names = Object.keys(siteHeaders);
     const securityDirectives = readHeaderDirectives().filter(({ name }) => names.includes(name));
 
-    expect(securityDirectives.map(({ condition, action, blocks }) => [condition, action, blocks])).toEqual(names.map(() => ['always', 'set', []]));
+    expect(securityDirectives.map(({ condition, action, env, blocks }) => [condition, action, env, blocks])).toEqual(
+        names.map(() => ['always', 'set', undefined, []]),
+    );
     expect(Object.fromEntries(securityDirectives.map(({ name, value }) => [name, value]))).toEqual(siteHeaders);
 });
 
-test('htaccess sends the cache header only with a found file', () => {
+// checks that each cache header sits outside each block, because Apache drops the `always` headers of a request that
+// matches an `<If>` with a `Header` inside
+test('htaccess sends the cache header only with a found file, outside each block, by the mark of a fingerprinted file', () => {
     const cacheDirectives = readHeaderDirectives().filter(({ name }) => name === 'Cache-Control');
 
-    expect(cacheDirectives.map(({ condition, action }) => [condition, action])).toEqual(Array(4).fill(['', 'set']));
+    expect(cacheDirectives.map(({ condition, action, value, env, blocks }) => [condition, action, value, env, blocks])).toEqual([
+        ['', 'set', 'public, max-age=31536000, immutable', 'long_cache', []],
+        ['', 'set', 'no-cache', '!long_cache', []],
+    ]);
+    expect(lines.filter(line => /^<(Else)?If/.test(line))).toEqual([]);
 });
 
 test('htaccess keeps each file with a fingerprint for a year and lets browsers ask again for each other file of the site', async () => {

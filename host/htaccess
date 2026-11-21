@@ -14,16 +14,13 @@ Options -ExecCGI -Includes -Indexes
     Require all denied
 </FilesMatch>
 
-# lets browsers ask again for each file whose name stays the same from build to build, and sends the cache header
-# only with a found file, because a missing file in assets/ mustn't stay cached for a year
-Header set Cache-Control "no-cache"
-# keeps each file with a fingerprint in its name for a year: Vite's assets, the .NET framework's files and Bun's chunks
-<If "%{REQUEST_URI} =~ m#^/assets/#">
-    Header set Cache-Control "public, max-age=31536000, immutable"
-</If>
-<ElseIf "%{REQUEST_URI} =~ m#^/engines/dotnet/_framework/[^/]+\.[a-z0-9]{10}\.(js|wasm)$#">
-    Header set Cache-Control "public, max-age=31536000, immutable"
-</ElseIf>
-<ElseIf "%{REQUEST_URI} =~ m#^/engines/[^/]+/[^/]+-[a-z0-9]{8}\.js$#">
-    Header set Cache-Control "public, max-age=31536000, immutable"
-</ElseIf>
+# marks each file with a fingerprint in its name: Vite's assets, the .NET framework's files and Bun's chunks
+SetEnvIf Request_URI "^/assets/" long_cache
+SetEnvIf Request_URI "^/engines/dotnet/_framework/[^/]+\.[a-z0-9]{10}\.(js|wasm)$" long_cache
+SetEnvIf Request_URI "^/engines/[^/]+/[^/]+-[a-z0-9]{8}\.js$" long_cache
+
+# keeps each marked file for a year and lets browsers ask again for each other file. Sends the cache header only with
+# a found file, because a missing file in assets/ mustn't stay cached for a year. Doesn't use `<If>`, because
+# Apache drops the `always` headers above for each request that matches one.
+Header set Cache-Control "public, max-age=31536000, immutable" env=long_cache
+Header set Cache-Control "no-cache" env=!long_cache

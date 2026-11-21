@@ -1,9 +1,13 @@
 import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import type { BuildArtifact } from 'bun';
 import { afterAll, afterEach, beforeAll } from 'bun:test';
 import { type Browser, chromium, type Locator, type Page } from 'playwright';
 import { siteHeaders } from './headers';
 
 const siteRoot = new URL('../artifacts/site/', import.meta.url);
+const fakeEngine = new URL('../engines/fake/', import.meta.url);
+let fakeWorker: Promise<BuildArtifact> | undefined;
 
 export const testTimeoutMs = 30000;
 
@@ -12,7 +16,41 @@ export function findSiteFile(pathname: string, root = siteRoot) {
     return Bun.file(new URL(`.${pathname.endsWith('/') ? `${pathname}index.html` : pathname}`, root));
 }
 
-/** Serves the built site like a static host on a free port, with the site's headers on every response. */
+// builds the fake engine's worker like `engines/build.ts` builds an engine's worker, because the site leaves the fake
+// engine out
+async function buildFakeWorker(): Promise<BuildArtifact> {
+    const { outputs } = await Bun.build({
+        entrypoints: [fileURLToPath(new URL('worker.ts', fakeEngine))],
+        target: 'browser',
+        format: 'esm',
+        minify: true,
+        throw: true,
+    });
+
+    return outputs[0];
+}
+
+// finds the fake engine's file for a URL's path, or the site's index with the fake engine's id
+async function findFakeEngineFile(pathname: string, root: URL): Promise<Blob | undefined> {
+    if (pathname === '/engines/index.json') {
+        const ids: string[] = await findSiteFile(pathname, root).json();
+
+        return new Blob([JSON.stringify([...ids, 'fake'].sort())], { type: 'application/json' });
+    }
+    if (pathname === '/engines/fake/manifest.json') {
+        return Bun.file(new URL('manifest.json', fakeEngine));
+    }
+    if (pathname === '/engines/fake/worker.js') {
+        fakeWorker ??= buildFakeWorker();
+
+        return fakeWorker;
+    }
+}
+
+/**
+ * Serves the built site like a static host on a free port, with the site's headers on every response. Adds the fake
+ * engine, which only the tests use, to the site's engines.
+ */
 export function startSiteServer(root = siteRoot) {
     if (!existsSync(new URL('index.html', root))) {
         throw new Error("the site isn't built, run `bun run build` first");
@@ -22,7 +60,13 @@ export function startSiteServer(root = siteRoot) {
         hostname: '127.0.0.1',
         port: 0,
         async fetch(request) {
-            const file = findSiteFile(new URL(request.url).pathname, root);
+            const { pathname } = new URL(request.url);
+            const fakeEngineFile = await findFakeEngineFile(pathname, root);
+            if (fakeEngineFile) {
+                return new Response(fakeEngineFile, { headers: siteHeaders });
+            }
+
+            const file = findSiteFile(pathname, root);
             if (!(await file.exists())) {
                 return new Response(null, { status: 404, headers: siteHeaders });
             }

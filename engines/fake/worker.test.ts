@@ -1,13 +1,24 @@
 import { expect, test } from 'bun:test';
 import { fakeManifest } from '../../contract/fake';
 import { readManifest } from '../../contract/manifest';
-import { findSiteFile, startWorkbench, testTimeoutMs } from '../../shell/page-testing';
+import { findSiteFile, startSiteServer, startWorkbench, testTimeoutMs } from '../../shell/page-testing';
 
 const openWorkbench = startWorkbench();
 
-test("site lists the fake engine and has the fake engine's manifest", async () => {
-    expect(await findSiteFile('/engines/index.json').json()).toEqual(['dotnet', 'fake', 'java', 'native']);
-    expect(readManifest(await findSiteFile('/engines/fake/manifest.json').json())).toEqual(fakeManifest);
+test('built site leaves out the fake engine because only the tests use it', async () => {
+    expect(await findSiteFile('/engines/index.json').json()).toEqual(['dotnet', 'java', 'native']);
+    expect(await findSiteFile('/engines/fake/manifest.json').exists()).toBe(false);
+});
+
+test("site server for the tests lists the fake engine and serves the fake engine's manifest", async () => {
+    const server = startSiteServer();
+
+    try {
+        expect(await (await fetch(new URL('engines/index.json', server.url))).json()).toEqual(['dotnet', 'fake', 'java', 'native']);
+        expect(readManifest(await (await fetch(new URL('engines/fake/manifest.json', server.url))).json())).toEqual(fakeManifest);
+    } finally {
+        server.stop();
+    }
 });
 
 test("fake engine's worker gets ready on the site without a policy violation", async () => {

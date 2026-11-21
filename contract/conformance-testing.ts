@@ -1,11 +1,12 @@
 import { expect, test } from 'bun:test';
+import { checkWithFiles, findRow, readFirstView } from './checking';
 import type { Check, Fixture, FixtureWith } from './conformance';
 import type { Document } from './document';
-import type { Listing } from './engine';
+import type { Engine, Listing } from './engine';
 import { createFakeHandlers, fakeManifest, sampleFiles } from './fake';
 import { connectFake } from './fake-testing';
 import { InThreadWorker, useInThreadWorker } from './in-thread-worker';
-import { ok } from './reply';
+import { EngineError, ok } from './reply';
 import { readRows, type Row, writeRows } from './rows';
 import type { EngineHandlers } from './serve';
 
@@ -124,4 +125,42 @@ export function testFailure(defect: string, breakHandlers: BreakHandlers, check:
 
         await expect(check(connectFake(), checked)).rejects.toThrow(message);
     });
+}
+
+// opens the fixture's file, lists its rows and reads its symbol, which are the calls that can need an engine's lazy
+// part
+async function useFixtureFile(engine: Engine, fixture: Fixture): Promise<void> {
+    const { file, symbol } = fixture;
+    await checkWithFiles(engine, [file], async fileId => {
+        const { key } = findRow(readRows(await engine.list(fileId)), symbol, file.name);
+        await engine.read(fileId, key, readFirstView(fixture));
+    });
+}
+
+/**
+ * Checks that the first call that needs the engine's failing loader throws an engine error and not a crash, and that
+ * the calls work once the loader works again.
+ */
+export async function checkLoadFailure(engine: Engine, fixture: Fixture): Promise<void> {
+    const thrown = await useFixtureFile(engine, fixture).then(
+        () => undefined,
+        (error: unknown) => error ?? null,
+    );
+    if (thrown === undefined) {
+        throw new Error("the engine doesn't throw while its loader fails");
+    }
+    if (!(thrown instanceof EngineError)) {
+        const message = thrown instanceof Error ? thrown.message : String(thrown);
+        throw new Error(`the engine throws '${message}' and not an engine error while its loader fails`);
+    }
+
+    await useFixtureFile(engine, fixture);
+}
+
+/**
+ * Registers a test that an engine whose loader rejects as often as `connect` gets refuses a call with an engine error
+ * and loads again with a later call. `connect` serves the engine with such a loader and connects the test.
+ */
+export function testLoadFailure(name: string, connect: (failures: number) => Engine, fixture: Fixture, timeLimitMs?: number): void {
+    test(`${name} refuses a call while its loader fails and loads again with a later call`, () => checkLoadFailure(connect(1), fixture), timeLimitMs);
 }

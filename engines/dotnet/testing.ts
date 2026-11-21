@@ -70,7 +70,12 @@ export function useDotnetEngine(): () => Engine {
     beforeEach(() => useInThreadWorker(() => createDotnetHandlers(loadTestRuntime), () => runtime?.readMemoryBytes() ?? 0));
     afterEach(restoreWorker);
 
-    return () => connectEngine('dotnet.js', { timeLimitMs: 120000, cancelLimitMs: 30000, hasLinkedFiles: true });
+    return connectDotnet;
+}
+
+/** Connects a test to the .NET engine in the in-thread worker that the test serves. */
+export function connectDotnet(): Engine {
+    return connectEngine('dotnet.js', { timeLimitMs: 120000, cancelLimitMs: 30000, hasLinkedFiles: true });
 }
 
 /** The shape of a PE file that `peFile` writes. */

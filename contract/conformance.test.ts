@@ -20,6 +20,7 @@ import {
     changeListings,
     changeRows,
     changeTarget,
+    checkLoadFailure,
     emptyDescription,
     fixture,
     type FullFixture,
@@ -31,7 +32,7 @@ import {
 import { parseTarget, writeTokens } from './document';
 import { fakeManifest } from './fake';
 import { areaOutside, useFakeEngine } from './fake-testing';
-import { failed, ok } from './reply';
+import { failed, ok, type Reply } from './reply';
 import { findDocumentRow, readRows, type Row } from './rows';
 
 const connect = useFakeEngine();
@@ -475,4 +476,35 @@ test('check takes the first token with the text that has a target', async () => 
     const linked = { file: new File(['fake\nmethod uses'], 'words.fake'), token: 'uses', user: 'Draw' };
 
     await checkLinkedFile(connect(), { ...fixture, manifest: { ...fakeManifest, views: [ops, code] }, file, symbol: 'Draw', linked });
+});
+
+// fails the first open with the reply or the error of a loader that fails once, in each worker of the test
+function failFirstOpen(failure: () => Reply<void>): BreakHandlers {
+    let opens = 0;
+
+    return ({ open }) => ({
+        open(...args) {
+            opens++;
+
+            return opens === 1 ? failure() : open(...args);
+        },
+    });
+}
+
+test('check passes for an engine that refuses a call while its loader fails and opens the file after that', async () => {
+    useBrokenHandlers(failFirstOpen(() => failed("The engine couldn't load its decompiler: 503")));
+
+    await checkLoadFailure(connect(), fixture);
+});
+
+test('check fails for an engine that crashes while its loader fails', async () => {
+    useBrokenHandlers(failFirstOpen(() => {
+        throw new Error('The chunk failed to load.');
+    }));
+
+    await expect(checkLoadFailure(connect(), fixture)).rejects.toThrow("the engine throws 'The chunk failed to load.' and not an engine error");
+});
+
+test("check fails for an engine that doesn't throw while its loader fails", async () => {
+    await expect(checkLoadFailure(connect(), fixture)).rejects.toThrow("the engine doesn't throw while its loader fails");
 });

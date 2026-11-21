@@ -21,6 +21,31 @@ type ListingReply = Omit<Listing, 'values'> & { values: string };
 // the document as the C# export writes it, with the tokens in base64
 type DocumentReply = Omit<Document, 'tokens'> & { tokens: string };
 
+// an error of the runtime's load, which a handler refuses its call with because a later call loads the runtime again
+class RuntimeLoadError extends Error {}
+
+// turns the errors of the runtime's load into failed replies, because the worker stays usable after them
+function refuseLoadErrors(handlers: EngineHandlers): EngineHandlers {
+    const calls = Object.entries(handlers as unknown as Record<string, (...args: never[]) => Promise<Reply<unknown>>>);
+    const refusing = calls.map(([name, handler]) => {
+        async function refuse(...args: never[]): Promise<Reply<unknown>> {
+            try {
+                return await handler(...args);
+            } catch (error) {
+                if (error instanceof RuntimeLoadError) {
+                    return failed(error.message);
+                }
+
+                throw error;
+            }
+        }
+
+        return [name, refuse];
+    });
+
+    return Object.fromEntries(refusing) as unknown as EngineHandlers;
+}
+
 /**
  * Returns the .NET engine's handlers, which load the runtime with the first call that needs it, because `claims` then
  * only reads the file's headers. The handlers start with an empty runtime because `dotnet.js` loads once in a process.
@@ -35,8 +60,12 @@ export function createDotnetHandlers(loadRuntime: () => Promise<DotnetRuntime>):
         return loaded;
     }
 
+    // forgets a failed load, so the next call loads the runtime again
     async function useExports() {
-        runtime ??= loadEmptyRuntime();
+        runtime ??= loadEmptyRuntime().catch((error: unknown) => {
+            runtime = undefined;
+            throw new RuntimeLoadError(`The .NET engine couldn't load its runtime: ${error instanceof Error ? error.message : error}`);
+        });
 
         return (await runtime).exports;
     }
@@ -59,7 +88,7 @@ export function createDotnetHandlers(loadRuntime: () => Promise<DotnetRuntime>):
         }
     }
 
-    return {
+    return refuseLoadErrors({
         async claims(_, file) {
             return ok(await hasCliHeader(file));
         },
@@ -127,5 +156,5 @@ export function createDotnetHandlers(loadRuntime: () => Promise<DotnetRuntime>):
         async listStrings(fileId, signal) {
             return readReply<StringUse[]>(await callExport(signal, exports => exports.ListStrings(fileId)));
         },
-    };
+    });
 }

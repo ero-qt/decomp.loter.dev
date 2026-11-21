@@ -42,11 +42,17 @@ async function startRuntime(dotnetUrl: string): Promise<DotnetRuntime> {
     return { exports: exports.Decomp.Dotnet.Exports, readMemoryBytes: () => Module.HEAPU8.length };
 }
 
-/** Loads the .NET runtime from the URL of its `dotnet.js` on the first call and returns the same runtime after that. */
+/**
+ * Loads the .NET runtime from the URL of its `dotnet.js` on the first call and returns the same runtime after that.
+ * Forgets a failed load, so the next call loads again, because the connection can come back.
+ */
 export function loadRuntime(dotnetUrl: string): Promise<DotnetRuntime> {
     let runtime = runtimes.get(dotnetUrl);
     if (!runtime) {
-        runtime = startRuntime(dotnetUrl);
+        runtime = startRuntime(dotnetUrl).catch((error: unknown) => {
+            runtimes.delete(dotnetUrl);
+            throw error;
+        });
         runtimes.set(dotnetUrl, runtime);
     }
 

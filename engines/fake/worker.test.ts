@@ -1,20 +1,28 @@
 import { expect, test } from 'bun:test';
+import { existsSync, readdirSync } from 'node:fs';
 import { fakeManifest } from '../../contract/fake';
 import { readManifest } from '../../contract/manifest';
 import { findSiteFile, startSiteServer, startWorkbench, testTimeoutMs } from '../../shell/page-testing';
 
 const openWorkbench = startWorkbench();
 
-test('built site leaves out the fake engine because only the tests use it', async () => {
-    expect(await findSiteFile('/engines/index.json').json()).toEqual(['dotnet', 'java', 'native']);
+// lists the engines' folders with a manifest, so a new engine doesn't need an edit here
+const engineIds = readdirSync(new URL('../', import.meta.url), { withFileTypes: true })
+    .filter(entry => entry.isDirectory() && existsSync(new URL(`../${entry.name}/manifest.json`, import.meta.url)))
+    .map(entry => entry.name)
+    .sort();
+
+test("built site lists each engine's folder with a manifest but leaves out the fake engine because only the tests use it", async () => {
+    expect(await findSiteFile('/engines/index.json').json()).toEqual(engineIds.filter(id => id !== 'fake'));
     expect(await findSiteFile('/engines/fake/manifest.json').exists()).toBe(false);
 });
 
-test("site server for the tests lists the fake engine and serves the fake engine's manifest", async () => {
-    const server = startSiteServer();
+test("site server for the tests lists each engine's folder with a manifest and serves the fake engine's manifest", async () => {
+    expect(engineIds).toContain('fake');
 
+    const server = startSiteServer();
     try {
-        expect(await (await fetch(new URL('engines/index.json', server.url))).json()).toEqual(['dotnet', 'fake', 'java', 'native']);
+        expect(await (await fetch(new URL('engines/index.json', server.url))).json()).toEqual(engineIds);
         expect(readManifest(await (await fetch(new URL('engines/fake/manifest.json', server.url))).json())).toEqual(fakeManifest);
     } finally {
         server.stop();

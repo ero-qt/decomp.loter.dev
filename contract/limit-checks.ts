@@ -1,4 +1,4 @@
-import { checkWithFiles, type Fixture } from './checking';
+import { checkWithFiles, type Fixture, type FixtureWith } from './checking';
 import type { Engine } from './engine';
 import { cutMark, maxStringLength, maxStrings } from './limits';
 
@@ -18,6 +18,20 @@ export async function checkStringLimits(engine: Engine, { file, cutString }: Fix
         }
         if (cutString !== undefined && !texts.some(text => text.startsWith(cutString) && text.endsWith(cutMark))) {
             throw new Error(`${file.name} doesn't list a string that starts with '${cutString}' and ends with the cut mark ${cutMark}`);
+        }
+    });
+}
+
+/** Checks that the note of the file above the limits has the fixture's note and doesn't have a line end. */
+export async function checkLimitNote(engine: Engine, { limited }: FixtureWith<'limited'>): Promise<void> {
+    const { file, note } = limited;
+    await checkWithFiles(engine, [file], async fileId => {
+        const listed = (await engine.list(fileId)).note;
+        if (!listed.includes(note)) {
+            throw new Error(`the note of ${file.name} is '${listed}', which doesn't have '${note}'`);
+        }
+        if (listed.includes('\n')) {
+            throw new Error(`the note of ${file.name} has a line end`);
         }
     });
 }

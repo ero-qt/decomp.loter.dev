@@ -31,6 +31,7 @@ export const fixture = {
     companion: { file: new File(['a note'], 'drawing.notes') },
     // a file whose first line only starts like a fake file's, which the engine claims and refuses
     unsupported: { file: new File(['fake 2\nnamespace Drawing'], 'next.fake'), text: "isn't a fake file" },
+    limited: { file: sampleFiles.drawing, note: '1 class left out' },
 } satisfies Fixture;
 
 /** A fixture of a file of functions without the groups. */
@@ -43,6 +44,7 @@ export const functionsFixture: Fixture = {
     linked: undefined,
     companion: undefined,
     unsupported: undefined,
+    limited: undefined,
 };
 
 /** A description whose fields are all empty or null. */

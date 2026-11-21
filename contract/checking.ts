@@ -54,10 +54,17 @@ export interface Fixture {
         /** A part of the refusal's text, which also has the file's name, like `only imports mscoree.dll`. */
         text: string;
     };
+    /** The group of an engine that leaves out parts of a file above one of its limits, like a count of strings. */
+    limited?: {
+        /** A file above one of the engine's limits. */
+        file: File;
+        /** A part of the note on the file's row, like `first 50,000 strings listed`. */
+        note: string;
+    };
 }
 
 /** A group of fixture files that only some engines have. */
-export type Group = 'linked' | 'companion' | 'unsupported';
+export type Group = 'linked' | 'companion' | 'unsupported' | 'limited';
 
 /** A fixture that has the groups that a check needs. */
 export type FixtureWith<Needed extends Group> = Fixture & Required<Pick<Fixture, Needed>>;

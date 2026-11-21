@@ -5,6 +5,7 @@ import {
     checkClaims,
     checkClosedFile,
     checkCompanion,
+    checkLimitNote,
     checkLinkedFile,
     checkManifest,
     checkReferences,
@@ -102,6 +103,7 @@ test('listChecks lists the checks of every engine and of every group of the fixt
         "finds a symbol's user in another file",
         'lists a companion as a missing file until provide gets the companion',
         'claims a file that it refuses with a text, and opens a file after that',
+        'notes on 1 line what it leaves out of a file above its limits',
     ]);
 });
 
@@ -241,6 +243,22 @@ const defects: [defect: string, breakHandlers: BreakHandlers, check: AnyCheck, m
         () => ({ listStrings: () => ok(Array.from({ length: 50001 }, () => ({ text: 'x', user: null }))) }),
         checkStringLimits,
         'drawing.fake lists 50001 strings, more than 50000',
+    ],
+    [
+        'an empty note for a file above the limits',
+        changeListings(listing => {
+            listing.note = '';
+        }),
+        checkLimitNote,
+        "the note of drawing.fake is '', which doesn't have '1 class left out'",
+    ],
+    [
+        'a note over 2 lines',
+        changeListings(listing => {
+            listing.note = '1 class left out\nsee the log';
+        }),
+        checkLimitNote,
+        'the note of drawing.fake has a line end',
     ],
     [
         'a close that leaves the file open',

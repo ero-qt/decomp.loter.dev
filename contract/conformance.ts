@@ -16,14 +16,14 @@ import {
 import { formatTarget, parseTarget, readTokens } from './document';
 import { checkDocuments } from './document-checks';
 import type { Description, Engine, MissingFile, Reference } from './engine';
-import { checkStringLimits } from './limit-checks';
+import { checkLimitNote, checkStringLimits } from './limit-checks';
 import { matchesFile, readManifest, readStart } from './manifest';
 import { checkBrokenFile, checkUnsupportedFile } from './refusal-checks';
 import { findDocumentRow, readRows, type Row } from './rows';
 
 export type { Check, Fixture, FixtureWith, Group } from './checking';
 export { checkDocuments } from './document-checks';
-export { checkStringLimits } from './limit-checks';
+export { checkLimitNote, checkStringLimits } from './limit-checks';
 export { checkBrokenFile, checkUnsupportedFile } from './refusal-checks';
 
 async function hasMissingFile(engine: Engine, fileId: number, name: string): Promise<boolean> {
@@ -342,9 +342,13 @@ const unsupportedChecks: [claim: string, check: Check<'unsupported'>][] = [
     ['claims a file that it refuses with a text, and opens a file after that', checkUnsupportedFile],
 ];
 
+const limitedChecks: [claim: string, check: Check<'limited'>][] = [
+    ['notes on 1 line what it leaves out of a file above its limits', checkLimitNote],
+];
+
 /** Lists the claim and the run of each check that every engine passes and of each check of the fixture's groups. */
 export function listChecks(fixture: Fixture): [claim: string, run: (engine: Engine) => Promise<void>][] {
-    const { linked, companion, unsupported } = fixture;
+    const { linked, companion, unsupported, limited } = fixture;
 
     function bind<Needed extends Group>(groupChecks: [claim: string, check: Check<Needed>][], groupFixture: FixtureWith<Needed>) {
         return groupChecks.map(([claim, check]): [string, (engine: Engine) => Promise<void>] => {
@@ -357,6 +361,7 @@ export function listChecks(fixture: Fixture): [claim: string, run: (engine: Engi
         ...(linked ? bind(linkedChecks, { ...fixture, linked }) : []),
         ...(companion ? bind(companionChecks, { ...fixture, companion }) : []),
         ...(unsupported ? bind(unsupportedChecks, { ...fixture, unsupported }) : []),
+        ...(limited ? bind(limitedChecks, { ...fixture, limited }) : []),
     ];
 }
 

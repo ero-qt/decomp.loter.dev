@@ -18,11 +18,13 @@ import { checkDocuments } from './document-checks';
 import type { Description, Engine, MissingFile, Reference } from './engine';
 import { checkStringLimits } from './limit-checks';
 import { matchesFile, readManifest, readStart } from './manifest';
+import { checkBrokenFile, checkUnsupportedFile } from './refusal-checks';
 import { findDocumentRow, readRows, type Row } from './rows';
 
-export type { Check, Fixture, FixtureWith } from './checking';
+export type { Check, Fixture, FixtureWith, Group } from './checking';
 export { checkDocuments } from './document-checks';
 export { checkStringLimits } from './limit-checks';
+export { checkBrokenFile, checkUnsupportedFile } from './refusal-checks';
 
 async function hasMissingFile(engine: Engine, fileId: number, name: string): Promise<boolean> {
     return (await engine.list(fileId)).missingFiles.some(missingFile => missingFile.name === name);
@@ -63,7 +65,7 @@ export async function checkClaims(engine: Engine, { manifest, file, linked, fore
     const read = readManifest(manifest);
     for (const claimed of [file, linked?.file]) {
         if (claimed && !matchesFile(read, claimed.name, await readStart(claimed))) {
-            throw new Error(`the page doesn't ask the engine about ${claimed.name}, which matches no extension and no magic of the manifest`);
+            throw new Error(`the page doesn't ask the engine about ${claimed.name}, which doesn't match an extension or a magic in the manifest`);
         }
         if (claimed && !(await engine.claims(claimed.name, claimed))) {
             throw new Error(`the engine doesn't claim ${claimed.name}`);
@@ -75,15 +77,6 @@ export async function checkClaims(engine: Engine, { manifest, file, linked, fore
             throw new Error(`the engine claims ${other.name}`);
         }
     }
-}
-
-/** Checks that `open` throws an engine error for the broken file. */
-export async function checkBrokenFile(engine: Engine, { broken }: Fixture): Promise<void> {
-    function refuseOpenFile(): Promise<void> {
-        return Promise.reject(new Error(`${broken.name} is open`));
-    }
-
-    await requireEngineError(checkWithFiles(engine, [broken], refuseOpenFile), 'open', broken.name);
 }
 
 /** Checks that `readRows` accepts the file's rows and that each row has a key of its own. */
@@ -345,9 +338,13 @@ const companionChecks: [claim: string, check: Check<'companion'>][] = [
     ['lists a companion as a missing file until provide gets the companion', checkCompanion],
 ];
 
+const unsupportedChecks: [claim: string, check: Check<'unsupported'>][] = [
+    ['claims a file that it refuses with a text, and opens a file after that', checkUnsupportedFile],
+];
+
 /** Lists the claim and the run of each check that every engine passes and of each check of the fixture's groups. */
 export function listChecks(fixture: Fixture): [claim: string, run: (engine: Engine) => Promise<void>][] {
-    const { linked, companion } = fixture;
+    const { linked, companion, unsupported } = fixture;
 
     function bind<Needed extends Group>(groupChecks: [claim: string, check: Check<Needed>][], groupFixture: FixtureWith<Needed>) {
         return groupChecks.map(([claim, check]): [string, (engine: Engine) => Promise<void>] => {
@@ -359,6 +356,7 @@ export function listChecks(fixture: Fixture): [claim: string, run: (engine: Engi
         ...bind(checks, fixture),
         ...(linked ? bind(linkedChecks, { ...fixture, linked }) : []),
         ...(companion ? bind(companionChecks, { ...fixture, companion }) : []),
+        ...(unsupported ? bind(unsupportedChecks, { ...fixture, unsupported }) : []),
     ];
 }
 

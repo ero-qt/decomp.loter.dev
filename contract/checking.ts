@@ -47,10 +47,17 @@ export interface Fixture {
         /** A file that no engine claims, under the name that `file` lists for the companion as a missing file. */
         file: File;
     };
+    /** The group of an engine that claims some files that it can't open, like a file of another architecture. */
+    unsupported?: {
+        /** A file that the engine claims and refuses to open. */
+        file: File;
+        /** A part of the refusal's text, which also has the file's name, like `only imports mscoree.dll`. */
+        text: string;
+    };
 }
 
 /** A group of fixture files that only some engines have. */
-export type Group = 'linked' | 'companion';
+export type Group = 'linked' | 'companion' | 'unsupported';
 
 /** A fixture that has the groups that a check needs. */
 export type FixtureWith<Needed extends Group> = Fixture & Required<Pick<Fixture, Needed>>;

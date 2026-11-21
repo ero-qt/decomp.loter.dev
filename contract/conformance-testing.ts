@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import { checkWithFiles, findRow, readFirstView } from './checking';
-import type { Check, Fixture, FixtureWith } from './conformance';
+import type { Check, Fixture, FixtureWith, Group } from './conformance';
 import type { Document } from './document';
 import type { Engine, Listing } from './engine';
 import { createFakeHandlers, fakeManifest, sampleFiles } from './fake';
@@ -14,12 +14,12 @@ import type { EngineHandlers } from './serve';
 export type BreakHandlers = (handlers: EngineHandlers) => Partial<EngineHandlers>;
 
 /** A check of any group. */
-export type AnyCheck = Check<'linked' | 'companion'>;
+export type AnyCheck = Check<Group>;
 
-/** A fixture with both groups, which every check takes. */
-export type FullFixture = FixtureWith<'linked' | 'companion'>;
+/** A fixture with every group, which every check takes. */
+export type FullFixture = FixtureWith<Group>;
 
-/** The fixture of the sample files, with both groups. */
+/** The fixture of the sample files, with every group. */
 export const fixture = {
     manifest: fakeManifest,
     file: sampleFiles.drawing,
@@ -29,6 +29,8 @@ export const fixture = {
     string: 'circle',
     linked: { file: sampleFiles.shapes, token: 'Shapes.Shape.Area', user: 'Drawing.Circle.Draw' },
     companion: { file: new File(['a note'], 'drawing.notes') },
+    // a file whose first line only starts like a fake file's, which the engine claims and refuses
+    unsupported: { file: new File(['fake 2\nnamespace Drawing'], 'next.fake'), text: "isn't a fake file" },
 } satisfies Fixture;
 
 /** A fixture of a file of functions without the groups. */
@@ -40,6 +42,7 @@ export const functionsFixture: Fixture = {
     string: undefined,
     linked: undefined,
     companion: undefined,
+    unsupported: undefined,
 };
 
 /** A description whose fields are all empty or null. */

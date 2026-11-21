@@ -13,6 +13,8 @@ export const elfFixture = {
     foreign: new File([peFile({})], 'tool.exe'),
     symbol: 'geometry.Rect',
     string: 'shapes fixture',
+    // a PE file without a CLI header that only imports mscoree.dll, so its code is .NET IL
+    unsupported: { file: await readFixture('managed-stub.exe'), text: 'only imports mscoree.dll' },
 } satisfies Fixture;
 
 /** The fixture of `shapes.dll`, a PE file whose PDB file is its companion. */

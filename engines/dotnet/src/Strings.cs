@@ -25,9 +25,9 @@ internal static class Strings
 
     /// <summary>
     ///     Lists each string once for each method that loads it, with the row of the method's code as its user, in the
-    ///     order of the methods and of their IL. Cuts a long string after <see cref="Limits.MaxStringLength"/>
-    ///     characters and stops after <see cref="Limits.MaxStrings"/> strings. Checks the cancellation before each
-    ///     method body and each string.
+    ///     order of the methods and of their IL. Cuts a long string with <see cref="Limits.CutString"/> and stops
+    ///     after <see cref="Limits.MaxStrings"/> strings. Checks the cancellation before each method body and each
+    ///     string.
     /// </summary>
     /// <exception cref="CanceledCallException">The worker canceled the call.</exception>
     public static async Task<List<StringUse>> ListAsync(SearchedFile file, Cancellation cancellation)
@@ -62,7 +62,7 @@ internal static class Strings
         return ListLoads(file.Metadata, instructions).Skip(Limits.MaxStrings).Any();
     }
 
-    // lists each string once for each method that loads it, cut after Limits.MaxStringLength characters
+    // lists each string once for each method that loads it, cut at Limits.MaxStringLength characters
     private static IEnumerable<(string Text, MethodDefinitionHandle Method)> ListLoads(MetadataReader metadata, List<TokenInstruction> instructions)
     {
         int heapSize = metadata.GetHeapSize(HeapIndex.UserString);
@@ -92,7 +92,7 @@ internal static class Strings
                     continue;
                 }
 
-                texts[offset] = text = read.Length > Limits.MaxStringLength ? read[..Limits.MaxStringLength] : read;
+                texts[offset] = text = Limits.CutString(read);
             }
 
             if (listed.Add((text, instruction.Method)))

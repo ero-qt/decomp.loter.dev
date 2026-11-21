@@ -23,16 +23,26 @@ test("strings of Drawing.dll include 'héllo ✓' with Painter.Paint as its user
     ]);
 });
 
-test('dotnet engine lists a string once for each method that loads it and cuts a string after 1,000 characters', async () => {
+test('dotnet engine lists a string once for each method that loads it and cuts a string above 1,000 characters with a mark', async () => {
     const engine = connect();
     const long = 'x'.repeat(1001);
+    const whole = 'y'.repeat(1000);
     const assembly = await compileAssembly(
         'Repeated',
-        `public class Use { public string[] A() => new[] { "same", "${long}" }; public string B(string s) => s == "same" ? s : "same"; }`,
+        `public class Use { public string[] A() => new[] { "same", "${long}", "${whole}" }; public string B(string s) => s == "same" ? s : "same"; }`,
     );
     const fileId = await engine.open(assembly.name, assembly);
 
-    expect((await engine.listStrings(fileId)).map(use => use.text)).toEqual(['same', 'x'.repeat(1000), 'same']);
+    expect((await engine.listStrings(fileId)).map(use => use.text)).toEqual(['same', `${'x'.repeat(999)}…`, whole, 'same']);
+});
+
+test('dotnet engine cuts a long string before a surrogate pair that the cut would split', async () => {
+    const engine = connect();
+    const split = `${'x'.repeat(998)}😀${'x'.repeat(10)}`;
+    const assembly = await compileAssembly('Split', `public class Use { public string A() => "${split}"; }`);
+    const fileId = await engine.open(assembly.name, assembly);
+
+    expect((await engine.listStrings(fileId)).map(use => use.text)).toEqual([`${'x'.repeat(998)}…`]);
 });
 
 test("dotnet engine lists a file's first 50,000 strings and says so in the file's note", async () => {

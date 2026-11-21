@@ -2,12 +2,12 @@
   "explorer.fileNesting.enabled": true,
   "explorer.fileNesting.expand": false,
   "explorer.fileNesting.patterns": {
-    ".gitignore": ".gitattributes, .editorconfig",
-    "readme.md": "license.md, third-party-notices.md",
-    "package.json": "bun.lock, tsconfig.json, justfile",
-    // leaves editor-testing.ts and page-testing.ts at the top because many test files share them
-    "*.ts": "${capture}.test.ts, ${capture}-*.test.ts, ${capture}.perf.ts, ${capture}-testing.ts",
+    ".gitignore": ".gitattributes, .gitmodules",
+    "readme.md": "changelog.md, license.md, third-party-notices.md",
+    "package.json": ".editorconfig, bun.lock, tsconfig.json, justfile",
+    "*.ts": "${capture}.test.ts, ${capture}-*.test.ts, ${capture}.perf.ts",
     "*.sh": "${capture}.test.ts, ${capture}.service, ${capture}.timer",
+    "*.css": "${capture}.test.ts",
   },
   "files.exclude": {
     "artifacts/": true,

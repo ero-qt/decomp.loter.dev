@@ -139,6 +139,29 @@ test("page fits the About tab's width in an 800 by 600 window and scrolls down t
     expect(await readPageWidthFit(page)).toEqual({ insidePaneWidth: true, scrollsSideways: false });
 }, testTimeoutMs);
 
+test('a swipe up on a touch screen scrolls the About tab down to the source link in a 300 pixel high window', async () => {
+    const { page } = await openWorkbench('dark', { hasTouch: true });
+    await page.setViewportSize({ width: 800, height: 300 });
+    await page.waitForFunction(() => document.querySelector('.part.editor')!.getBoundingClientRect().height < 300);
+    const box = (await findAboutPage(page).locator('..').boundingBox())!;
+    const x = box.x + box.width / 2;
+    const cdp = await page.context().newCDPSession(page);
+
+    // swipes up from the pane's bottom to its top once per read because one swipe moves the page by the pane's height
+    const swipeAndRead = async () => {
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y: box.y + box.height - 10 }] });
+        for (let step = 1; step <= 5; step++) {
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: box.y + box.height - 10 - step * 40 }] });
+        }
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+
+        return readLinkInsidePane(page);
+    };
+
+    expect(await readLinkInsidePane(page)).toBe(false);
+    expect(await readUntil(swipeAndRead, true)).toBe(true);
+}, testTimeoutMs);
+
 test("footer shows the version right of the source link, on the source link's line", async () => {
     const { page } = await openWorkbench();
 

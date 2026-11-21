@@ -196,7 +196,8 @@ export async function readStart(file: Blob): Promise<Uint8Array> {
     return new Uint8Array(await file.slice(0, maxMagicBytes).arrayBuffer());
 }
 
-function toHex(bytes: Uint8Array): string {
+/** Writes bytes as hex without Node's `Buffer`, which a browser's worker doesn't have. */
+export function toHex(bytes: Uint8Array): string {
     return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
 }
 

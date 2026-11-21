@@ -2,6 +2,7 @@ import { failed, ok, type Reply } from '../../contract/reply';
 import type { EngineHandlers } from '../../contract/serve';
 import { writeRows } from '../../contract/rows';
 import { modifiersOf } from '../../contract/symbols';
+import { toHex } from '../shared/magic';
 import { writeJava } from './decompile';
 import { describeTarget, resolveTarget } from './describe';
 import { type JavaFile, readFile } from './files';
@@ -46,10 +47,6 @@ function refuseView(view: string): Reply<never> {
 
 function refuseFile(fileId: number): Reply<never> {
     return failed(`The Java engine doesn't have an open file with the id ${fileId}.`);
-}
-
-function toHex(bytes: Uint8Array): string {
-    return [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
 // checks the major version because a fat Mach-O file starts like a class file but has a small count of architectures

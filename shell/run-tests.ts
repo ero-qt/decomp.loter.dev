@@ -2,7 +2,7 @@ import { Glob } from 'bun';
 
 const suffix = Bun.argv[2] ?? 'test';
 // leaves out the submodules in engines/native/vendor, whose tests belong to their own projects
-const paths = (await Array.fromAsync(new Glob(`{contract,engines,host,shell}/**/*.${suffix}.ts`).scan()))
+const paths = (await Array.fromAsync(new Glob(`{contract,engines,host,release,shell}/**/*.${suffix}.ts`).scan()))
     .filter(path => !path.startsWith('engines/native/vendor/'))
     .sort();
 // runs each file in its own process because a file's browser and rows then free their memory before the next file

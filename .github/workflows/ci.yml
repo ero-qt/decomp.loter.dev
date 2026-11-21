@@ -124,6 +124,7 @@ jobs:
           - engines/fake
           - engines/java
           - host
+          - release
           - shell
     steps:
       - name: check out

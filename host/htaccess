@@ -1,0 +1,29 @@
+# sends the site's headers with every answer of Apache, also with a missing file
+Header always set Content-Security-Policy "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; require-trusted-types-for 'script'"
+Header always set Referrer-Policy "no-referrer"
+Header always set X-Content-Type-Options "nosniff"
+
+# sends the types that the browser checks, because it only compiles WebAssembly and imports a module with them
+AddType application/wasm .wasm
+AddType text/javascript .mjs
+
+# keeps the host from running code that an upload slipped into the site, because the site only has static files
+Options -ExecCGI -Includes -Indexes
+<FilesMatch "(?i)\.(php[3-8]?|phtml|phar|pht|cgi|pl|py|sh|shtml|inc)$">
+    SetHandler none
+    Require all denied
+</FilesMatch>
+
+# lets browsers ask again for each file whose name stays the same from build to build, and sends the cache header
+# only with a found file, because a missing file in assets/ mustn't stay cached for a year
+Header set Cache-Control "no-cache"
+# keeps each file with a fingerprint in its name for a year: Vite's assets, the .NET framework's files and Bun's chunks
+<If "%{REQUEST_URI} =~ m#^/assets/#">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+</If>
+<ElseIf "%{REQUEST_URI} =~ m#^/engines/dotnet/_framework/[^/]+\.[a-z0-9]{10}\.(js|wasm)$#">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+</ElseIf>
+<ElseIf "%{REQUEST_URI} =~ m#^/engines/[^/]+/[^/]+-[a-z0-9]{8}\.js$#">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+</ElseIf>

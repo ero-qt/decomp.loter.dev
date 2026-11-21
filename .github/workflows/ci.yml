@@ -123,6 +123,7 @@ jobs:
           - engines/dotnet
           - engines/fake
           - engines/java
+          - host
           - shell
     steps:
       - name: check out

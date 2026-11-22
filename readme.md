@@ -45,6 +45,8 @@ The native engine's tests first build its WebAssembly module from the forks of R
 
 The native engine's tests build their fixture with clang, lld and LLVM's tools like `llvm-lipo`. They take each tool from the folder in `NATIVE_LLVM` when you set it, else from the `PATH`, also under a versioned name like `ld.lld-18`, which Linux packages often use. Only a tool that's in neither comes from Emscripten's LLVM, because emsdk's LLVM only builds WebAssembly. So install a full LLVM, like Ubuntu's `clang`, `lld` and `llvm` packages.
 
+The IL2CPP engine's tests write a small `global-metadata.dat` and build the matching `GameAssembly.dll`, `libil2cpp.so` and armv7 `libil2cpp-armv7.so` with clang, `lld-link` and `ld.lld`, which they find the same way.
+
 ---
 
 AI-assisted.

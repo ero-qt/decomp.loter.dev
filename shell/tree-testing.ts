@@ -26,6 +26,11 @@ export function findRow(page: Page, label: string): Locator {
     return findRows(page).filter({ has: page.locator('.label-name').getByText(label, { exact: true }) }).first();
 }
 
+/** Finds the Symbols view's progress strip while the strip runs. */
+export function findProgressStrip(page: Page): Locator {
+    return page.locator('.pane').filter({ has: findPaneHeader(page, 'Symbols') }).locator('.monaco-progress-container.active');
+}
+
 /** Finds the header of the Explorer's view with a title. */
 export function findPaneHeader(page: Page, title: string): Locator {
     return page.locator('.pane-header').filter({ has: page.locator('h3.title').getByText(title, { exact: true }) });

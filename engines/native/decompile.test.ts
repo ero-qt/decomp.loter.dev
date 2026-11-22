@@ -150,3 +150,26 @@ test("a failed fetch of a processor's language becomes a failed reply, and the n
     isFailing = false;
     expect((await handlers.read(1, add.key, 'c', signal)).value?.text).toContain('add(');
 }, 120000);
+
+test("open starts the fetch of the processor's languages, so the first read doesn't fetch them", async () => {
+    const module = await loadTestModule();
+    const fetches: string[] = [];
+    const watched: NativeModule = {
+        ...module,
+        async fetchFile(path) {
+            fetches.push(path);
+
+            return module.fetchFile(path);
+        },
+    };
+    const handlers = createNativeHandlers(async () => watched, mountInMemory);
+    const file = await readFixture('shapes-x64.so');
+    const signal = new AbortController().signal;
+    await handlers.open(1, file.name, file, signal);
+    const add = readRows((await handlers.list(1, signal)).value!).find(row => row.name === 'add')!;
+    const fetchedBeforeRead = [...fetches];
+
+    expect((await handlers.read(1, add.key, 'c', signal)).value?.text).toContain('add(');
+    expect(fetchedBeforeRead.filter(path => path.endsWith('.sla')).sort()).toEqual(['sleigh/x86/x86-64.sla', 'sleigh/x86/x86.sla']);
+    expect(fetches).toEqual(fetchedBeforeRead);
+}, 120000);

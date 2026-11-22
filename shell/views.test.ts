@@ -3,7 +3,7 @@ import type { Locator, Page } from 'playwright';
 import { fakeManifest, sampleFiles } from '../contract/fake';
 import { aboutTab, closeTab, openCircle, readActiveTab, readCursor, readHover, readTabs, readUntil, waitForTabs } from './editor-testing';
 import { startWorkbench, testTimeoutMs, waitForEngineReplies } from './page-testing';
-import { dropAndWait, dropFiles, expandRows, findRow, startWithEngines, testEngine } from './tree-testing';
+import { dropAndWait, dropFiles, expandRows, findProgressStrip, findRow, startWithEngines, testEngine } from './tree-testing';
 
 const openWorkbench = startWorkbench();
 const drawing = await sampleFiles.drawing.text();
@@ -145,6 +145,22 @@ test("Show Ops to the Side in `Draw`'s menu puts the cursor of `Circle.ops` at `
     await findGroup(page, 'Circle.ops').locator('.tab.active').click();
 
     expect(await readUntil(() => readCursor(page), 'Ln 5, Col 20')).toBe('Ln 5, Col 20');
+}, testTimeoutMs);
+
+test("Symbols view's progress strip runs during the read of a document beside and stops after the document's tab opens", async () => {
+    const { page } = await openWorkbench();
+    await startWithEngines(page, { test: testEngine });
+    await dropFiles(page, { 'late.test': '' });
+    await expandRows(page, 'late.test');
+    await readUntil(() => findProgressStrip(page).isVisible(), false);
+
+    await findRow(page, 'Listed').click({ button: 'right' });
+    await pickMenuItem(page, 'Show Ops to the Side');
+    const isRunning = await readUntil(() => findProgressStrip(page).isVisible(), true);
+    await page.locator('.tab .label-name').getByText('Listed.ops', { exact: true }).waitFor();
+
+    expect(isRunning).toBe(true);
+    expect(await readUntil(() => findProgressStrip(page).isVisible(), false)).toBe(false);
 }, testTimeoutMs);
 
 test("file that closes during the read of a document beside doesn't get a tab", async () => {

@@ -5,7 +5,7 @@ import type { EngineHandlers } from '../../contract/serve';
 import { modifiersOf } from '../../contract/symbols';
 import { loadOnce, refuseLoadErrors } from '../shared/loading';
 import { createRefusals } from '../shared/refusals';
-import { cHeader, disassemblyHeader, listClassParts, writeClassDocument } from './class-document';
+import { assemblyHeader, cHeader, listClassParts, writeClassDocument } from './class-document';
 import { createDocumentCache, decompileFunction } from './code';
 import { describeRow, findFullName } from './describe';
 import { checkArchitecture, disassembleFunction, type DisassemblyRows } from './disassembly';
@@ -66,6 +66,15 @@ function findRefusal(module: NativeModule, session: number, path: string, name: 
     }
 
     return undefined;
+}
+
+// starts writing the languages of a session's processor without waiting for them, because the first decompile then
+// doesn't wait for their fetch. A failed write gets ignored here because that decompile writes the languages again.
+function writeLanguageEarly(writeLanguage: (processor?: string) => Promise<void>, module: NativeModule, session: number) {
+    const processor = findProcessor(module, session);
+    if (processor.value !== undefined) {
+        writeLanguage(processor.value).catch(() => undefined);
+    }
 }
 
 /**
@@ -168,7 +177,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
             return ok(await claimsNativeFile(file));
         },
         async open(fileId, name, file, signal) {
-            const module = await useModule();
+            const { module, writeLanguage } = await useLoaded();
             signal.throwIfAborted();
 
             const mounted = await mountFile(module.fs, `/files/${++mountCount}`, 'binary', file);
@@ -186,6 +195,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
             }
 
             files.set(fileId, { name, session, mounted });
+            writeLanguageEarly(writeLanguage, module, session);
 
             return ok(undefined);
         },
@@ -265,7 +275,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
                 return refusals.noDocument(listing.rows[index].name);
             }
 
-            const architecture = view === 'disassembly' ? checkArchitecture(module, file.session) : ok(undefined);
+            const architecture = view === 'assembly' ? checkArchitecture(module, file.session) : ok(undefined);
             if (architecture.error !== undefined) {
                 return architecture;
             }
@@ -293,7 +303,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
 
             const parts = listClassParts(listing, index, fileId, name => module.describeStruct(file.session, name));
 
-            return writeClassDocument(parts, readMethod, signal, view === 'c' ? cHeader : disassemblyHeader);
+            return writeClassDocument(parts, readMethod, signal, view === 'c' ? cHeader : assemblyHeader);
         },
         async describe(target, view, signal) {
             if (!views.includes(view)) {

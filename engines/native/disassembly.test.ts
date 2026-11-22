@@ -40,7 +40,7 @@ function findToken(text: string, tokens: Token[], word: string, index = 0): Toke
 }
 
 async function readDisassembly(file: OpenFile, name: string): Promise<{ text: string; tokens: Token[]; locals: string[] }> {
-    const document = await file.engine.read(file.fileId, findKey(file, name), 'disassembly');
+    const document = await file.engine.read(file.fileId, findKey(file, name), 'assembly');
 
     return { text: document.text, tokens: readTokens(document), locals: document.locals };
 }
@@ -135,7 +135,7 @@ test("32-bit ARM code disassembles, though the engine can't decompile it", async
 test("read refuses the disassembly of MIPS code, which the engine's disassembler doesn't read", async () => {
     const file = await openFile('extras-mips.so');
 
-    await expect(file.engine.read(file.fileId, findKey(file, 'extras_name'), 'disassembly')).rejects.toThrow(
+    await expect(file.engine.read(file.fileId, findKey(file, 'extras_name'), 'assembly')).rejects.toThrow(
         "The native engine can't disassemble MIPS code.",
     );
 }, 120000);
@@ -186,7 +186,7 @@ test("a canceled disassembly of big_sum stops after the chunk that the glue disa
     await handlers.open(1, file.name, file, signal);
     const bigSum = readRows((await handlers.list(1, signal)).value!).find(row => row.name === 'big_sum')!;
 
-    await expect(handlers.read(1, bigSum.key, 'disassembly', controller.signal)).rejects.toThrow();
+    await expect(handlers.read(1, bigSum.key, 'assembly', controller.signal)).rejects.toThrow();
     expect(counts.chunks).toBe(2);
     expect(performance.now() - abortedAt).toBeLessThan(2000);
 }, 120000);

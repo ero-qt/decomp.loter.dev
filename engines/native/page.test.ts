@@ -37,29 +37,30 @@ test("dropped elf file lists its namespace and classes, and a click on a class o
     expect(listOtherHostRequests(page, requests)).toEqual([]);
 }, nativeTimeoutMs);
 
-test('workbench loads the native worker, the module and the C grammar only after a drop, and the language only for a C document', async () => {
+test('workbench loads the native worker, the module, the C grammar and the language only after a drop, and the language once', async () => {
     const { page, requests } = await openWorkbench();
     const startRequests = [...requests];
+    const isLanguage = (url: string) => url.endsWith('/engines/native/sleigh/x86/x86-64.sla');
 
     await dropFiles(page, { 'shapes-x64.so': shapes });
     await expandRows(page, 'shapes-x64.so', 'geometry');
-    await readUntil(async () => requests.some(url => /\/c\.tmLanguage/.test(url)), true);
+    await readUntil(async () => requests.some(url => /\/c\.tmLanguage/.test(url)) && requests.some(isLanguage), true);
     const listedRequests = [...requests];
 
     await findRow(page, 'Rect').click();
     await waitForTabs(page, 'About', 'Rect.c');
     await readUntil(() => readWordColor(page, 'return ', 'return'), '#d48aad');
-    const language = requests.filter(url => url.endsWith('/engines/native/sleigh/x86/x86-64.sla'));
+    const language = requests.filter(isLanguage);
     const grammar = requests.filter(url => /\/c\.tmLanguage/.test(url));
 
     expect(startRequests.filter(url => nativeFiles.test(url))).toEqual([]);
     expect(listedRequests.some(url => url.endsWith('/engines/native/worker.js'))).toBe(true);
     expect(listedRequests.some(url => url.endsWith('/engines/native/rizin.mjs'))).toBe(true);
     expect(listedRequests.some(url => url.endsWith('/engines/native/rizin.wasm'))).toBe(true);
-    expect(language.length).toBeGreaterThanOrEqual(1);
+    expect(language.length).toBe(1);
     expect(grammar.length).toBeGreaterThanOrEqual(1);
     expect(startRequests.filter(url => grammar.includes(url))).toEqual([]);
-    expect(listedRequests.filter(url => language.includes(url))).toEqual([]);
+    expect(listedRequests.filter(isLanguage)).toEqual(language);
 }, nativeTimeoutMs);
 
 test("dropped dll shows its missing pdb, and the pdb picked from the missing file's row adds the dll's static functions", async () => {
@@ -80,21 +81,21 @@ test("dropped dll shows its missing pdb, and the pdb picked from the missing fil
     expect(await readRowTexts(page)).toContain('geometry');
 }, nativeTimeoutMs);
 
-test("Show Disassembly to the Side in rect_area's menu opens rect_area.asm with the theme's mnemonic and register colors", async () => {
+test("Show Assembly to the Side in rect_area's menu opens rect_area.asm with the theme's mnemonic and register colors", async () => {
     const { page, violations, requests } = await openWorkbench();
     await dropFiles(page, { 'shapes-x64.so': shapes });
     await expandRows(page, 'shapes-x64.so');
 
     await findRow(page, 'rect_area').click({ button: 'right' });
-    await pickMenuItem(page, 'Show Disassembly to the Side');
-    const disassemblyTab = page.locator('.tab .label-name').getByText('rect_area.asm', { exact: true });
-    await disassemblyTab.waitFor();
-    await page.locator('.editor-group-container').filter({ has: disassemblyTab }).locator('.view-line').first().click();
+    await pickMenuItem(page, 'Show Assembly to the Side');
+    const assemblyTab = page.locator('.tab .label-name').getByText('rect_area.asm', { exact: true });
+    await assemblyTab.waitFor();
+    await page.locator('.editor-group-container').filter({ has: assemblyTab }).locator('.view-line').first().click();
     const moveLine = '00001a49  mov ebx, edi';
 
     expect(await readUntil(() => readWordColor(page, moveLine, 'mov'), '#d48aad')).toBe('#d48aad');
     expect(await readUntil(() => readWordColor(page, moveLine, 'edi'), '#569cd6')).toBe('#569cd6');
-    expect(requests.filter(url => /disassembly\.tmLanguage/.test(url)).length).toBeGreaterThanOrEqual(1);
+    expect(requests.filter(url => /assembly\.tmLanguage/.test(url)).length).toBeGreaterThanOrEqual(1);
     expect(violations).toEqual([]);
     expect(listOtherHostRequests(page, requests)).toEqual([]);
 }, nativeTimeoutMs);

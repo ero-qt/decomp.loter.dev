@@ -14,7 +14,7 @@ import type { View } from '../contract/manifest';
 import { CanceledError } from '../contract/reply';
 import { kinds } from '../contract/symbols';
 import { vscode } from './api';
-import { documentScheme } from './config';
+import { documentScheme, symbolsViewId } from './config';
 import { formatDocumentPath, parseDocumentPath } from './document-paths';
 import type { SiteEngine } from './engines';
 import { type OpenFile, type OpenFiles, type ReadDocument, readErrorText } from './files';
@@ -67,6 +67,8 @@ export class RowDocuments implements TextDocumentContentProvider, DocumentSemant
     private readonly changedTokens = new vscode.EventEmitter<void>();
     private clickCount = 0;
     private isDoubleClick = false;
+    private pendingReads = 0;
+    private endProgress = () => {};
     readonly onDidChange = this.changedDocument.event;
     readonly onDidChangeSemanticTokens = this.changedTokens.event;
 
@@ -110,9 +112,26 @@ export class RowDocuments implements TextDocumentContentProvider, DocumentSemant
                 : Promise.reject(new Error(`the page doesn't have an open file for '${uri.path}'`));
             document = { read, controller, waiters: 0, isClosed: false };
             this.documents.set(uri.toString(), document);
+            this.showProgress(read);
         }
 
         return document;
+    }
+
+    // runs the Symbols view's progress strip while any read is pending, because the page doesn't open a document's tab
+    // before the document's read ends
+    private showProgress(read: Promise<ReadDocument>) {
+        if (this.pendingReads++ === 0) {
+            const { promise, resolve } = Promise.withResolvers<void>();
+            this.endProgress = resolve;
+            void vscode.window.withProgress({ location: { viewId: symbolsViewId } }, () => promise);
+        }
+
+        void read.catch(() => undefined).finally(() => {
+            if (--this.pendingReads === 0) {
+                this.endProgress();
+            }
+        });
     }
 
     // drops a document's read, so the next caller reads the document again

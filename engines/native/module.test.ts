@@ -6,7 +6,8 @@ import { writeCompileRules } from './build/ghidra';
 import { buildModule, moduleFolder } from './build/link';
 import { listConfigureInputs } from './build/rizin';
 import { readToolVersions } from './build/stamp';
-import { loadTestModule } from './testing';
+import { mountInMemory } from './files';
+import { loadTestModule, readFixture } from './testing';
 
 const repoFolder = fileURLToPath(new URL('../../', import.meta.url));
 // gives a host's first build up to an hour, because it compiles Rizin, Ghidra's decompiler and Emscripten's libraries
@@ -65,3 +66,27 @@ test("each compile of the decompiler's build writes a depfile, so a changed head
         expect(rule).toEndWith('\n  depfile = $out.d\n  deps = gcc');
     }
 });
+
+test("disassemble writes each instruction's address, size, text with Rizin's names, raw text and jump, up to a byte budget", async () => {
+    const module = await loadTestModule();
+    const mounted = await mountInMemory(module.fs, '/files/module-disassemble', 'binary', await readFixture('shapes-x64.so'));
+    const session = module.newSession();
+    module.openSession(session, mounted.path);
+    module.prepareFunction(session, 0x1a30n);
+
+    const addTwice = module.disassemble(session, 0x1a30n, 15, 1024);
+    const budgeted = module.disassemble(session, 0x1a30n, 15, 3);
+    module.freeSession(session);
+    mounted.unmount();
+
+    expect(addTwice).toEqual([
+        { addr: '0x1a30', size: 1, text: 'push rbx', opcode: 'push rbx' },
+        { addr: '0x1a31', size: 2, text: 'mov ebx, esi', opcode: 'mov ebx, esi' },
+        { addr: '0x1a33', size: 5, text: 'call add', opcode: 'call 0x1a20', jump: '0x1a20' },
+        { addr: '0x1a38', size: 2, text: 'mov edi, eax', opcode: 'mov edi, eax' },
+        { addr: '0x1a3a', size: 2, text: 'mov esi, ebx', opcode: 'mov esi, ebx' },
+        { addr: '0x1a3c', size: 1, text: 'pop rbx', opcode: 'pop rbx' },
+        { addr: '0x1a3d', size: 2, text: 'jmp add', opcode: 'jmp 0x1a20', jump: '0x1a20' },
+    ]);
+    expect(budgeted.map(instruction => instruction.addr)).toEqual(['0x1a30', '0x1a31']);
+}, buildTimeoutMs);

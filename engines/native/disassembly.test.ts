@@ -116,17 +116,13 @@ test('disassembly of a function above the size limit stops at the limit with a n
     ].join('\n'));
 }, 120000);
 
-test("disassembly of big_sum decodes every instruction of its long blocks up to the limit, which its note counts", async () => {
+test('disassembly of big_sum, a function of 188,168 bytes, decodes every instruction of its long blocks without a cut', async () => {
     const { text } = await readDisassembly(await openFile('big-x64.so'), 'big_sum');
-    const lines = text.trimEnd().split('\n');
-    const instructions = lines.slice(1, -1);
-    const [, size, shown] = /^; ([\d,]+) bytes of code, of which the engine shows the first ([\d,]+)\.$/.exec(lines.at(-1)!) ?? [];
+    const instructions = text.trimEnd().split('\n').slice(1);
     const addresses = instructions.map(line => parseInt(line.slice(0, 8), 16));
 
     expect(instructions.filter(line => !/^[0-9a-f]{8}  [a-z]/.test(line) || /\b(invalid|undefined)\b/.test(line))).toEqual([]);
-    expect(Number(size.replaceAll(',', ''))).toBeGreaterThan(128 * 1024);
-    expect(Number(shown.replaceAll(',', ''))).toBeLessThanOrEqual(128 * 1024);
-    expect(Number(shown.replaceAll(',', ''))).toBeGreaterThan(addresses.at(-1)! - addresses[0]);
+    expect(addresses.at(-1)! - addresses[0]).toBeGreaterThan(188_000);
 }, 120000);
 
 test("32-bit ARM code disassembles, though the engine can't decompile it", async () => {
@@ -168,20 +164,20 @@ test("a call of an import's stub shows the import's name and points at its row, 
     expect(arm.text).toContain('  bl fcn.00010440\n');
 }, 120000);
 
-test("a canceled disassembly of big_sum stops after the chunk that Rizin decodes, inside the engine's cancel limit", async () => {
+test("a canceled disassembly of big_sum stops after the chunk that the glue disassembles, inside the engine's cancel limit", async () => {
     const module = await loadTestModule();
     const controller = new AbortController();
     const counts = { chunks: 0 };
     let abortedAt = 0;
     const watched: NativeModule = {
         ...module,
-        runCommand(session, command) {
-            if (command.startsWith('pDj') && ++counts.chunks === 2) {
+        disassemble(session, address, size, maxBytes) {
+            if (++counts.chunks === 2) {
                 controller.abort();
                 abortedAt = performance.now();
             }
 
-            return module.runCommand(session, command);
+            return module.disassemble(session, address, size, maxBytes);
         },
     };
     const handlers = createNativeHandlers(async () => watched, mountInMemory);

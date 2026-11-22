@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-22
+
+### Changed
+
+- The .NET engine keeps strings of up to 1,000 characters whole and cuts longer ones like the other engines do.
+- When an engine fails to load, the error starts with the engine, like "The native engine couldn't load …". The .NET engine tries its runtime again after a failed load.
+- The About tab's Supported files table lists every extension that an engine opens, like `.winmd`.
+
+### Fixed
+
+- The Disassembly view opens long functions about 3 times faster and shows up to 256 KB of a function, twice as much as before.
+
 ## [1.1.0] - 2026-11-22
 
 ### Added
@@ -61,7 +73,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 - A native engine that opens ELF, PE and Mach-O programs and libraries with Rizin and Ghidra's decompiler and shows their functions and classes as C. It also reads a PE file's PDB file for names and types and finds the classes of stripped files through their RTTI.
 - A privacy notice about what stays in your browser and what the server keeps.
 
-[Unreleased]: https://github.com/ero-qt/decomp.loter.dev/compare/1.1.0...HEAD
+[Unreleased]: https://github.com/ero-qt/decomp.loter.dev/compare/1.2.0...HEAD
+[1.2.0]: https://github.com/ero-qt/decomp.loter.dev/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/ero-qt/decomp.loter.dev/compare/1.0.4...1.1.0
 [1.0.4]: https://github.com/ero-qt/decomp.loter.dev/compare/1.0.3...1.0.4
 [1.0.3]: https://github.com/ero-qt/decomp.loter.dev/compare/1.0.2...1.0.3

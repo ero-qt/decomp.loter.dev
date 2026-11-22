@@ -1,0 +1,12 @@
+{
+  "id": "il2cpp",
+  "name": "IL2CPP",
+  "extensions": [".dat"],
+  "magics": ["af1bb1fa"],
+  "views": [{ "id": "csharp", "title": "C#", "extension": ".cs", "language": "csharp" }],
+  "memoryLimitBytes": 1073741824,
+  "cancelLimitMs": 10000,
+  "keepsCompanions": true,
+  "formats": "Unity IL2CPP games",
+  "fileNote": "files like global-metadata.dat plus GameAssembly.dll or libil2cpp.so"
+}

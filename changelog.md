@@ -8,8 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ### Added
 
+- Unity games built with IL2CPP open from their `global-metadata.dat`. The Symbols view lists every assembly's types and members by name. The search lists the strings of the game's metadata too. Pick the game's `GameAssembly.dll` or `libil2cpp.so` on the missing file's row to get each type as a C# stub with the types of its members. Until then, the stubs show `object` in place of each type, with a note on top about the missing file. The .NET engine's decompiler writes the stubs, so they look, color and link like the C# of a .NET assembly. Go to definition on a type in a stub opens that type, even in another assembly of the game. Games from the Unity 6000.5 alpha and the 6000.6 beta don't open. The site tells you that the engine can't read their metadata.
+- The hover of a field shows its offset, and the hover of a method shows the addresses of its code on 1 line.
+- The Symbols view lists a property's accessors under the property.
 - The native engine's C keeps each statement on 1 line, even a call with a long name.
 - A game's `GameAssembly.dll` or `libil2cpp.so` in the native engine lists `script.json` and the game's `global-metadata.dat` as missing files. Pick a `script.json` from Il2CppDumper on its row and the tree and the C show the game's functions by name, like `Player$$Update`.
+- When you pick the game's `global-metadata.dat` on its row under a `GameAssembly.dll` or `libil2cpp.so` in the native engine, the IL2CPP engine opens the game with the binary. The binary then closes in the native engine.
 - The native engine reads the lists `ScriptMetadata`, `ScriptMetadataMethod` and `ScriptString` of Il2CppDumper's `script.json`, so its C shows the globals that a game fills with metadata by name, like `UnityEngine.Debug_TypeInfo`.
 - The native engine decompiles 32-bit ARM code, like the `libil2cpp.so` of an Android game, in ARM mode and in Thumb mode. It reads bit 0 of a method's address as the mark of Thumb code, like Unity sets it.
 - Files you open together find each other now. If one of them is a missing file of another, like `GameAssembly.dll` or `libil2cpp.so` next to its `global-metadata.dat`, the site adds it to that file without a pick. You can also open them one after the other from the same folder, like the metadata after its `GameAssembly.dll`.

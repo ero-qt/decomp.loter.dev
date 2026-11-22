@@ -47,6 +47,8 @@ The native engine's tests build their fixture with clang, lld and LLVM's tools l
 
 The IL2CPP engine's tests write a small `global-metadata.dat` and build the matching `GameAssembly.dll`, `libil2cpp.so` and armv7 `libil2cpp-armv7.so` with clang, `lld-link` and `ld.lld`, which they find the same way.
 
+Some of the IL2CPP engine's tests, like `real.test.ts`, also read files of 4 Unity builds from Cpp2IL's tests, about 39 MB together. They take the `global-metadata.dat` of each build and the `GameAssembly.dll` of the 2019.4 and 2022.3 builds. The first test downloads them at a pinned commit of Cpp2IL into `artifacts/il2cpp-real` and checks each file's SHA-256 hash. The repo doesn't keep them because they include Unity's runtime.
+
 ---
 
 AI-assisted.

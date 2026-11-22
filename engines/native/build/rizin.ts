@@ -106,6 +106,12 @@ function runNinja(args: string[]): string {
  * of the libraries in their link order.
  */
 export function buildRizin(): string[] {
+    // lets Meson configure again before the build and fixes the configuration again, because Ninja runs Meson again when
+    // a file of the checkout is newer than the build folder, like after a fresh clone in CI. That configure undoes the
+    // fixes.
+    runNinja(['build.ninja']);
+    fixConfiguration();
+
     const linkCommand = runNinja(['-t', 'commands', 'binrz/rizin/rizin.js']).trim().split('\n').at(-1) ?? '';
     const libraries = linkCommand.split(' ').filter(part => part.endsWith('.a'));
     const databases = runNinja(['-t', 'targets', 'all'])

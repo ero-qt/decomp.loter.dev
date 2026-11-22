@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-22
+
+### Added
+
+- Java classes get a Bytecode view. It shows each method's instructions below Java-like declarations of the class and its members, with the instructions and keywords in color.
+- Native functions and classes get a Disassembly view with each instruction after its address and the mnemonics and registers in color. A call has the name of the function it calls. A jump inside the function has a label that takes you to the line it jumps to.
+
 ## [1.0.4] - 2026-11-21
 
 ### Fixed
@@ -54,7 +61,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 - A native engine that opens ELF, PE and Mach-O programs and libraries with Rizin and Ghidra's decompiler and shows their functions and classes as C. It also reads a PE file's PDB file for names and types and finds the classes of stripped files through their RTTI.
 - A privacy notice about what stays in your browser and what the server keeps.
 
-[Unreleased]: https://github.com/ero-qt/decomp.loter.dev/compare/1.0.4...HEAD
+[Unreleased]: https://github.com/ero-qt/decomp.loter.dev/compare/1.1.0...HEAD
+[1.1.0]: https://github.com/ero-qt/decomp.loter.dev/compare/1.0.4...1.1.0
 [1.0.4]: https://github.com/ero-qt/decomp.loter.dev/compare/1.0.3...1.0.4
 [1.0.3]: https://github.com/ero-qt/decomp.loter.dev/compare/1.0.2...1.0.3
 [1.0.2]: https://github.com/ero-qt/decomp.loter.dev/compare/1.0.1...1.0.2

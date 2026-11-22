@@ -35,11 +35,15 @@ test("java engine's worker gets ready on the site without a policy violation", a
     expect(violations).toEqual([]);
 }, testTimeoutMs);
 
-test("java engine's folder holds its manifest, its worker and Vineflower's chunk, each small with brotli", async () => {
+test("java engine's folder holds its manifest, its worker and the chunks of its shared code, its bytecode and Vineflower, each small", async () => {
     const names = readdirSync(siteFolder).sort();
-    const chunk = names.find(name => name !== 'manifest.json' && name !== 'worker.js');
+    const findChunk = (prefix: string) => names.find(name => name.startsWith(prefix))!;
+    const workerBytes = (await measureBrotli('worker.js')) + (await measureBrotli(findChunk('worker-')));
 
-    expect(names).toEqual(['manifest.json', chunk!, 'worker.js'].sort());
-    expect(await measureBrotli('worker.js')).toBeLessThanOrEqual(20_000);
-    expect(await measureBrotli(chunk!)).toBeLessThanOrEqual(450_000);
+    const kinds = names.map(name => name.replace(/-[^-]+\.js$/, '-*.js'));
+
+    expect(kinds).toEqual(['bytecode-*.js', 'manifest.json', 'vf.runtime-*.js', 'worker-*.js', 'worker.js']);
+    expect(workerBytes).toBeLessThanOrEqual(24_000);
+    expect(await measureBrotli(findChunk('bytecode-'))).toBeLessThanOrEqual(8_000);
+    expect(await measureBrotli(findChunk('vf.runtime-'))).toBeLessThanOrEqual(450_000);
 });

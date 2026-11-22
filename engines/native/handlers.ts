@@ -3,9 +3,10 @@ import { failed, ok, type Reply } from '../../contract/reply';
 import { writeRows } from '../../contract/rows';
 import type { EngineHandlers } from '../../contract/serve';
 import { modifiersOf } from '../../contract/symbols';
-import { listClassParts, writeClassDocument } from './class-document';
-import { type CodeRows, createDocumentCache, decompileFunction } from './code';
-import { describeRow } from './describe';
+import { cHeader, disassemblyHeader, listClassParts, writeClassDocument } from './class-document';
+import { createDocumentCache, decompileFunction } from './code';
+import { describeRow, findFullName } from './describe';
+import { checkArchitecture, disassembleFunction, type DisassemblyRows } from './disassembly';
 import { type MountedFile, type MountFile, writeShareFiles } from './files';
 import { claimsNativeFile } from './formats';
 import manifest from './manifest.json' with { type: 'json' };
@@ -132,15 +133,17 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
     }
 
     // finds the row of a function, global or import at an address, whose import's address is its stub or pointer
-    function findRows(fileId: number, address: bigint, { rows, keys, importKeys, indexes }: FileListing): CodeRows {
+    function findRows(fileId: number, address: bigint, listing: FileListing): DisassemblyRows {
+        const { rows, keys, importKeys, indexes } = listing;
+
         return {
             fileId,
             address,
             findRow(at) {
                 const key = keys.keys.get(at) ?? importKeys.get(at);
-                const row = key === undefined ? undefined : rows[indexes.get(key)!];
+                const index = key === undefined ? undefined : indexes.get(key)!;
 
-                return row && { key: row.key, kind: row.kind };
+                return index === undefined ? undefined : { key: rows[index].key, kind: rows[index].kind, name: findFullName(listing, index) };
             },
         };
     }
@@ -291,22 +294,35 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
                 return failed(`${listing.rows[index].name} doesn't have its own document.`);
             }
 
-            const processor = findProcessor(module, file.session);
-            if (processor.error !== undefined) {
-                return processor;
+            const architecture = view === 'disassembly' ? checkArchitecture(module, file.session) : ok(undefined);
+            if (architecture.error !== undefined) {
+                return architecture;
             }
 
-            await writeLanguage(processor.value);
-            signal.throwIfAborted();
+            // writes the languages of the file's processor only for C, because Ghidra needs them and Rizin disassembles
+            // a processor that Ghidra doesn't decompile
+            if (view === 'c') {
+                const processor = findProcessor(module, file.session);
+                if (processor.error !== undefined) {
+                    return processor;
+                }
 
-            const readMethod = (methodKey: number) => readFunction(module, fileId, file, listing, methodKey);
+                await writeLanguage(processor.value);
+                signal.throwIfAborted();
+            }
+
+            const decompile = (methodKey: number) => readFunction(module, fileId, file, listing, methodKey);
+            const disassemble = (methodKey: number) => {
+                return disassembleFunction(module, file.session, findRows(fileId, listing.keys.addresses.get(methodKey)!, listing), signal);
+            };
+            const readMethod = view === 'c' ? decompile : disassemble;
             if (listing.keys.addresses.has(key)) {
                 return readMethod(key);
             }
 
             const parts = listClassParts(listing, index, fileId, name => module.describeStruct(file.session, name));
 
-            return writeClassDocument(parts, readMethod, signal);
+            return writeClassDocument(parts, readMethod, signal, view === 'c' ? cHeader : disassemblyHeader);
         },
         async describe(target, view, signal) {
             if (!views.includes(view)) {

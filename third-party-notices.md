@@ -16,7 +16,7 @@ The Java engine decompiles classes with [Vineflower](https://github.com/Vineflow
 
 ## @katana-project/asm
 
-The Java engine reads class files with [@katana-project/asm](https://github.com/katana-project/asm) 0.25.4. Its copyright line is "Copyright (c) 2024 Matouš Kučera". It's under the MIT License, whose text is at the end of this file.
+The Java engine reads class files and writes their bytecode with [@katana-project/asm](https://github.com/katana-project/asm) 0.25.4. Its copyright line is "Copyright (c) 2024 Matouš Kučera". It's under the MIT License, whose text is at the end of this file.
 
 ## ICSharpCode.Decompiler
 
@@ -32,7 +32,7 @@ The .NET engine runs in the .NET runtime 11.0.0-rc.3 for WebAssembly, with the p
 
 ## Rizin
 
-The native engine reads and analyzes programs with [Rizin](https://github.com/rizinorg/rizin) v0.9.1 at commit `c3a90e9226d977f58f4e9c75f78fa6b07afe13c7`, which the build compiles for the browser with Emscripten. It takes Rizin from the fork [ero-qt/rizin](https://github.com/ero-qt/rizin/tree/4ab956e9d0058ad614167c74b8a5854c4a49a934) at commit `4ab956e9d0058ad614167c74b8a5854c4a49a934`, which adds the changes for the browser to that commit. The build leaves out Rizin's GPL parts, so Rizin's code in the module is under the GNU Lesser General Public License 3.0. Its text and the text of the GNU General Public License 3.0, which it adds to, are at the end of this file. Rizin's files have the copyright lines of their authors. Its type and format databases, which the site serves in `engines/native/share`, have "Copyright 2009 RadareOrg <pancake@nopcode.org>". Some of Rizin's own files are under other licenses, which the next part lists.
+The native engine reads, disassembles and analyzes programs with [Rizin](https://github.com/rizinorg/rizin) v0.9.1 at commit `c3a90e9226d977f58f4e9c75f78fa6b07afe13c7`, which the build compiles for the browser with Emscripten. It takes Rizin from the fork [ero-qt/rizin](https://github.com/ero-qt/rizin/tree/4ab956e9d0058ad614167c74b8a5854c4a49a934) at commit `4ab956e9d0058ad614167c74b8a5854c4a49a934`, which adds the changes for the browser to that commit. The build leaves out Rizin's GPL parts, so Rizin's code in the module is under the GNU Lesser General Public License 3.0. Its text and the text of the GNU General Public License 3.0, which it adds to, are at the end of this file. Rizin's files have the copyright lines of their authors. Its type and format databases, which the site serves in `engines/native/share`, have "Copyright 2009 RadareOrg <pancake@nopcode.org>". Some of Rizin's own files are under other licenses, which the next part lists.
 
 The module also links folders of Rizin's `subprojects` that are part of Rizin's repository. `rzar`, `rzgdb`, `rzwinkd` and the shell grammar `rizin-shell-parser` are under the LGPL 3.0. `rzspp` is under the MIT License with the copyright line "Copyright (c) 2009-2016 pancake <pancake@nopcode.org>".
 
@@ -725,7 +725,7 @@ vscode-oniguruma's `onig.wasm` is [Oniguruma](https://github.com/kkos/oniguruma)
 
 ## Java grammar
 
-Java code gets its colors from the Java grammar of VS Code's Java extension, which the site takes from [@codingame/monaco-vscode-java-default-extension](https://github.com/CodinGame/monaco-vscode-api) 39.0.4. The extension's package file lists the MIT License under VS Code's copyright above. VS Code converted the grammar from the grammar of [redhat-developer/vscode-java](https://github.com/redhat-developer/vscode-java), as a note in the grammar's file tells.
+Java code and the declarations in bytecode get their colors from the Java grammar of VS Code's Java extension, which the site takes from [@codingame/monaco-vscode-java-default-extension](https://github.com/CodinGame/monaco-vscode-api) 39.0.4. The extension's package file lists the MIT License under VS Code's copyright above. VS Code converted the grammar from the grammar of [redhat-developer/vscode-java](https://github.com/redhat-developer/vscode-java), as a note in the grammar's file tells.
 
 ## C# grammar
 

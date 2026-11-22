@@ -5,6 +5,7 @@ import { modifiersOf } from '../../contract/symbols';
 import { writeJava } from './decompile';
 import { describeTarget, resolveTarget } from './describe';
 import { type JavaFile, readFile } from './files';
+import manifest from './manifest.json' with { type: 'json' };
 import { findUsers } from './references';
 import { type JavaRows, listRows } from './rows';
 import { listStrings } from './strings';
@@ -23,7 +24,21 @@ const classHeaderSize = 10;
 // take a few times its size there
 const maxFileBytes = 512 * 1024 * 1024;
 
-const javaView = 'java';
+// the views whose documents the engine writes
+const views = manifest.views.map(view => view.id);
+
+let bytecodeLoad: Promise<typeof import('./bytecode')> | undefined;
+
+// imports the bytecode writer with the disassembler on the first bytecode read because listing a file and its Java
+// don't need them, and imports them again after a failed import because the connection can come back
+function loadBytecode(): Promise<typeof import('./bytecode')> {
+    bytecodeLoad ??= import('./bytecode').catch(error => {
+        bytecodeLoad = undefined;
+        throw error;
+    });
+
+    return bytecodeLoad;
+}
 
 function refuseView(view: string): Reply<never> {
     return failed(`The Java engine doesn't have the view ${view}.`);
@@ -108,7 +123,7 @@ export function createJavaHandlers(): EngineHandlers {
             if (!file) {
                 return refuseFile(fileId);
             }
-            if (view !== javaView) {
+            if (!views.includes(view)) {
                 return refuseView(view);
             }
             if (!row) {
@@ -118,16 +133,27 @@ export function createJavaHandlers(): EngineHandlers {
                 return failed(`${row.name} doesn't have its own document.`);
             }
 
-            return writeJava(files, fileId, file.rowKeys[key], signal);
+            if (view !== 'bytecode') {
+                return writeJava(files, fileId, file.rowKeys[key], signal);
+            }
+
+            let bytecode: typeof import('./bytecode');
+            try {
+                bytecode = await loadBytecode();
+            } catch (error) {
+                return failed(`The engine can't load the disassembler: ${error instanceof Error ? error.message : error}`);
+            }
+
+            return bytecode.writeBytecode(files, fileId, file.rowKeys[key], signal);
         },
         describe(target, view) {
-            return view === javaView ? ok(describeTarget(files, target)) : refuseView(view);
+            return views.includes(view) ? ok(describeTarget(files, target)) : refuseView(view);
         },
         resolve(target) {
             return ok(resolveTarget(files, target));
         },
         findReferences(target, view, signal) {
-            return view === javaView ? ok(findUsers(files, target, signal)) : refuseView(view);
+            return views.includes(view) ? ok(findUsers(files, target, signal)) : refuseView(view);
         },
         async listStrings(fileId, signal) {
             const file = files.get(fileId);

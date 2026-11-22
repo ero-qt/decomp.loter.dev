@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 ### Fixed
 
 - The Symbols view shows its loading strip while a document loads, so a slow first click on a native function doesn't look like nothing happened. Go to Definition and the views you open to the side show it too.
+- The first C document of a native file opens sooner, because the native engine starts loading the processor's files for Ghidra right after the file opens.
 
 ## [1.2.0] - 2026-11-22
 

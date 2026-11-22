@@ -40,12 +40,13 @@ export function findProcessor(module: NativeModule, session: number): Reply<stri
 /**
  * Returns the function that writes a processor's compiled languages into the module's file system before its first
  * decompile. Writes the small specification files of every processor with the first call, even without a processor,
- * because Ghidra reads them all to list its languages. Only marks a processor and the list after their writes, so a
- * failed fetch tries again with the next call.
+ * because Ghidra reads them all to list its languages. Shares a pending write with later calls and forgets a failed
+ * one, so a failed fetch tries again with the next call.
  */
 export function createLanguageWriter(module: NativeModule): (processor?: string) => Promise<void> {
     let listing: Promise<string[]> | undefined;
-    const written = new Set<string>();
+    // processor -> the write of the processor's languages
+    const writes = new Map<string, Promise<void>>();
 
     // writes files listed as `processor/file`, because Ghidra finds a file in its processor's folder
     async function writeFiles(files: string[]) {
@@ -75,11 +76,23 @@ export function createLanguageWriter(module: NativeModule): (processor?: string)
         return listing;
     }
 
+    function useWrite(processor: string, files: string[]): Promise<void> {
+        let write = writes.get(processor);
+        if (!write) {
+            write = writeFiles(files.filter(file => file.startsWith(`${processor}/`) && file.endsWith('.sla'))).catch(error => {
+                writes.delete(processor);
+                throw error;
+            });
+            writes.set(processor, write);
+        }
+
+        return write;
+    }
+
     return async processor => {
         const files = await useListing();
-        if (processor !== undefined && !written.has(processor)) {
-            await writeFiles(files.filter(file => file.startsWith(`${processor}/`) && file.endsWith('.sla')));
-            written.add(processor);
+        if (processor !== undefined) {
+            await useWrite(processor, files);
         }
     };
 }

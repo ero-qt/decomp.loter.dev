@@ -68,6 +68,15 @@ function findRefusal(module: NativeModule, session: number, path: string, name: 
     return undefined;
 }
 
+// starts writing the languages of a session's processor without waiting for them, because the first decompile then
+// doesn't wait for their fetch. A failed write gets ignored here because that decompile writes the languages again.
+function writeLanguageEarly(writeLanguage: (processor?: string) => Promise<void>, module: NativeModule, session: number) {
+    const processor = findProcessor(module, session);
+    if (processor.value !== undefined) {
+        writeLanguage(processor.value).catch(() => undefined);
+    }
+}
+
 /**
  * Returns the native engine's handlers, which load the module with the first call that needs it, because `claims` then
  * only reads the file's headers. Each open file gets a Rizin session. `mountFile` puts the file's bytes where the
@@ -168,7 +177,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
             return ok(await claimsNativeFile(file));
         },
         async open(fileId, name, file, signal) {
-            const module = await useModule();
+            const { module, writeLanguage } = await useLoaded();
             signal.throwIfAborted();
 
             const mounted = await mountFile(module.fs, `/files/${++mountCount}`, 'binary', file);
@@ -186,6 +195,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
             }
 
             files.set(fileId, { name, session, mounted });
+            writeLanguageEarly(writeLanguage, module, session);
 
             return ok(undefined);
         },

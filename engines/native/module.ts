@@ -25,6 +25,7 @@ interface RizinModule {
     _session_describe(session: number, address: number): number;
     _session_cmd(session: number, command: number): number;
     _session_decompile(session: number, address: number): number;
+    _session_disassemble(session: number, address: number, size: number, maxBytes: number): number;
     _session_references(session: number, address: number): number;
     _session_strings(session: number, maxStrings: number, maxBytes: number): number;
     _free(pointer: number): void;
@@ -47,6 +48,16 @@ export interface PreparedFunction {
     size: number;
     name: string;
     signature: string;
+}
+
+/** An instruction as the glue writes it, with its address and jump target in hex and its text with names. */
+export interface GlueInstruction {
+    addr: string;
+    size: number;
+    text: string;
+    /** The instruction's text without names, like `call 0x1a20`. */
+    opcode: string;
+    jump?: string;
 }
 
 /** Rizin with rz-ghidra in wasm, with typed calls of the engine's glue. */
@@ -80,6 +91,11 @@ export interface NativeModule {
     fetchFile(path: string): Promise<Uint8Array>;
     /** Decompiles the function at an address with Ghidra and returns its C with rz-ghidra's annotations. */
     decompile(session: number, address: bigint): Decompiled;
+    /**
+     * Disassembles the instructions of `size` bytes from an address until their bytes reach `maxBytes`, or returns an
+     * empty list where the module can't read the bytes.
+     */
+    disassemble(session: number, address: bigint, size: number, maxBytes: number): GlueInstruction[];
     /** Returns the addresses of the code and data that refer to an address, in address order. */
     listReferences(session: number, address: bigint): bigint[];
     /** Returns the first `maxStrings` strings of a session's file, each cut after `maxBytes` bytes of UTF-8. */
@@ -157,6 +173,13 @@ export async function loadModule(moduleUrl: string, wasmBinary?: ArrayBuffer): P
             return withText(module, `0x${address.toString(16)}`, pointer => {
                 return takeJson(module, 'the C of the function', () => module._session_decompile(session, pointer));
             });
+        },
+        disassemble(session, address, size, maxBytes) {
+            const text = withText(module, `0x${address.toString(16)}`, pointer => {
+                return takeText(module, module._session_disassemble(session, pointer, size, maxBytes));
+            });
+
+            return text === '' ? [] : JSON.parse(text);
         },
         listReferences(session, address) {
             const references = withText(module, `0x${address.toString(16)}`, pointer => {

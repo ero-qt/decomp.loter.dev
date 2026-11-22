@@ -18,7 +18,7 @@ interface Block {
     size: number;
 }
 
-/** An instruction as `pDj` writes it, with a text that uses the names of symbols and with the raw text. */
+/** An instruction with a text that uses the names of symbols and with the raw text. */
 interface Instruction {
     offset: bigint;
     size: number;
@@ -27,17 +27,13 @@ interface Instruction {
     jump?: bigint;
 }
 
-// the largest part of a function that the engine disassembles, because Rizin decodes about 14 KB of code a second and
-// 128 KB already take about 10 s
+// the largest part of a function that the engine disassembles
 const maxFunctionBytes = 128 * 1024;
-// the bytes that 1 command decodes before the engine yields, because Rizin's time grows faster than the bytes (1 KB in
-// 70 ms, 8 KB in 1.7 s) and a cancel then gets through well inside the native engine's cancel limit of 2 s
-const chunkBytes = 1024;
-// the longest instruction of the architectures that the module disassembles, which is x86's
-const maxInstructionBytes = 15n;
+// the bytes that 1 call of the glue disassembles before the engine yields, because the glue takes about 100 ms for
+// 8 KB and a cancel then gets through well inside the native engine's cancel limit of 2 s
+const chunkBytes = 8 * 1024;
 // the architectures that the module's disassembler reads, which only has Rizin's x86 and ARM plugins
 const disassembledArchitectures = ['x86', 'arm'];
-const addressKeys = ['addr', 'offset', 'jump'];
 const declaration = flagsOf('', 'declaration');
 
 /** Returns a refusal for a session's file whose architecture the module's disassembler doesn't read. */
@@ -47,17 +43,17 @@ export function checkArchitecture(module: NativeModule, session: number): Reply<
     return disassembledArchitectures.includes(arch) ? ok(undefined) : failed(`The native engine can't disassemble ${name} code.`);
 }
 
-// reads Rizin's JSON with the addresses as unsigned big integers, because a JavaScript number loses the low bits of an
-// address above 2^53 and Rizin writes a jump as a signed 64-bit number
-function readJson<T>(text: string): T {
-    const quoted = text.replace(/"(addr|offset|jump)":(-?\d+)/g, '"$1":"$2"');
+// reads the blocks that `afbj` lists with their addresses as big integers, because a JavaScript number loses the low
+// bits of an address above 2^53
+function readBlocks(text: string): Block[] {
+    const quoted = text.replace(/"addr":(\d+)/g, '"addr":"$1"');
 
-    return JSON.parse(quoted || 'null', (key, value) => (addressKeys.includes(key) ? BigInt.asUintN(64, BigInt(value)) : value));
+    return JSON.parse(quoted || 'null', (key, value) => (key === 'addr' ? BigInt(value) : value)) ?? [];
 }
 
 /**
  * Lists the instructions of a function's blocks in address order until the instructions would pass `maxBytes`.
- * Decodes each block by its bytes in chunks and gives the worker's message loop a turn between chunks.
+ * Disassembles each block in chunks and gives the worker's message loop a turn between chunks.
  */
 async function listInstructions(
     module: NativeModule,
@@ -67,7 +63,7 @@ async function listInstructions(
     signal: AbortSignal,
 ): Promise<Instruction[]> {
     const yieldTurn = createYielder(signal);
-    const blocks = readJson<Block[]>(module.runCommand(session, `afbj @ 0x${address.toString(16)}`)) ?? [];
+    const blocks = readBlocks(module.runCommand(session, `afbj @ 0x${address.toString(16)}`));
     blocks.sort((first, second) => (first.addr < second.addr ? -1 : first.addr > second.addr ? 1 : 0));
 
     const instructions: Instruction[] = [];
@@ -77,12 +73,9 @@ async function listInstructions(
         for (let at = block.addr; at < end; ) {
             await yieldTurn();
 
-            const chunkEnd = at + BigInt(Math.min(chunkBytes, Number(end - at)));
-            const decoded = readJson<Instruction[]>(module.runCommand(session, `pDj ${chunkEnd - at} @ 0x${at.toString(16)}`)) ?? [];
-            // leaves the instructions near a chunk's end to the next chunk, because Rizin writes a cut instruction as
-            // bytes without a text and can read the rest of its bytes as another instruction
-            const safeEnd = chunkEnd < end ? chunkEnd - maxInstructionBytes : chunkEnd;
-            const whole = decoded.filter(({ offset, size }) => offset < safeEnd && offset + BigInt(size) <= chunkEnd);
+            const whole = module.disassemble(session, at, Number(end - at), chunkBytes).map(({ addr, size, text, opcode, jump }) => {
+                return { offset: BigInt(addr), size, disasm: text, opcode, jump: jump === undefined ? undefined : BigInt(jump) };
+            });
             if (whole.length === 0) {
                 break;
             }

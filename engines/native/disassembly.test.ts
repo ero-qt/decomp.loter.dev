@@ -168,20 +168,20 @@ test("a call of an import's stub shows the import's name and points at its row, 
     expect(arm.text).toContain('  bl fcn.00010440\n');
 }, 120000);
 
-test("a canceled disassembly of big_sum stops after the chunk that Rizin decodes, inside the engine's cancel limit", async () => {
+test("a canceled disassembly of big_sum stops after the chunk that the glue disassembles, inside the engine's cancel limit", async () => {
     const module = await loadTestModule();
     const controller = new AbortController();
     const counts = { chunks: 0 };
     let abortedAt = 0;
     const watched: NativeModule = {
         ...module,
-        runCommand(session, command) {
-            if (command.startsWith('pDj') && ++counts.chunks === 2) {
+        disassemble(session, address, size, maxBytes) {
+            if (++counts.chunks === 2) {
                 controller.abort();
                 abortedAt = performance.now();
             }
 
-            return module.runCommand(session, command);
+            return module.disassemble(session, address, size, maxBytes);
         },
     };
     const handlers = createNativeHandlers(async () => watched, mountInMemory);

@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Files you open together find each other now. If one of them is a missing file of another, like `GameAssembly.dll` or `libil2cpp.so` next to its `global-metadata.dat`, the site adds it to that file without a pick. You can also open them one after the other from the same folder, like the metadata after its `GameAssembly.dll`.
+
+### Changed
+
+- The search for symbols and strings shows each file's results as soon as that file is searched, so a slow file doesn't hold back the others.
+
 ## [1.3.0] - 2026-11-25
 
 ### Added

@@ -155,6 +155,7 @@ export interface RoutedEngine {
     magics?: string[];
     /** The manifest's views. The manifest gets the fake engine's views when the engine doesn't give any. */
     views?: View[];
+    keepsCompanions?: boolean;
     serve?: () => void;
 }
 
@@ -166,8 +167,8 @@ export async function startWithEngines(page: Page, engines: Record<string, Route
     await page.route('**/engines/index.json', route => route.fulfill({ json: Object.keys(engines) }));
     for (const [id, engine] of Object.entries(engines)) {
         if (engine) {
-            const { extensions, magics, views = fakeManifest.views } = engine;
-            const manifest = { ...fakeManifest, id, name: id, extensions, magics, views };
+            const { extensions, magics, views = fakeManifest.views, keepsCompanions } = engine;
+            const manifest = { ...fakeManifest, id, name: id, extensions, magics, views, keepsCompanions };
             await page.route(`**/engines/${id}/manifest.json`, route => route.fulfill({ json: manifest }));
         }
         if (engine?.serve) {

@@ -113,7 +113,7 @@ export async function checkStrings(engine: Engine, fixture: Fixture): Promise<vo
     });
 }
 
-/** Checks that the calls for a closed file throw an engine error while a call for another open file works. */
+/** Checks that the calls for a closed file throw an engine error, while a call for another open file works. */
 export async function checkClosedFile(engine: Engine, fixture: Fixture): Promise<void> {
     const { file, symbol } = fixture;
     await checkWithFiles(engine, [file], async openId => {
@@ -125,6 +125,7 @@ export async function checkClosedFile(engine: Engine, fixture: Fixture): Promise
         await requireEngineError(engine.read(closedId, key, readFirstView(fixture)), 'read', 'a closed file');
         await requireEngineError(engine.listStrings(closedId), 'listStrings', 'a closed file');
         await requireEngineError(engine.provide(closedId, file.name, file), 'provide', 'a closed file');
+
         await engine.list(openId);
     });
 }

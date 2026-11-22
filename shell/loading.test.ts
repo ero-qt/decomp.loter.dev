@@ -149,7 +149,7 @@ test("engine gets a picked companion under the missing file's name when the file
     expect(await chooser.element().getAttribute('accept')).toBe('.notes');
 }, testTimeoutMs);
 
-test('engine gets a picked companion that another engine claims', async () => {
+test('engine gets a picked companion that another engine claims, and the companion opens on its own too', async () => {
     const { page } = await openWorkbench();
     await startWithEngines(page, { fake: null, notes: { extensions: ['.notes'], serve: serveTestEngine } });
     await dropFiles(page, { 'drawing.fake': drawing });
@@ -157,7 +157,7 @@ test('engine gets a picked companion that another engine claims', async () => {
 
     await pickFile(page, findRow(page, 'drawing.notes'), 'drawing.notes', 'A note.');
 
-    const expected = ['drawing.fake 1 class left out', 'shapes.fake not loaded', 'Drawing'];
+    const expected = ['drawing.fake 1 class left out', 'shapes.fake not loaded', 'Drawing', 'drawing.notes'];
     expect(await readUntil(() => readRowTexts(page), expected)).toEqual(expected);
     await waitForEngineCalls(page, 'provide');
 }, testTimeoutMs);

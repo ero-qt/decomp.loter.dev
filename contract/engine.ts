@@ -5,6 +5,8 @@ import type { Rows } from './rows';
 export interface MissingFile {
     /** The name of the missing file, with the file's extension when the file has one. */
     name: string;
+    /** The other names that the file can have, like `libil2cpp.so` for a game's `GameAssembly.dll` on Android. */
+    otherNames?: string[];
     /** The text that the page shows next to the name, like `1.0.0.0, not loaded`. */
     reason: string;
     /**

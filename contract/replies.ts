@@ -34,7 +34,13 @@ function isFactPair(value: unknown): boolean {
 }
 
 function isMissingFile(value: unknown): boolean {
-    return isObject(value) && isString(value.name) && isString(value.reason) && typeof value.isCompanion === 'boolean';
+    if (!isObject(value)) {
+        return false;
+    }
+
+    const hasOtherNames = value.otherNames === undefined || isListOf(value.otherNames, isString);
+
+    return isString(value.name) && hasOtherNames && isString(value.reason) && typeof value.isCompanion === 'boolean';
 }
 
 function isRanges(value: unknown): boolean {

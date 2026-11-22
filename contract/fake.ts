@@ -15,6 +15,7 @@ export const fakeManifest: Manifest = readManifest({
         { id: 'ops', title: 'Ops', extension: '.ops', language: 'plaintext' },
     ],
     hasLinkedFiles: true,
+    formats: 'Fake test files',
 });
 
 const firstLine = 'fake';

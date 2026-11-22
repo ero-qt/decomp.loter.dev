@@ -6,7 +6,7 @@ test("java engine's JSON manifest names its views, the files that the engine cla
     expect(readManifest(manifest)).toEqual({
         id: 'java',
         name: 'Java',
-        extensions: ['.jar', '.war', '.class'],
+        extensions: ['.class', '.jar', '.war'],
         magics: ['cafebabe', '504b0304'],
         views: [
             { id: 'java', title: 'Java', extension: '.java', language: 'java' },
@@ -14,5 +14,6 @@ test("java engine's JSON manifest names its views, the files that the engine cla
         ],
         hasLinkedFiles: true,
         cancelLimitMs: 10000,
+        formats: 'Java classes and archives',
     });
 });

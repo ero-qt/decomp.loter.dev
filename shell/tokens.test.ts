@@ -57,6 +57,8 @@ test("token legend has each kind's semantic token type at the kind's index", () 
         section: 'namespace',
         reference: 'namespace',
         resource: 'string',
+        function: 'function',
+        variable: 'variable',
     });
 });
 

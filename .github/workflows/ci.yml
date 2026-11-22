@@ -112,21 +112,37 @@ jobs:
           path: artifacts/site
           retention-days: 3
 
+  list:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      folders: ${{ steps.folders.outputs.folders }}
+    steps:
+      - name: check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # lists each engine's folder with a manifest and the folders of the host, the release scripts and the shell, but
+      # not the native engine's and the shared helpers', whose tests run in their own jobs
+      - name: list the test folders
+        id: folders
+        run: |
+          {
+            dirname engines/*/manifest.json | grep -vx engines/native
+            printf '%s\n' host release shell
+          } | sort | jq -Rcs '"folders=" + (split("\n")[:-1] | tojson)' -r >> "$GITHUB_OUTPUT"
+
+  # sets up the JDK for a folder with Java fixture sources, the .NET SDK for a folder with a C# project and runs the
+  # folder's own ci-setup.sh, so an engine only adds files to its own folder
   test:
     name: test ${{ matrix.folder }}
-    needs: build
+    needs: [list, build]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        folder:
-          - engines/dotnet
-          - engines/fake
-          - engines/java
-          - host
-          - release
-          - shell
+        folder: ${{ fromJSON(needs.list.outputs.folders) }}
     steps:
       - name: check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -135,14 +151,19 @@ jobs:
       - name: set up Bun and packages
         uses: ./.github/actions/bun
       - name: set up JDK 21
-        if: matrix.folder == 'engines/java'
+        if: hashFiles(format('{0}/fixture/**/*.java', matrix.folder)) != ''
         uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: 21
       - name: set up .NET SDK
-        if: matrix.folder == 'engines/dotnet'
+        if: hashFiles(format('{0}/**/*.csproj', matrix.folder)) != ''
         uses: ./.github/actions/dotnet
+      - name: run the folder's setup
+        if: hashFiles(format('{0}/ci-setup.sh', matrix.folder)) != ''
+        env:
+          FOLDER: ${{ matrix.folder }}
+        run: '"$FOLDER/ci-setup.sh"'
       - name: set up the page tests
         uses: ./.github/actions/page-tests
       - name: run the tests
@@ -151,6 +172,42 @@ jobs:
         run: |
           shopt -s globstar
           for file in "$FOLDER"/**/*.test.ts; do
+            bun test "./$file"
+          done
+
+  # sets up the tools of every engine's fixture by the same markers, because the claims test reads every fixture, and
+  # skips the site and the browser, which its tests don't use
+  test-shared:
+    name: test engines/shared
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: set up Bun and packages
+        uses: ./.github/actions/bun
+      - name: set up JDK 21
+        if: hashFiles('engines/*/fixture/**/*.java') != ''
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: set up .NET SDK
+        if: hashFiles('engines/*/**/*.csproj') != ''
+        uses: ./.github/actions/dotnet
+      - name: run the engines' setups
+        run: |
+          for script in engines/*/ci-setup.sh; do
+            if [ -f "$script" ]; then
+              "$script"
+            fi
+          done
+      - name: run the tests
+        run: |
+          shopt -s globstar
+          for file in engines/shared/**/*.test.ts; do
             bun test "./$file"
           done
 

@@ -2,9 +2,10 @@ import { expect, test } from 'bun:test';
 import { fileURLToPath } from 'node:url';
 import { readRows, type Row } from '../../contract/rows';
 import { accessibilityOf, modifiersOf } from '../../contract/symbols';
+import { LoadError } from '../shared/loading';
 import { mountInMemory } from './files';
 import { createNativeHandlers } from './handlers';
-import { ModuleError, type NativeModule } from './module';
+import type { NativeModule } from './module';
 import { groupRows, type GlueListing } from './rows';
 import { loadTestModule, readFixture, useNativeEngine } from './testing';
 
@@ -173,7 +174,7 @@ test("a listing that the module can't read becomes a failed reply", async () => 
     const broken: NativeModule = {
         ...module,
         listSymbols() {
-            throw new ModuleError("The native engine couldn't read the symbols of the file.");
+            throw new LoadError("The native engine couldn't read the symbols of the file.");
         },
     };
     const handlers = createNativeHandlers(async () => broken, mountInMemory);

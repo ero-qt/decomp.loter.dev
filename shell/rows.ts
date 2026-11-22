@@ -28,6 +28,8 @@ const places: Record<Kind, number> = {
     section: -1,
     reference: 0,
     resource: 0,
+    function: 8,
+    variable: 3,
 };
 
 /**
@@ -59,6 +61,8 @@ export const symbolKinds: Record<Kind, keyof typeof SymbolKind> = {
     section: 'Package',
     reference: 'Module',
     resource: 'File',
+    function: 'Function',
+    variable: 'Variable',
 };
 
 // compares names without case and numbers by value because a file manager sorts files that way

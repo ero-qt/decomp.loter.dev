@@ -36,7 +36,7 @@ test('buildFixture writes the same bytes on every build', async () => {
 
 test("buildFixture rebuilds JARs whose stamp doesn't match the sources, the build's scripts or the JDK", async () => {
     const again = fileURLToPath(new URL('../../artifacts/java-fixture-stamp/', import.meta.url));
-    const stamp = join(again, 'fixture.stamp');
+    const stamp = join(again, 'build.stamp');
     rmSync(again, { recursive: true, force: true });
     await buildFixture(again, process.env.JAVA_HOME);
     const [sources, jdk] = readFileSync(stamp, 'utf8').split('\n');

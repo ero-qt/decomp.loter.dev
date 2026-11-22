@@ -1,8 +1,6 @@
-import { afterEach, beforeEach } from 'bun:test';
 import { crc32, deflateRawSync } from 'node:zlib';
 import type { Engine } from '../../contract/engine';
-import { restoreWorker, useInThreadWorker } from '../../contract/in-thread-worker';
-import { connectEngine } from '../../contract/queue';
+import { useEngine } from '../shared/testing';
 import { createJavaHandlers } from './handlers';
 
 /** An entry of a zip file that `zipFile` writes. */
@@ -69,10 +67,7 @@ export function zipFile(entries: ZipEntry[]): Uint8Array<ArrayBuffer> {
  * test. The cancel limit lets a canceled decompile finish because Vineflower can't stop in the middle.
  */
 export function useJavaEngine(): () => Engine {
-    beforeEach(() => useInThreadWorker(createJavaHandlers));
-    afterEach(restoreWorker);
-
-    return () => connectEngine('java.js', { timeLimitMs: 60000, cancelLimitMs: 30000, hasLinkedFiles: true });
+    return useEngine(createJavaHandlers, { timeLimitMs: 60000, cancelLimitMs: 30000, hasLinkedFiles: true });
 }
 
 /** A nested, local or anonymous class in the `InnerClasses` attribute that `classFile` writes. */

@@ -21,6 +21,8 @@ export interface Fixture {
     symbol: string;
     /** A string in the file. */
     string?: string;
+    /** The start of a string in the file that is longer than `maxStringLength`, which the engine lists cut. */
+    cutString?: string;
     /** The group of an engine whose files use symbols of other files that the engine opens. */
     linked?: {
         /**
@@ -45,10 +47,24 @@ export interface Fixture {
         /** A file that no engine claims, under the name that `file` lists for the companion as a missing file. */
         file: File;
     };
+    /** The group of an engine that claims some files that it can't open, like a file of another architecture. */
+    unsupported?: {
+        /** A file that the engine claims and refuses to open. */
+        file: File;
+        /** A part of the refusal's text, which also has the file's name, like `only imports mscoree.dll`. */
+        text: string;
+    };
+    /** The group of an engine that leaves out parts of a file above one of its limits, like a count of strings. */
+    limited?: {
+        /** A file above one of the engine's limits. */
+        file: File;
+        /** A part of the note on the file's row, like `first 50,000 strings listed`. */
+        note: string;
+    };
 }
 
 /** A group of fixture files that only some engines have. */
-export type Group = 'linked' | 'companion';
+export type Group = 'linked' | 'companion' | 'unsupported' | 'limited';
 
 /** A fixture that has the groups that a check needs. */
 export type FixtureWith<Needed extends Group> = Fixture & Required<Pick<Fixture, Needed>>;

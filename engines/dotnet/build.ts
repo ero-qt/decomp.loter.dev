@@ -1,85 +1,31 @@
-import { createHash } from 'node:crypto';
-import { cpSync, existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { copyFramework, type DotnetProject, findFrameworkFolder, publishProject } from '../shared/dotnet/publish';
 
 const engineFolder = fileURLToPath(new URL('.', import.meta.url));
 const outputFolder = fileURLToPath(new URL('../../artifacts/dotnet/', import.meta.url));
-const publishFolder = join(outputFolder, 'publish');
-const stamp = join(outputFolder, 'publish.stamp');
-const assetsFile = join(outputFolder, 'obj', 'Decomp.Dotnet', 'project.assets.json');
-// keeps the SDK from calling Microsoft and from printing its welcome text
-const sdkEnvironment = { ...process.env, DOTNET_CLI_TELEMETRY_OPTOUT: '1', DOTNET_NOLOGO: '1' };
+const sources = readdirSync(join(engineFolder, 'src'), { recursive: true, withFileTypes: true })
+    .filter(entry => entry.isFile())
+    .map(entry => join(entry.parentPath, entry.name));
+const buildFiles = ['Directory.Build.props', 'global.json', 'build.ts', '../shared/dotnet/publish.ts', '../shared/stamp.ts'];
+
+const project: DotnetProject = {
+    projectFolder: join(engineFolder, 'src'),
+    sdkFolder: engineFolder,
+    outputFolder,
+    inputs: [...sources, ...buildFiles.map(path => join(engineFolder, path))],
+};
 
 /** The published folder with `dotnet.js`, the runtime and the assemblies, which the worker loads. */
-export const frameworkFolder = join(publishFolder, 'wwwroot', '_framework');
-
-function runSdk(args: string[]): string {
-    const dotnet = Bun.which('dotnet');
-    if (!dotnet) {
-        throw new Error('Install the .NET SDK 11 because the build publishes the .NET engine with it.');
-    }
-
-    // runs from the engine's folder because its global.json picks the SDK there
-    const { exitCode, stdout, stderr } = Bun.spawnSync([dotnet, ...args], { cwd: engineFolder, env: sdkEnvironment });
-    if (exitCode !== 0) {
-        throw new Error(`dotnet ${args[0]} failed: ${stdout.toString()}${stderr.toString()}`);
-    }
-
-    return stdout.toString().trim();
-}
-
-// hashes the SDK's version with the path and text of each input of the publish, because the hash then changes with any
-// edit, new file or deleted file
-function hashInputs(): string {
-    const hash = createHash('sha256').update(runSdk(['--version']));
-    const sources = readdirSync(join(engineFolder, 'src'), { recursive: true, withFileTypes: true })
-        .filter(entry => entry.isFile())
-        .map(entry => relative(engineFolder, join(entry.parentPath, entry.name)));
-    const files = [...sources, 'Directory.Build.props', 'global.json', 'build.ts'].sort();
-
-    for (const path of files) {
-        hash.update(`\0${path}\0`).update(readFileSync(join(engineFolder, path)));
-    }
-
-    return hash.digest('hex');
-}
+export const frameworkFolder = findFrameworkFolder(project);
 
 /**
  * Publishes the engine's C# project for the browser into `artifacts/dotnet/publish`, unless the stamp of the last
  * publish matches the sources, the build's files and the SDK.
  */
 export async function publishEngine(): Promise<void> {
-    const inputs = hashInputs();
-    if (existsSync(stamp) && readFileSync(stamp, 'utf8') === inputs && existsSync(join(frameworkFolder, 'dotnet.js'))) {
-        return;
-    }
-
-    // removes the stamp and the old files first because a publish that stops halfway then leaves no stamp, and a file
-    // that the project stopped making doesn't stay
-    rmSync(stamp, { force: true });
-    rmSync(publishFolder, { recursive: true, force: true });
-
-    // keeps no build server and no MSBuild node running after the publish because the host has little memory
-    runSdk(['publish', 'src', '-c', 'Release', '-o', publishFolder, '--disable-build-servers', '-nodeReuse:false', '-maxcpucount:1']);
-
-    await Bun.write(stamp, inputs);
-}
-
-// finds the runtime pack that the publish took its runtime from, in the NuGet folder that the restore used
-async function findRuntimePack(): Promise<string> {
-    const assets = await Bun.file(assetsFile).json();
-    const [packageFolder] = Object.keys(assets.packageFolders);
-    const [framework] = Object.values<{ downloadDependencies: { name: string; version: string }[] }>(assets.project.frameworks);
-    const pack = framework.downloadDependencies.find(dependency => dependency.name.startsWith('Microsoft.NETCore.App.Runtime.'));
-    if (!pack) {
-        throw new Error("the restore of the .NET engine doesn't list a runtime pack");
-    }
-
-    // takes the version out of a range like `[11.0.0, 11.0.0]`
-    const version = pack.version.replace(/^\[([^,]+),.*$/, '$1');
-
-    return join(packageFolder, pack.name.toLowerCase(), version);
+    await publishProject(project);
 }
 
 /**
@@ -87,8 +33,5 @@ async function findRuntimePack(): Promise<string> {
  * the engine's folder of the site.
  */
 export default async function copyIntoSite(siteFolder: string): Promise<void> {
-    await publishEngine();
-
-    cpSync(frameworkFolder, join(siteFolder, '_framework'), { recursive: true });
-    cpSync(join(await findRuntimePack(), 'THIRD-PARTY-NOTICES.TXT'), join(siteFolder, 'THIRD-PARTY-NOTICES.TXT'));
+    await copyFramework(project, join(outputFolder, 'obj', 'Decomp.Dotnet', 'project.assets.json'), siteFolder);
 }

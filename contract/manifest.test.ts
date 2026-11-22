@@ -44,6 +44,15 @@ test("readManifest returns a priority and refuses one that isn't a whole number"
     }
 });
 
+test("readManifest returns the texts of the About tab's table and refuses one that isn't a string", () => {
+    const read = readManifest({ ...manifest, formats: '.NET assemblies', fileNote: 'and files without an extension' });
+
+    expect([read.formats, read.fileNote]).toEqual(['.NET assemblies', 'and files without an extension']);
+    expect(readManifest(manifest).formats).toBeUndefined();
+    expect(() => readManifest({ ...manifest, formats: 3 })).toThrow("formats isn't a string");
+    expect(() => readManifest({ ...manifest, fileNote: false })).toThrow("fileNote isn't a string");
+});
+
 test("readManifest returns the magics and refuses one that isn't 1 to 16 bytes in lowercase hex digits", () => {
     expect(readManifest({ ...manifest, magics: ['4d5a', 'cafebabe'] }).magics).toEqual(['4d5a', 'cafebabe']);
     expect(readManifest(manifest).magics).toBeUndefined();

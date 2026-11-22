@@ -3,6 +3,8 @@ import { failed, ok, type Reply } from '../../contract/reply';
 import { writeRows } from '../../contract/rows';
 import type { EngineHandlers } from '../../contract/serve';
 import { modifiersOf } from '../../contract/symbols';
+import { loadOnce, refuseLoadErrors } from '../shared/loading';
+import { createRefusals } from '../shared/refusals';
 import { cHeader, disassemblyHeader, listClassParts, writeClassDocument } from './class-document';
 import { createDocumentCache, decompileFunction } from './code';
 import { describeRow, findFullName } from './describe';
@@ -10,7 +12,7 @@ import { checkArchitecture, disassembleFunction, type DisassemblyRows } from './
 import { type MountedFile, type MountFile, writeShareFiles } from './files';
 import { claimsNativeFile } from './formats';
 import manifest from './manifest.json' with { type: 'json' };
-import { ModuleError, type NativeModule } from './module';
+import type { NativeModule } from './module';
 import { defaultMaxMembers, groupRows, type NativeRows } from './rows';
 import { createLanguageWriter, findProcessor } from './sleigh';
 import { listStrings } from './strings';
@@ -41,6 +43,7 @@ interface LoadedModule {
 
 // the views whose documents the engine writes
 const views = manifest.views.map(view => view.id);
+const refusals = createRefusals('native');
 
 // counts the files that any handlers mounted, because a module outlives its handlers in tests and each file then gets
 // a folder of its own
@@ -65,29 +68,6 @@ function findRefusal(module: NativeModule, session: number, path: string, name: 
     return undefined;
 }
 
-// turns the errors of the module and its files into failed replies, because the worker stays usable after them and a
-// later call can load a file that failed to load
-function refuseModuleErrors(handlers: EngineHandlers): EngineHandlers {
-    const calls = Object.entries(handlers as unknown as Record<string, (...args: never[]) => Promise<Reply<unknown>>>);
-    const refusing = calls.map(([name, handler]) => {
-        async function refuse(...args: never[]): Promise<Reply<unknown>> {
-            try {
-                return await handler(...args);
-            } catch (error) {
-                if (error instanceof ModuleError) {
-                    return failed(error.message);
-                }
-
-                throw error;
-            }
-        }
-
-        return [name, refuse];
-    });
-
-    return Object.fromEntries(refusing) as unknown as EngineHandlers;
-}
-
 /**
  * Returns the native engine's handlers, which load the module with the first call that needs it, because `claims` then
  * only reads the file's headers. Each open file gets a Rizin session. `mountFile` puts the file's bytes where the
@@ -96,7 +76,6 @@ function refuseModuleErrors(handlers: EngineHandlers): EngineHandlers {
 export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mountFile: MountFile): EngineHandlers {
     const files = new Map<number, NativeFile>();
     const cache = createDocumentCache();
-    let moduleLoad: Promise<LoadedModule> | undefined;
 
     // writes the databases and the language list before the first session, because Rizin reads the databases when it
     // loads a binary and a session's Ghidra plugin doesn't see languages that come later
@@ -108,15 +87,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
         return { module, writeLanguage };
     }
 
-    // forgets a failed load, so the next call loads the module again
-    function useLoaded(): Promise<LoadedModule> {
-        moduleLoad ??= loadAndWrite().catch(error => {
-            moduleLoad = undefined;
-            throw error;
-        });
-
-        return moduleLoad;
-    }
+    const useLoaded = loadOnce(loadAndWrite);
 
     async function useModule(): Promise<NativeModule> {
         return (await useLoaded()).module;
@@ -189,10 +160,10 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
     function findFile(fileId: number): Reply<NativeFile> {
         const file = files.get(fileId);
 
-        return file ? ok(file) : failed(`The native engine doesn't have an open file with the id ${fileId}.`);
+        return file ? ok(file) : refusals.file(fileId);
     }
 
-    return refuseModuleErrors({
+    return refuseLoadErrors({
         async claims(_, file) {
             return ok(await claimsNativeFile(file));
         },
@@ -278,7 +249,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
                 return found;
             }
             if (!views.includes(view)) {
-                return failed(`The native engine doesn't have the view ${view}.`);
+                return refusals.view(view);
             }
 
             const { module, writeLanguage } = await useLoaded();
@@ -288,10 +259,10 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
             const listing = readListing(module, file);
             const index = listing.indexes.get(key);
             if (index === undefined) {
-                return failed(`${file.name} doesn't have a symbol with the key 0x${(key >>> 0).toString(16)}.`);
+                return refusals.key(file.name, `0x${(key >>> 0).toString(16)}`);
             }
             if (!modifiersOf(listing.rows[index].flags).includes('document')) {
-                return failed(`${listing.rows[index].name} doesn't have its own document.`);
+                return refusals.noDocument(listing.rows[index].name);
             }
 
             const architecture = view === 'disassembly' ? checkArchitecture(module, file.session) : ok(undefined);
@@ -326,7 +297,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
         },
         async describe(target, view, signal) {
             if (!views.includes(view)) {
-                return failed(`The native engine doesn't have the view ${view}.`);
+                return refusals.view(view);
             }
 
             const found = await findTarget(target);
@@ -348,7 +319,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
         // doesn't exist before its decompile
         async findReferences(target, view, signal) {
             if (!views.includes(view)) {
-                return failed(`The native engine doesn't have the view ${view}.`);
+                return refusals.view(view);
             }
 
             const found = await findTarget(target);

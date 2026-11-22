@@ -1,9 +1,8 @@
-import { afterEach, beforeEach } from 'bun:test';
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { Engine } from '../../contract/engine';
-import { restoreWorker, useInThreadWorker } from '../../contract/in-thread-worker';
 import { connectEngine } from '../../contract/queue';
+import { findTool, requireTool, useEngine } from '../shared/testing';
 import { frameworkFolder, publishEngine } from './build';
 import { buildFixture, compileText } from './fixture/build';
 import { createDotnetHandlers } from './handlers';
@@ -18,13 +17,11 @@ let fixtureBuild: Promise<void> | undefined;
 let runtimeLoad: Promise<DotnetRuntime> | undefined;
 let runtime: DotnetRuntime | undefined;
 
-function findDotnet(): string | undefined {
-    return Bun.which('dotnet') ?? undefined;
-}
+const connectOptions = { timeLimitMs: 120000, cancelLimitMs: 30000, hasLinkedFiles: true };
 
 /** Reads an assembly of the fixture, like `Drawing.dll`, and builds the fixture first when its stamp is stale. */
 export async function readFixture(name: string): Promise<File> {
-    fixtureBuild ??= buildFixture(fixtureFolder, findDotnet());
+    fixtureBuild ??= buildFixture(fixtureFolder, findTool(['dotnet']));
     await fixtureBuild;
 
     return new File([await Bun.file(join(fixtureFolder, name)).bytes()], name);
@@ -36,10 +33,7 @@ export async function readFixture(name: string): Promise<File> {
  * unoptimized.
  */
 export async function compileAssembly(path: string, text: string, references: string[] = [], { isDebug = false } = {}): Promise<File> {
-    const dotnet = findDotnet();
-    if (!dotnet) {
-        throw new Error('Install the .NET SDK 11 because the tests compile assemblies with it.');
-    }
+    const dotnet = requireTool(['dotnet'], 'the .NET SDK 11', 'compile assemblies with it');
 
     const referencePaths = references.map(reference => join(testFolder, `${reference}.dll`));
     const options = { references: referencePaths, isOptimized: !isDebug };
@@ -67,10 +61,12 @@ export function loadTestRuntime(): Promise<DotnetRuntime> {
  * test.
  */
 export function useDotnetEngine(): () => Engine {
-    beforeEach(() => useInThreadWorker(() => createDotnetHandlers(loadTestRuntime), () => runtime?.readMemoryBytes() ?? 0));
-    afterEach(restoreWorker);
+    return useEngine(() => createDotnetHandlers(loadTestRuntime), connectOptions, () => runtime?.readMemoryBytes() ?? 0);
+}
 
-    return () => connectEngine('dotnet.js', { timeLimitMs: 120000, cancelLimitMs: 30000, hasLinkedFiles: true });
+/** Connects a test to the .NET engine in the in-thread worker that the test serves. */
+export function connectDotnet(): Engine {
+    return connectEngine('dotnet.js', connectOptions);
 }
 
 /** The shape of a PE file that `peFile` writes. */

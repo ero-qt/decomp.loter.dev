@@ -1,3 +1,4 @@
+import { fetchBytes, importModule, LoadError } from '../shared/loading';
 import type { Decompiled } from './code';
 import type { GlueListing } from './rows';
 
@@ -39,9 +40,6 @@ type CreateRizin = (options: { wasmBinary?: ArrayBuffer; print: (text: string) =
 export type PdbLoad = 'loaded' | 'unreadable' | 'mismatch';
 
 const pdbLoads: PdbLoad[] = ['loaded', 'unreadable', 'mismatch'];
-
-/** An error of the module or its files, like a file that didn't load, which the handlers refuse a call with. */
-export class ModuleError extends Error {}
 
 /** A function that the glue analyzed, with the bytes of its code, the name that its C has and its signature. */
 export interface PreparedFunction {
@@ -111,7 +109,7 @@ function takeJson<T>(module: RizinModule, what: string, call: () => number): T {
     try {
         return JSON.parse(takeText(module, call()));
     } catch (error) {
-        throw new ModuleError(`The native engine couldn't read ${what}: ${error instanceof Error ? error.message : error}`);
+        throw new LoadError(`The native engine couldn't read ${what}: ${error instanceof Error ? error.message : error}`);
     }
 }
 
@@ -130,12 +128,7 @@ function withText<T>(module: RizinModule, text: string, call: (pointer: number) 
  * beside itself. Imports the module by its URL at run time because a bundle then leaves its 10 MB out.
  */
 export async function loadModule(moduleUrl: string, wasmBinary?: ArrayBuffer): Promise<NativeModule> {
-    let createRizin: CreateRizin;
-    try {
-        ({ default: createRizin } = await import(moduleUrl));
-    } catch (error) {
-        throw new ModuleError(`The native engine couldn't load rizin.mjs: ${error instanceof Error ? error.message : error}`);
-    }
+    const { default: createRizin } = await importModule<{ default: CreateRizin }>(moduleUrl, 'rizin.mjs', 'native');
 
     // drops Rizin's log, whose warnings are about the analysis's guesses and would fill the console of every file
     const module = await createRizin({ wasmBinary, print: () => {}, printErr: () => {} });
@@ -175,18 +168,7 @@ export async function loadModule(moduleUrl: string, wasmBinary?: ArrayBuffer): P
         listStrings(session, maxStrings, maxBytes) {
             return takeJson(module, 'the strings of the file', () => module._session_strings(session, maxStrings, maxBytes));
         },
-        async fetchFile(path) {
-            try {
-                const response = await fetch(new URL(path, moduleUrl));
-                if (!response.ok) {
-                    throw new Error(`${response.status} ${response.statusText}`);
-                }
-
-                return new Uint8Array(await response.arrayBuffer());
-            } catch (error) {
-                throw new ModuleError(`The native engine couldn't load ${path}: ${error instanceof Error ? error.message : error}`);
-            }
-        },
+        fetchFile: path => fetchBytes(new URL(path, moduleUrl), path, 'native'),
         runCommand: (session, command) => withText(module, command, text => takeText(module, module._session_cmd(session, text))),
         readMemoryBytes: () => module.HEAPU8.length,
     };

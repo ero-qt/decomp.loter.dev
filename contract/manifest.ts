@@ -34,6 +34,10 @@ export interface Manifest {
     cancelLimitMs?: number;
     /** The rank of the engine in the page's search for an engine that claims a file, higher first, 0 by default. */
     priority?: number;
+    /** The text of the engine's row in the About tab's table of supported files, like `Java classes and archives`. */
+    formats?: string;
+    /** The text after the extensions in that row, like `and files without an extension`. */
+    fileNote?: string;
 }
 
 /** The most bytes that a magic has. */
@@ -58,6 +62,10 @@ function readString(value: unknown, name: string): string {
     }
 
     return value;
+}
+
+function readOptionalString(value: unknown, name: string): string | undefined {
+    return value === undefined ? undefined : readString(value, name);
 }
 
 function readOptionalBoolean(value: unknown, name: string): boolean | undefined {
@@ -138,6 +146,8 @@ const manifestKeys = [
     'memoryLimitBytes',
     'cancelLimitMs',
     'priority',
+    'formats',
+    'fileNote',
 ] as const satisfies readonly (keyof Manifest)[];
 
 function readView(value: unknown, index: number): View {
@@ -188,6 +198,8 @@ export function readManifest(value: unknown): Manifest {
         memoryLimitBytes: readOptionalPositiveInteger(manifest.memoryLimitBytes, 'memoryLimitBytes'),
         cancelLimitMs: readOptionalPositiveInteger(manifest.cancelLimitMs, 'cancelLimitMs'),
         priority: readOptionalInteger(manifest.priority, 'priority'),
+        formats: readOptionalString(manifest.formats, 'formats'),
+        fileNote: readOptionalString(manifest.fileNote, 'fileNote'),
     };
 }
 
@@ -196,7 +208,8 @@ export async function readStart(file: Blob): Promise<Uint8Array> {
     return new Uint8Array(await file.slice(0, maxMagicBytes).arrayBuffer());
 }
 
-function toHex(bytes: Uint8Array): string {
+/** Writes bytes as hex without Node's `Buffer`, which a browser's worker doesn't have. */
+export function toHex(bytes: Uint8Array): string {
     return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
 }
 

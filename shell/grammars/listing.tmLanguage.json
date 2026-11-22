@@ -1,0 +1,51 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Listing",
+  "scopeName": "source.listing",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#string-double" },
+    { "include": "#string-single" },
+    { "include": "#opcode" },
+    { "include": "#number-hex" },
+    { "include": "#number" }
+  ],
+  "repository": {
+
+    "comment": {
+      "name": "comment.line.listing",
+      "match": "(?:;|//).*$"
+    },
+
+    "string-double": {
+      "name": "string.quoted.double.listing",
+      "begin": "\"",
+      "end": "\"|$",
+      "patterns": [{ "name": "constant.character.escape.listing", "match": "\\\\." }]
+    },
+
+    "string-single": {
+      "name": "string.quoted.single.listing",
+      "begin": "'",
+      "end": "'|$",
+      "patterns": [{ "name": "constant.character.escape.listing", "match": "\\\\." }]
+    },
+
+    "opcode": {
+      "match": "^\\s*(?:(?:0[xX][0-9a-fA-F]+|[0-9]+|>>)\\s*:?\\s+)*([A-Za-z_][\\w.]*)",
+      "captures": {
+        "1": { "name": "support.function.opcode.listing" }
+      }
+    },
+
+    "number-hex": {
+      "name": "constant.numeric.hex.listing",
+      "match": "\\b0[xX][0-9a-fA-F]+\\b"
+    },
+
+    "number": {
+      "name": "constant.numeric.listing",
+      "match": "(?<![\\w.])-?[0-9]+(?:\\.[0-9]+)?\\b"
+    }
+  }
+}

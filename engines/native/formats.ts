@@ -1,4 +1,5 @@
-import { hasCliHeader, isPeFile } from '../pe';
+import { toHex } from '../shared/magic';
+import { hasCliHeader, isPeFile } from '../shared/pe';
 
 const elfClasses = [1, 2];
 const elfByteOrders = [1, 2];
@@ -9,11 +10,6 @@ const fatMachoMagic = 'cafebabe';
 const maxFatSlices = 44;
 const fatHeaderSize = 8;
 const fatEntrySize = 20;
-
-// writes bytes as hex without Node's Buffer, which a browser's worker doesn't have
-function toHex(bytes: Uint8Array): string {
-    return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
-}
 
 function claimsElf(start: Uint8Array): boolean {
     return start.length >= 6 && elfClasses.includes(start[4]) && elfByteOrders.includes(start[5]);

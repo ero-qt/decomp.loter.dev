@@ -1,13 +1,12 @@
 import type { TokenCollector } from '@run-slicer/vf';
 import { type Document, writeTokens } from '../../contract/document';
 import { failed, ok, type Reply } from '../../contract/reply';
+import { loadOnce } from '../shared/loading';
 import type { OpenFiles } from './describe';
 import { findTop } from './files';
 import { mapTokens, readAnyClass, type VineflowerToken } from './tokens';
 
 type Vineflower = typeof import('@run-slicer/vf/vf.runtime.js');
-
-let vineflower: Promise<Vineflower> | undefined;
 
 // writes every constructor because the rows then always match the text, and never edits the text after the decompile
 // because the token offsets point into it
@@ -15,14 +14,7 @@ const options = { 'hide-default-constructor': '0', 'new-line-separator': '1', 'i
 
 // imports Vineflower on the first read because listing a file doesn't need it, and imports it again after a failed
 // import because the connection can come back
-function loadVineflower(): Promise<Vineflower> {
-    vineflower ??= import('@run-slicer/vf/vf.runtime.js').catch(error => {
-        vineflower = undefined;
-        throw error;
-    });
-
-    return vineflower;
-}
+const loadVineflower = loadOnce<Vineflower>(() => import('@run-slicer/vf/vf.runtime.js'));
 
 function readMessage(error: unknown): string {
     return error instanceof Error ? error.message : String(error);

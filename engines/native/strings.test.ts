@@ -46,7 +46,7 @@ test('strings stop at 50,000 and each string at 1,000 characters with a mark', a
 
     expect(asked).toEqual([50000]);
     expect(strings).toHaveLength(50000);
-    expect(strings[1]).toEqual({ text: `1${'.'.repeat(999)}…`, user: null });
+    expect(strings[1]).toEqual({ text: `1${'.'.repeat(998)}…`, user: null });
 });
 
 test('a canceled listing of strings stops', async () => {

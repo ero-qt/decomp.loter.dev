@@ -1,11 +1,12 @@
 import { expect, test } from 'bun:test';
-import type { Check, Fixture } from './conformance';
+import { checkWithFiles, findRow, readFirstView } from './checking';
+import type { Check, Fixture, FixtureWith, Group } from './conformance';
 import type { Document } from './document';
-import type { Listing } from './engine';
+import type { Engine, Listing } from './engine';
 import { createFakeHandlers, fakeManifest, sampleFiles } from './fake';
 import { connectFake } from './fake-testing';
 import { InThreadWorker, useInThreadWorker } from './in-thread-worker';
-import { ok } from './reply';
+import { EngineError, ok } from './reply';
 import { readRows, type Row, writeRows } from './rows';
 import type { EngineHandlers } from './serve';
 
@@ -13,9 +14,12 @@ import type { EngineHandlers } from './serve';
 export type BreakHandlers = (handlers: EngineHandlers) => Partial<EngineHandlers>;
 
 /** A check of any group. */
-export type AnyCheck = Check<'linked' | 'companion'>;
+export type AnyCheck = Check<Group>;
 
-/** The fixture of the sample files, with both groups. */
+/** A fixture with every group, which every check takes. */
+export type FullFixture = FixtureWith<Group>;
+
+/** The fixture of the sample files, with every group. */
 export const fixture = {
     manifest: fakeManifest,
     file: sampleFiles.drawing,
@@ -25,6 +29,9 @@ export const fixture = {
     string: 'circle',
     linked: { file: sampleFiles.shapes, token: 'Shapes.Shape.Area', user: 'Drawing.Circle.Draw' },
     companion: { file: new File(['a note'], 'drawing.notes') },
+    // a file whose first line only starts like a fake file's, which the engine claims and refuses
+    unsupported: { file: new File(['fake 2\nnamespace Drawing'], 'next.fake'), text: "isn't a fake file" },
+    limited: { file: sampleFiles.drawing, note: '1 class left out' },
 } satisfies Fixture;
 
 /** A fixture of a file of functions without the groups. */
@@ -36,6 +43,8 @@ export const functionsFixture: Fixture = {
     string: undefined,
     linked: undefined,
     companion: undefined,
+    unsupported: undefined,
+    limited: undefined,
 };
 
 /** A description whose fields are all empty or null. */
@@ -115,10 +124,48 @@ export function changeTarget(from: string, to: string): BreakHandlers {
 }
 
 /** Registers a test that the check fails with the message for an engine whose handlers `breakHandlers` replaces. */
-export function testFailure(defect: string, breakHandlers: BreakHandlers, check: AnyCheck, message: string, checked = fixture) {
+export function testFailure(defect: string, breakHandlers: BreakHandlers, check: AnyCheck, message: string, checked: FullFixture = fixture) {
     test(`check fails for ${defect}`, async () => {
         useBrokenHandlers(breakHandlers);
 
         await expect(check(connectFake(), checked)).rejects.toThrow(message);
     });
+}
+
+// opens the fixture's file, lists its rows and reads its symbol, which are the calls that can need an engine's lazy
+// part
+async function useFixtureFile(engine: Engine, fixture: Fixture): Promise<void> {
+    const { file, symbol } = fixture;
+    await checkWithFiles(engine, [file], async fileId => {
+        const { key } = findRow(readRows(await engine.list(fileId)), symbol, file.name);
+        await engine.read(fileId, key, readFirstView(fixture));
+    });
+}
+
+/**
+ * Checks that the first call that needs the engine's failing loader throws an engine error and not a crash, and that
+ * the calls work once the loader works again.
+ */
+export async function checkLoadFailure(engine: Engine, fixture: Fixture): Promise<void> {
+    const thrown = await useFixtureFile(engine, fixture).then(
+        () => undefined,
+        (error: unknown) => error ?? null,
+    );
+    if (thrown === undefined) {
+        throw new Error("the engine doesn't throw while its loader fails");
+    }
+    if (!(thrown instanceof EngineError)) {
+        const message = thrown instanceof Error ? thrown.message : String(thrown);
+        throw new Error(`the engine throws '${message}' and not an engine error while its loader fails`);
+    }
+
+    await useFixtureFile(engine, fixture);
+}
+
+/**
+ * Registers a test that an engine whose loader rejects as often as `connect` gets refuses a call with an engine error
+ * and loads again with a later call. `connect` serves the engine with such a loader and connects the test.
+ */
+export function testLoadFailure(name: string, connect: (failures: number) => Engine, fixture: Fixture, timeLimitMs?: number): void {
+    test(`${name} refuses a call while its loader fails and loads again with a later call`, () => checkLoadFailure(connect(1), fixture), timeLimitMs);
 }

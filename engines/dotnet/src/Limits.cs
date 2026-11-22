@@ -36,10 +36,15 @@ internal static class Limits
     public const int MaxStrings = 50_000;
 
     /// <summary>
-    ///     Cuts a string after 1,000 characters, more than twice the 429 of System.Private.CoreLib's longest string,
-    ///     because quick open shows a string on 1 line.
+    ///     Keeps a string of up to 1,000 characters whole, more than twice the 429 of System.Private.CoreLib's longest
+    ///     string, and cuts a longer string, because quick open shows a string on 1 line.
     /// </summary>
     public const int MaxStringLength = 1_000;
+
+    /// <summary>
+    ///     Ends a string that <see cref="CutString"/> cut, like the other engines.
+    /// </summary>
+    public const string CutMark = "…";
 
     private const string CycleError = "has types that are nested in each other.";
 
@@ -136,6 +141,30 @@ internal static class Limits
         levels[type] = typeLevels;
 
         return null;
+    }
+
+    /// <summary>
+    ///     Cuts a string longer than <see cref="MaxStringLength"/> to that length with <see cref="CutMark"/> as its
+    ///     last character, before a surrogate pair that the cut would split.
+    /// </summary>
+    /// <returns>
+    ///     The string itself when it isn't longer than the limit, else its start with the mark.
+    /// </returns>
+    public static string CutString(string text)
+    {
+        if (text.Length <= MaxStringLength)
+        {
+            return text;
+        }
+
+        int end = MaxStringLength - CutMark.Length;
+
+        if (char.IsHighSurrogate(text[end - 1]))
+        {
+            end--;
+        }
+
+        return text[..end] + CutMark;
     }
 
     private static string? FindDepthError(int depth)

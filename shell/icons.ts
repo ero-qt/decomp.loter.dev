@@ -31,6 +31,8 @@ const icons: Partial<Record<Kind, [codicon: string, color: string]>> = {
     section: ['folder', 'folder'],
     reference: ['library', 'reference'],
     resource: ['file-binary', 'file'],
+    function: ['symbol-function', 'function'],
+    variable: ['symbol-variable', 'variable'],
 };
 
 // accessibility -> the codicon and the chart color of the accessibility's badge

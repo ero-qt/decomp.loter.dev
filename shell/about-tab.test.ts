@@ -24,9 +24,10 @@ const pageLines = [
     'Source on GitHub',
     `Version ${version} (${commit.slice(0, 7)})`,
 ];
+// has a row for each engine that the site serves, in the order of the format texts, with its manifest's texts
 const formatRows = [
     ['Format', 'Files', 'Views'],
-    ['.NET assemblies', '.dll, .exe', 'C#, IL'],
+    ['.NET assemblies', '.dll, .exe, .winmd', 'C#, IL'],
     ['Java classes and archives', '.class, .jar, .war', 'Java, Bytecode'],
     ['Native programs and libraries', '.exe, .dll, .sys, .efi, .so, .dylib, .elf and files without an extension', 'C, Disassembly'],
 ];
@@ -87,7 +88,7 @@ test("workbench starts with the active About tab, which shows the site's name, h
     expect(await page.getByRole('heading', { name: 'decomp.loter.dev', level: 1 }).count()).toBe(1);
 }, testTimeoutMs);
 
-test("About tab's tables list the supported files with their views and the keyboard shortcuts", async () => {
+test("About tab's tables list a row for each served engine with its formats text and the keyboard shortcuts", async () => {
     const { page } = await openWorkbench();
 
     expect(await readTableRows(page, 'Supported files')).toEqual(formatRows);

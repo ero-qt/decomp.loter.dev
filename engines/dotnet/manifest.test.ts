@@ -16,5 +16,6 @@ test("dotnet engine's JSON manifest names the C# and IL views, PE files and limi
         memoryLimitBytes: 536870912,
         cancelLimitMs: 10000,
         priority: 10,
+        formats: '.NET assemblies',
     });
 });

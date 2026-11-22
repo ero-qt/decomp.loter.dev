@@ -27,6 +27,8 @@ const tokenTypes: Record<Kind, string> = {
     section: 'namespace',
     reference: 'namespace',
     resource: 'string',
+    function: 'function',
+    variable: 'variable',
 };
 
 /**

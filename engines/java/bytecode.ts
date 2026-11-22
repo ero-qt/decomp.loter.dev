@@ -3,6 +3,7 @@ import { disassemble, escapeLiteral } from '@katana-project/asm/analysis/disasm'
 import { type Document, formatTarget, type Token, writeTokens } from '../../contract/document';
 import { failed, ok, type Reply } from '../../contract/reply';
 import { flagsOf } from '../../contract/symbols';
+import { createYielder } from '../shared/yielding';
 import { readClass } from './classfile';
 import { findKeyRow, findMember, type FoundRow, type OpenFiles } from './describe';
 import { findTop } from './files';
@@ -138,9 +139,11 @@ function referRows(files: OpenFiles, fileId: number, text: string, offset: numbe
 /**
  * Disassembles a top class of an open file with every class nested in it, each like `javap` writes it, below the top
  * class's source file, package and the imports of all the classes. The class and member lines declare their rows. A
- * member or class in an instruction's operands points at its row in the open files. Throws once the signal aborts.
+ * member or class in an instruction's operands points at its row in the open files. Gives the worker's message loop a
+ * turn between classes and throws once the signal aborts.
  */
 export async function writeBytecode(files: OpenFiles, fileId: number, top: string, signal: AbortSignal): Promise<Reply<Document>> {
+    const yieldTurn = createYielder(signal);
     const file = files.get(fileId)!;
     const nested = [...file.classes.keys()].filter(name => name !== top && findTop(file, name) === top);
     const names = [top, ...nested.sort()];
@@ -148,7 +151,8 @@ export async function writeBytecode(files: OpenFiles, fileId: number, top: strin
     const parsed: { name: string; node: Node; head: RegExpExecArray; body: string }[] = [];
 
     for (const name of names) {
-        signal.throwIfAborted();
+        await yieldTurn();
+
         const bytes = await file.zip.read(file.classes.get(name)!.entry).catch(() => null);
         if (!bytes) {
             return failed(`The engine can't read ${name} from ${file.name}.`);

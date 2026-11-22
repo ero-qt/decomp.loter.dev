@@ -5,11 +5,14 @@ import {
     checkClaims,
     checkClosedFile,
     checkCompanion,
+    checkLimitNote,
     checkLinkedFile,
     checkManifest,
     checkReferences,
     checkRows,
+    checkStringLimits,
     checkStrings,
+    checkUnsupportedFile,
     listChecks,
     testEngine,
 } from './conformance';
@@ -19,8 +22,10 @@ import {
     changeListings,
     changeRows,
     changeTarget,
+    checkLoadFailure,
     emptyDescription,
     fixture,
+    type FullFixture,
     functionsFixture,
     listCalls,
     testFailure,
@@ -29,7 +34,7 @@ import {
 import { parseTarget, writeTokens } from './document';
 import { fakeManifest } from './fake';
 import { areaOutside, useFakeEngine } from './fake-testing';
-import { failed, ok } from './reply';
+import { failed, ok, type Reply } from './reply';
 import { findDocumentRow, readRows, type Row } from './rows';
 
 const connect = useFakeEngine();
@@ -51,6 +56,23 @@ function placeOnFirstLine(text: string, ranges: Int32Array): number[] {
     });
 }
 
+// refuses every open after the open of the file with the name, like an engine whose refusal leaves it broken
+function refuseOpensAfter(refusedName: string): BreakHandlers {
+    let isBroken = false;
+
+    return ({ open }) => ({
+        async open(fileId, name, file, signal) {
+            if (isBroken) {
+                return failed('The engine is broken.');
+            }
+
+            isBroken = name === refusedName;
+
+            return open(fileId, name, file, signal);
+        },
+    });
+}
+
 function giveSameKey(rows: Row[]) {
     rows[2].key = rows[1].key;
 }
@@ -69,16 +91,19 @@ const baseClaims = [
     'lists rows that readRows accepts, each with a key of its own',
     'writes documents that declare their rows and locals and point each row target at 1 row',
     'lists strings whose users are rows',
+    'lists at most 50,000 strings, each with at most 1,000 characters',
     'refuses the calls for a closed file',
     'writes a document again after a canceled read of the document',
 ];
 
-test('listChecks lists the checks of every engine and of both groups of the fixture', () => {
+test('listChecks lists the checks of every engine and of every group of the fixture', () => {
     expect(listChecks(fixture).map(([claim]) => claim)).toEqual([
         ...baseClaims,
         "resolves a symbol outside the open files to a row once the symbol's file is open",
         "finds a symbol's user in another file",
         'lists a companion as a missing file until provide gets the companion',
+        'claims a file that it refuses with a text, and opens a file after that',
+        'notes on 1 line what it leaves out of a file above its limits',
     ]);
 });
 
@@ -116,6 +141,44 @@ const defects: [defect: string, breakHandlers: BreakHandlers, check: AnyCheck, m
         () => ({ open: () => ok(undefined) }),
         checkBrokenFile,
         "open doesn't throw an engine error for broken.fake",
+    ],
+    [
+        'a broken file whose refusal leaves the engine unable to open a file',
+        refuseOpensAfter('broken.fake'),
+        checkBrokenFile,
+        "drawing.fake doesn't open after the refusal of broken.fake",
+    ],
+    [
+        'an unsupported file that the engine opens',
+        ({ open }) => ({
+            open(fileId, name, file, signal) {
+                return name === 'next.fake' ? ok(undefined) : open(fileId, name, file, signal);
+            },
+        }),
+        checkUnsupportedFile,
+        "open doesn't throw an engine error for next.fake",
+    ],
+    [
+        "an unsupported file that the engine doesn't claim",
+        claimAs('next.fake', false),
+        checkUnsupportedFile,
+        "the engine doesn't claim next.fake",
+    ],
+    [
+        "an unsupported file whose refusal doesn't have the file's name",
+        ({ open }) => ({
+            async open(fileId, name, file, signal) {
+                return name === 'next.fake' ? failed("It isn't a fake file.") : open(fileId, name, file, signal);
+            },
+        }),
+        checkUnsupportedFile,
+        "the refusal of next.fake is 'It isn't a fake file.', which doesn't have the file's name and 'isn't a fake file'",
+    ],
+    [
+        'an unsupported file whose refusal leaves the engine unable to open a file',
+        refuseOpensAfter('next.fake'),
+        checkUnsupportedFile,
+        "drawing.fake doesn't open after the refusal of next.fake",
     ],
     [
         'a broken file that crashes the engine',
@@ -168,6 +231,34 @@ const defects: [defect: string, breakHandlers: BreakHandlers, check: AnyCheck, m
         () => ({ listStrings: () => ok([{ text: 'circle', user: 'L:0' }]) }),
         checkStrings,
         "the reply of listStrings isn't a list of texts, each with a row target or null as its user",
+    ],
+    [
+        'a string longer than the limit',
+        () => ({ listStrings: () => ok([{ text: 'x'.repeat(1001), user: null }]) }),
+        checkStringLimits,
+        'drawing.fake has a string of 1001 characters, more than 1000',
+    ],
+    [
+        'more strings than the limit',
+        () => ({ listStrings: () => ok(Array.from({ length: 50001 }, () => ({ text: 'x', user: null }))) }),
+        checkStringLimits,
+        'drawing.fake lists 50001 strings, more than 50000',
+    ],
+    [
+        'an empty note for a file above the limits',
+        changeListings(listing => {
+            listing.note = '';
+        }),
+        checkLimitNote,
+        "the note of drawing.fake is '', which doesn't have '1 class left out'",
+    ],
+    [
+        'a note over 2 lines',
+        changeListings(listing => {
+            listing.note = '1 class left out\nsee the log';
+        }),
+        checkLimitNote,
+        'the note of drawing.fake has a line end',
     ],
     [
         'a close that leaves the file open',
@@ -375,7 +466,7 @@ const defects: [defect: string, breakHandlers: BreakHandlers, check: AnyCheck, m
     ],
 ];
 
-const misfits: [claim: string, misfit: typeof fixture, check: AnyCheck, message: string][] = [
+const misfits: [claim: string, misfit: FullFixture, check: AnyCheck, message: string][] = [
     [
         'a manifest without a view',
         { ...fixture, manifest: { ...fakeManifest, views: [] } },
@@ -389,16 +480,34 @@ const misfits: [claim: string, misfit: typeof fixture, check: AnyCheck, message:
         "the fixture has a linked file and the manifest doesn't have hasLinkedFiles",
     ],
     [
-        'a file whose name has no extension of the manifest',
+        "a file whose name doesn't have an extension in the manifest",
         { ...fixture, manifest: { ...fakeManifest, extensions: ['.other'] } },
         checkClaims,
-        "the page doesn't ask the engine about drawing.fake, which matches no extension and no magic of the manifest",
+        "the page doesn't ask the engine about drawing.fake, which doesn't match an extension or a magic in the manifest",
     ],
     [
         "a string that the file doesn't have",
         { ...fixture, string: 'square' },
         checkStrings,
         "drawing.fake doesn't have the string 'square'",
+    ],
+    [
+        "an unsupported file that the page doesn't ask the engine about",
+        { ...fixture, unsupported: { ...fixture.unsupported, file: new File(['fake 2'], 'next.other') } },
+        checkUnsupportedFile,
+        "the page doesn't ask the engine about next.other, which doesn't match an extension or a magic of the manifest",
+    ],
+    [
+        'an unsupported file whose refusal has another text',
+        { ...fixture, unsupported: { ...fixture.unsupported, text: 'is from a newer version' } },
+        checkUnsupportedFile,
+        "the refusal of next.fake is 'next.fake isn't a fake file.', which doesn't have the file's name and 'is from a newer version'",
+    ],
+    [
+        "a long string that the file doesn't list cut",
+        { ...fixture, cutString: 'circle' },
+        checkStringLimits,
+        "drawing.fake doesn't list a string that starts with 'circle' and ends with the cut mark …",
     ],
     [
         "a token that the symbol's document doesn't have",
@@ -454,4 +563,44 @@ test('check takes the first token with the text that has a target', async () => 
     const linked = { file: new File(['fake\nmethod uses'], 'words.fake'), token: 'uses', user: 'Draw' };
 
     await checkLinkedFile(connect(), { ...fixture, manifest: { ...fakeManifest, views: [ops, code] }, file, symbol: 'Draw', linked });
+});
+
+// fails the first open with the reply or the error of a loader that fails once, in each worker of the test
+function failFirstOpen(failure: () => Reply<void>): BreakHandlers {
+    let opens = 0;
+
+    return ({ open }) => ({
+        open(...args) {
+            opens++;
+
+            return opens === 1 ? failure() : open(...args);
+        },
+    });
+}
+
+test('check passes for an engine that refuses a call while its loader fails and opens the file after that', async () => {
+    useBrokenHandlers(failFirstOpen(() => failed("The engine couldn't load its decompiler: 503")));
+
+    await checkLoadFailure(connect(), fixture);
+});
+
+test('check fails for an engine that crashes while its loader fails', async () => {
+    useBrokenHandlers(failFirstOpen(() => {
+        throw new Error('The chunk failed to load.');
+    }));
+
+    await expect(checkLoadFailure(connect(), fixture)).rejects.toThrow("the engine throws 'The chunk failed to load.' and not an engine error");
+});
+
+test("check fails for an engine that doesn't throw while its loader fails", async () => {
+    await expect(checkLoadFailure(connect(), fixture)).rejects.toThrow("the engine doesn't throw while its loader fails");
+});
+
+test('check keeps the error of an open that fails after a refusal as the cause', async () => {
+    useBrokenHandlers(refuseOpensAfter('next.fake'));
+
+    const thrown = (await checkUnsupportedFile(connect(), fixture).catch((error: unknown) => error)) as Error;
+
+    expect(thrown.message).toBe("drawing.fake doesn't open after the refusal of next.fake");
+    expect((thrown.cause as Error).message).toBe('The engine is broken.');
 });

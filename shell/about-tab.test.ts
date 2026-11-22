@@ -29,7 +29,7 @@ const formatRows = [
     ['Format', 'Files', 'Views'],
     ['.NET assemblies', '.dll, .exe, .winmd', 'C#, IL'],
     ['Java classes and archives', '.class, .jar, .war', 'Java, Bytecode'],
-    ['Native programs and libraries', '.exe, .dll, .sys, .efi, .so, .dylib, .elf and files without an extension', 'C, Disassembly'],
+    ['Native programs and libraries', '.exe, .dll, .sys, .efi, .so, .dylib, .elf and files without an extension', 'C, Assembly'],
 ];
 const shortcutRows = [
     ['Go to definition', 'F12 or Ctrl+click'],

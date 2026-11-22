@@ -5,7 +5,7 @@
   "magics": ["7f454c46", "4d5a", "feedface", "feedfacf", "cefaedfe", "cffaedfe", "cafebabe"],
   "views": [
     { "id": "c", "title": "C", "extension": ".c", "language": "c" },
-    { "id": "disassembly", "title": "Disassembly", "extension": ".asm", "language": "disassembly" }
+    { "id": "assembly", "title": "Assembly", "extension": ".asm", "language": "assembly" }
   ],
   "memoryLimitBytes": 1073741824,
   "cancelLimitMs": 2000,

@@ -32,7 +32,7 @@ export interface ClassParts {
     methods: ClassMethod[];
 }
 
-/** How a view writes a class's header, which is C code in the C view and comment lines in the Disassembly view. */
+/** How a view writes a class's header, which is C code in the C view and comment lines in the Assembly view. */
 export interface HeaderStyle {
     /** The text in front of each line of the class's definition and static members, like `; `. */
     linePrefix: string;
@@ -43,8 +43,8 @@ export interface HeaderStyle {
 /** Writes the header as C code with C comments. */
 export const cHeader: HeaderStyle = { linePrefix: '', comment: '// ' };
 
-/** Writes the header as assembly comments, which the disassembly grammar colors as comments. */
-export const disassemblyHeader: HeaderStyle = { linePrefix: '; ', comment: '; ' };
+/** Writes the header as assembly comments, which the assembly grammar colors as comments. */
+export const assemblyHeader: HeaderStyle = { linePrefix: '; ', comment: '; ' };
 
 const declaration = flagsOf('', 'declaration');
 

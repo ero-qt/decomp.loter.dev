@@ -1,41 +1,41 @@
 {
-  "name": "Disassembly",
-  "scopeName": "source.disassembly",
+  "name": "Assembly",
+  "scopeName": "source.assembly",
   "patterns": [
     {
       "match": "^\\s*([0-9A-Fa-f]{8,16})\\s+([^\\s,]+)",
       "captures": {
         "1": {
-          "name": "comment.line.address.disassembly"
+          "name": "comment.line.address.assembly"
         },
         "2": {
-          "name": "keyword.control.mnemonic.disassembly"
+          "name": "keyword.control.mnemonic.assembly"
         }
       }
     },
     {
       "match": "(;|//).*$",
-      "name": "comment.line.disassembly"
+      "name": "comment.line.assembly"
     },
     {
       "match": "\"(?:[^\"\\\\]|\\\\.)*\"",
-      "name": "string.quoted.double.disassembly"
+      "name": "string.quoted.double.assembly"
     },
     {
       "match": "\\b(?:[re]?(?:ax|bx|cx|dx|si|di|sp|bp|ip)|[abcd][lh]|(?:si|di|sp|bp)l|r(?:[0-9]|1[0-5])[bwd]?|[c-gs]s|[xyz]mm(?:[12]?[0-9]|3[01])|cr[0-8]|dr[0-7]|k[0-7]|[xw](?:[12]?[0-9]|3[01])|[xw]zr|wsp|lr|fp|pc|[bhsdqv](?:[12]?[0-9]|3[01])|sb|sl)\\b|\\$(?:zero|at|v[01]|a[0-3]|t[0-9]|s[0-8]|k[01]|gp|sp|fp|ra|[0-9]|[12][0-9]|3[01])\\b",
-      "name": "variable.language.register.disassembly"
+      "name": "variable.language.register.assembly"
     },
     {
       "match": "\\b(?:byte|word|dword|qword|tword|oword|xmmword|ymmword|zmmword|ptr|short|near|far)\\b",
-      "name": "storage.type.disassembly"
+      "name": "storage.type.assembly"
     },
     {
       "match": "[\\[\\]{}()]",
-      "name": "punctuation.section.brackets.disassembly"
+      "name": "punctuation.section.brackets.assembly"
     },
     {
       "match": "[+\\-*!,]",
-      "name": "keyword.operator.disassembly"
+      "name": "keyword.operator.assembly"
     }
   ]
 }

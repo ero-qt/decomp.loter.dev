@@ -5,7 +5,7 @@ import type { EngineHandlers } from '../../contract/serve';
 import { modifiersOf } from '../../contract/symbols';
 import { loadOnce, refuseLoadErrors } from '../shared/loading';
 import { createRefusals } from '../shared/refusals';
-import { cHeader, disassemblyHeader, listClassParts, writeClassDocument } from './class-document';
+import { assemblyHeader, cHeader, listClassParts, writeClassDocument } from './class-document';
 import { createDocumentCache, decompileFunction } from './code';
 import { describeRow, findFullName } from './describe';
 import { checkArchitecture, disassembleFunction, type DisassemblyRows } from './disassembly';
@@ -275,7 +275,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
                 return refusals.noDocument(listing.rows[index].name);
             }
 
-            const architecture = view === 'disassembly' ? checkArchitecture(module, file.session) : ok(undefined);
+            const architecture = view === 'assembly' ? checkArchitecture(module, file.session) : ok(undefined);
             if (architecture.error !== undefined) {
                 return architecture;
             }
@@ -303,7 +303,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
 
             const parts = listClassParts(listing, index, fileId, name => module.describeStruct(file.session, name));
 
-            return writeClassDocument(parts, readMethod, signal, view === 'c' ? cHeader : disassemblyHeader);
+            return writeClassDocument(parts, readMethod, signal, view === 'c' ? cHeader : assemblyHeader);
         },
         async describe(target, view, signal) {
             if (!views.includes(view)) {

@@ -5,10 +5,10 @@ import csharpGrammarUrl from '@codingame/monaco-vscode-csharp-default-extension/
 import csharpConfigurationUrl from '@codingame/monaco-vscode-csharp-default-extension/resources/language-configuration.json?url';
 import javaGrammarUrl from '@codingame/monaco-vscode-java-default-extension/resources/java.tmLanguage.json?url';
 import javaConfigurationUrl from '@codingame/monaco-vscode-java-default-extension/resources/language-configuration.json?url';
+import assemblyConfigurationUrl from './grammars/assembly.language-configuration.json?url';
+import assemblyGrammarUrl from './grammars/assembly.tmLanguage.json?url';
 import bytecodeConfigurationUrl from './grammars/bytecode.language-configuration.json?url';
 import bytecodeGrammarUrl from './grammars/bytecode.tmLanguage.json?url';
-import disassemblyConfigurationUrl from './grammars/disassembly.language-configuration.json?url';
-import disassemblyGrammarUrl from './grammars/disassembly.tmLanguage.json?url';
 import ilConfigurationUrl from './grammars/il.language-configuration.json?url';
 import ilGrammarUrl from './grammars/il.tmLanguage.json?url';
 import listingConfigurationUrl from './grammars/listing.language-configuration.json?url';
@@ -29,10 +29,10 @@ export interface Grammar {
  * URLs from a default extension because its module would add snippets and texts to the start.
  */
 export const grammars: Record<string, Grammar> = {
+    assembly: { scopeName: 'source.assembly', grammarUrl: assemblyGrammarUrl, configurationUrl: assemblyConfigurationUrl },
     bytecode: { scopeName: 'source.bytecode', grammarUrl: bytecodeGrammarUrl, configurationUrl: bytecodeConfigurationUrl },
     c: { scopeName: 'source.c', grammarUrl: cGrammarUrl, configurationUrl: cConfigurationUrl },
     csharp: { scopeName: 'source.cs', grammarUrl: csharpGrammarUrl, configurationUrl: csharpConfigurationUrl },
-    disassembly: { scopeName: 'source.disassembly', grammarUrl: disassemblyGrammarUrl, configurationUrl: disassemblyConfigurationUrl },
     il: { scopeName: 'source.il', grammarUrl: ilGrammarUrl, configurationUrl: ilConfigurationUrl },
     java: { scopeName: 'source.java', grammarUrl: javaGrammarUrl, configurationUrl: javaConfigurationUrl },
     listing: { scopeName: 'source.listing', grammarUrl: listingGrammarUrl, configurationUrl: listingConfigurationUrl },

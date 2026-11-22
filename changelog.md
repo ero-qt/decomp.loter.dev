@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ### Fixed
 
-- The Disassembly view opens long functions about 3 times faster.
+- The Disassembly view opens long functions about 3 times faster and shows up to 256 KB of a function, twice as much as before.
 
 ## [1.1.0] - 2026-11-22
 

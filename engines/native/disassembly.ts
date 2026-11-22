@@ -27,8 +27,8 @@ interface Instruction {
     jump?: bigint;
 }
 
-// the largest part of a function that the engine disassembles
-const maxFunctionBytes = 128 * 1024;
+// the largest part of a function that the engine disassembles, because 256 KB already take about 5 s with the analysis
+const maxFunctionBytes = 256 * 1024;
 // the bytes that 1 call of the glue disassembles before the engine yields, because the glue takes about 100 ms for
 // 8 KB and a cancel then gets through well inside the native engine's cancel limit of 2 s
 const chunkBytes = 8 * 1024;

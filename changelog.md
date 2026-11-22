@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-11-22
+
 ### Fixed
 
 - The Symbols view shows its loading strip while a document loads, so a slow first click on a native function doesn't look like nothing happened. Go to Definition and the views you open to the side show it too.
@@ -79,7 +81,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 - A native engine that opens ELF, PE and Mach-O programs and libraries with Rizin and Ghidra's decompiler and shows their functions and classes as C. It also reads a PE file's PDB file for names and types and finds the classes of stripped files through their RTTI.
 - A privacy notice about what stays in your browser and what the server keeps.
 
-[Unreleased]: https://github.com/ero-qt/decomp.loter.dev/compare/1.2.0...HEAD
+[Unreleased]: https://github.com/ero-qt/decomp.loter.dev/compare/1.2.1...HEAD
+[1.2.1]: https://github.com/ero-qt/decomp.loter.dev/compare/1.2.0...1.2.1
 [1.2.0]: https://github.com/ero-qt/decomp.loter.dev/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/ero-qt/decomp.loter.dev/compare/1.0.4...1.1.0
 [1.0.4]: https://github.com/ero-qt/decomp.loter.dev/compare/1.0.3...1.0.4

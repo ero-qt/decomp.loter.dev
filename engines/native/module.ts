@@ -22,6 +22,7 @@ interface RizinModule {
     _session_prepare(session: number, address: number): number;
     _session_struct(session: number, name: number): number;
     _session_load_pdb(session: number, path: number): number;
+    _session_load_names(session: number, path: number, headerPath: number): number;
     _session_describe(session: number, address: number): number;
     _session_cmd(session: number, command: number): number;
     _session_decompile(session: number, address: number): number;
@@ -82,6 +83,12 @@ export interface NativeModule {
      * `mismatch` for a PDB file of another binary.
      */
     loadPdb(session: number, path: string): PdbLoad;
+    /**
+     * Loads a file with a line for each function, its address relative to the image in hex, its name and an optional
+     * signature after a tab, into a session with the C header of the signatures' types, and returns `loaded`, or why
+     * it didn't, like `loadPdb`.
+     */
+    loadNames(session: number, path: string, headerPath?: string): PdbLoad;
     /**
      * Returns the signature of the function at an address from its debug information or its demangled name, or
      * `undefined` where neither has the parameters.
@@ -170,6 +177,13 @@ export async function loadModule(moduleUrl: string, wasmBinary?: ArrayBuffer): P
             return text === '' ? undefined : JSON.parse(text);
         },
         loadPdb: (session, path) => pdbLoads[withText(module, path, pointer => module._session_load_pdb(session, pointer))],
+        loadNames(session, path, headerPath = '') {
+            const load = withText(module, path, pointer => {
+                return withText(module, headerPath, header => module._session_load_names(session, pointer, header));
+            });
+
+            return pdbLoads[load];
+        },
         describeFunction(session, address) {
             const text = withText(module, `0x${address.toString(16)}`, pointer => takeText(module, module._session_describe(session, pointer)));
 

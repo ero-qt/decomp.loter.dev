@@ -79,6 +79,9 @@ static RzSetU *add_symbols(PJ *j, Session *session, RzBinObject *object, bool (*
 	}
 
 	pdb_add_symbols(j, session, listed, is_kind == listing_is_function);
+	if (is_kind == listing_is_function) {
+		names_file_add_functions(j, session, listed);
+	}
 	return listed;
 }
 
@@ -180,6 +183,15 @@ static void add_pdb(PJ *j, Session *session, RzBinObject *object) {
 	pj_kb(j, "hasPdb", session->pdb != NULL);
 }
 
+/**
+ * \brief Adds whether IL2CPP built the binary, which then takes a names file. It also adds whether the session loaded
+ * the names file.
+ */
+static void add_names_file(PJ *j, Session *session, RzBinObject *object) {
+	pj_kb(j, "isIl2Cpp", names_file_is_il2cpp(object));
+	pj_kb(j, "hasNames", session->has_names);
+}
+
 static int compare_addresses(const void *a, const void *b, void *user) {
 	ut64 left = *(const ut64 *)a;
 	ut64 right = *(const ut64 *)b;
@@ -242,6 +254,7 @@ EMSCRIPTEN_KEEPALIVE char *session_listing(Session *session, size_t max) {
 	pj_end(j);
 	pj_kn(j, "omitted", cap.omitted);
 	add_pdb(j, session, object);
+	add_names_file(j, session, object);
 	add_imports(j, object, max);
 	add_types(j, core);
 	classes_add_rtti(j, session, object);

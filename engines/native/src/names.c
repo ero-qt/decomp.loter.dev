@@ -179,7 +179,8 @@ static void cut_parameters(char *name) {
 }
 
 /**
- * \brief Returns the clean name of the symbol, the PDB function or the entry point at an address, or NULL.
+ * \brief Returns the clean name of the symbol, the function of the PDB file or the names file, or the entry point at an
+ * address, or NULL.
  *
  * The caller frees the result with free().
  */
@@ -200,7 +201,8 @@ static char *name_at(Session *session, ut64 addr) {
 	RzListIter *flag_it;
 	RzFlagItem *flag;
 	rz_list_foreach (flags, flag_it, flag) {
-		if (rz_str_startswith(flag->name, "pdb.") && RZ_STR_ISNOTEMPTY(flag->realname)) {
+		bool is_named = rz_str_startswith(flag->name, "pdb.") || rz_str_startswith(flag->name, "names.");
+		if (is_named && RZ_STR_ISNOTEMPTY(flag->realname)) {
 			return names_clean(flag->realname);
 		}
 	}

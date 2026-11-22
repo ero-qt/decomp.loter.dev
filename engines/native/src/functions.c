@@ -9,9 +9,14 @@ static int compare_addresses(const void *a, const void *b, void *user) {
 	return left < right ? -1 : left > right;
 }
 
+static bool add_named_start(RzFlagItem *item, void *user) {
+	rz_vector_push((RzVector *)user, &item->offset);
+	return true;
+}
+
 /**
  * \brief Returns the end of the function at an address: the end of its symbol, else the start of the next function
- * symbol, else UT64_MAX.
+ * symbol or function of the names file, else UT64_MAX.
  */
 static ut64 function_end(Session *session, ut64 addr) {
 	RzBinObject *object = rz_bin_cur_object(session->core->bin);
@@ -29,6 +34,7 @@ static ut64 function_end(Session *session, ut64 addr) {
 				rz_vector_push(&session->starts, &symbol->vaddr);
 			}
 		}
+		rz_flag_foreach_prefix(session->core->flags, "names.", -1, add_named_start, &session->starts);
 		rz_vector_sort(&session->starts, compare_addresses, false, NULL);
 	}
 
@@ -112,6 +118,7 @@ static void name_target(Session *session, ut64 addr) {
 	if (fcn) {
 		debug_info_apply_dwarf(core, fcn);
 		debug_info_apply_pdb(session, fcn);
+		names_file_apply_signature(session, fcn);
 		rename_function(session, fcn);
 	}
 }
@@ -204,6 +211,7 @@ static RzAnalysisFunction *prepare(Session *session, ut64 addr) {
 	wrap_stack_offsets(core, fcn);
 	debug_info_apply_dwarf(core, fcn);
 	debug_info_apply_pdb(session, fcn);
+	names_file_apply_signature(session, fcn);
 	rename_function(session, fcn);
 	name_parts(session, fcn);
 	return fcn;

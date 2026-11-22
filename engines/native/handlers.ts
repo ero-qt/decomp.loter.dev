@@ -3,6 +3,7 @@ import { failed, ok, type Reply } from '#contract/reply';
 import { writeRows } from '#contract/rows';
 import type { EngineHandlers } from '#contract/serve';
 import { modifiersOf } from '#contract/symbols';
+import { matchesBinary } from '../shared/binary-identity';
 import { loadOnce, refuseLoadErrors } from '../shared/loading';
 import { isPeFile } from '../shared/pe';
 import { createRefusals } from '../shared/refusals';
@@ -14,6 +15,7 @@ import { type MountedFile, type MountFile, writeShareFiles } from './files';
 import { claimsNativeFile } from './formats';
 import manifest from './manifest.json' with { type: 'json' };
 import type { NativeModule } from './module';
+import { namesFileName, readNamesFile } from './names-file';
 import { defaultMaxMembers, groupRows, type NativeRows } from './rows';
 import { createLanguageWriter, findProcessor } from './sleigh';
 import { listStrings } from './strings';
@@ -28,6 +30,8 @@ interface FileListing extends NativeRows {
 /** A file that the engine opened, with its Rizin session, its PDB file and its rows once a call needs them. */
 interface NativeFile {
     name: string;
+    /** The file that the engine opened, which a names file's `Binary` field has to match. */
+    binary: Blob;
     session: number;
     mounted: MountedFile;
     pdb?: MountedFile;
@@ -111,6 +115,36 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
         }
 
         return file.listing;
+    }
+
+    // loads a names file and its header, whose text the glue reads at once, so the mounted copies go away
+    async function provideNames(module: NativeModule, fileId: number, file: NativeFile, name: string, names: Blob): Promise<Reply<void>> {
+        const namesFile = await readNamesFile(names, name);
+        if (namesFile.error !== undefined) {
+            return namesFile;
+        }
+        if (namesFile.value.binary && !(await matchesBinary(namesFile.value.binary, file.binary))) {
+            return failed(`${name} lists the functions of another binary, not of ${file.name}.`);
+        }
+
+        return loadNames(module, fileId, file, name, namesFile.value.lines, new Blob([namesFile.value.header ?? '']));
+    }
+
+    async function loadNames(module: NativeModule, fileId: number, file: NativeFile, name: string, lines: Blob, header: Blob): Promise<Reply<void>> {
+        const mounted = await mountFile(module.fs, `/files/${++mountCount}`, name, lines);
+        const mountedHeader = await mountFile(module.fs, `/files/${++mountCount}`, 'il2cpp.h', header);
+        const load = module.loadNames(file.session, mounted.path, mountedHeader.path);
+        mounted.unmount();
+        mountedHeader.unmount();
+        if (load !== 'loaded') {
+            return failed(load === 'mismatch' ? `${name} doesn't match ${file.name}.` : `${name} isn't readable.`);
+        }
+
+        // drops the rows and documents that the names change
+        file.listing = undefined;
+        cache.dropFile(fileId);
+
+        return ok(undefined);
     }
 
     // finds the row of a function, global or import at an address, whose import's address is its stub or pointer
@@ -200,7 +234,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
                 return failed(refusal);
             }
 
-            files.set(fileId, { name, session, mounted });
+            files.set(fileId, { name, binary: file, session, mounted });
             writeLanguageEarly(writeLanguage, module, session);
 
             return ok(undefined);
@@ -229,8 +263,12 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
             signal.throwIfAborted();
 
             const file = found.value;
-            if (!readListing(module, file).missingFiles.some(missingFile => missingFile.name === name)) {
+            if (!readListing(module, file).missingFiles.some(missingFile => missingFile.name === name && missingFile.isCompanion)) {
                 return failed(`${file.name} doesn't need ${name}.`);
+            }
+
+            if (name === namesFileName) {
+                return provideNames(module, fileId, file, name, pdb);
             }
 
             const mounted = await mountFile(module.fs, `/files/${++mountCount}`, name, pdb);

@@ -11,7 +11,7 @@ import {
     waitForEngineCalls,
     waitForEngineReplies,
 } from './page-testing';
-import { dropAndWait, dropFiles, expandRows, findRow, findRows, startWithEngines, testEngine } from './tree-testing';
+import { dropAndWait, dropFiles, expandRows, findProgressStrip, findRow, findRows, startWithEngines, testEngine } from './tree-testing';
 
 const openWorkbench = startWorkbench();
 const drawing = await sampleFiles.drawing.text();
@@ -153,6 +153,19 @@ test("open document stays in the tab after a later click on the document's row a
     await waitForEngineReplies(page, 'read', 2);
 
     expect(await readLines(page)).toEqual(lines);
+}, testTimeoutMs);
+
+test("Symbols view's progress strip runs during a clicked row's read and stops after the document's tab opens", async () => {
+    const { page } = await openWorkbench();
+    await startTestEngine(page, { 'late.test': '' });
+    await readUntil(() => findProgressStrip(page).isVisible(), false);
+
+    await findRow(page, 'Listed').click();
+    const isRunning = await readUntil(() => findProgressStrip(page).isVisible(), true);
+    await waitForTabs(page, 'About', 'Listed.code');
+
+    expect(isRunning).toBe(true);
+    expect(await readUntil(() => findProgressStrip(page).isVisible(), false)).toBe(false);
 }, testTimeoutMs);
 
 test("file that closes during its document's read doesn't get a tab", async () => {

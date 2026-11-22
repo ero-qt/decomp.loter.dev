@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- The Symbols view shows its loading strip while a document loads, so a slow first click on a native function doesn't look like nothing happened. Go to Definition and the views you open to the side show it too.
+
 ## [1.2.0] - 2026-11-22
 
 ### Changed

@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ### Security
 
+- The readme's `gh attestation verify` command checks that the deploy workflow signed the checksums for the version's tag, so an attestation from another workflow or branch doesn't pass.
 - The host refuses a release with a FIFO or another file that isn't a plain file. It also removes a release that fails its checks, so a broken upload doesn't push out one of the 3 releases I keep.
 - A folder like `/assets/` shows the site's own page with the site's security headers when the host refuses to list it, instead of the host's bare 403 page.
 - The host copies an upload into its release folder before it checks the files, so an upload that's still running can't sneak files into a release after the checks.

@@ -10,7 +10,13 @@ The site ships parts of other projects, which [third-party-notices.md](third-par
 
 The About tab shows the site's version and commit. Each deploy signs the SHA-256 hash of every file it uploads through GitHub's artifact attestations and serves the hashes as [checksums.txt](https://decomp.loter.dev/checksums.txt). The GitHub release of that version has the same file.
 
-`gh attestation verify checksums.txt -R ero-qt/decomp.loter.dev` shows that the deploy workflow signed the release's copy and which tag it built. `bun release/verify-live.ts https://decomp.loter.dev checksums.txt` then fetches every file in that copy from the live site and compares it with its hash. Both only cover what the server sent you at that moment.
+This command checks that the deploy workflow signed the release's copy when it built the version's tag, here 1.2.1:
+
+```sh
+gh attestation verify checksums.txt -R ero-qt/decomp.loter.dev --signer-workflow ero-qt/decomp.loter.dev/.github/workflows/deploy.yml --source-ref refs/tags/1.2.1
+```
+
+`bun release/verify-live.ts https://decomp.loter.dev checksums.txt` then fetches every file in that copy from the live site and compares it with its hash. Both only cover what the server sent you at that moment.
 
 ## Hosting
 

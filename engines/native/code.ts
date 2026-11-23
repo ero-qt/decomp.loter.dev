@@ -1,6 +1,7 @@
 import { type Document, formatTarget, type Token, writeTokens } from '#contract/document';
 import { failed, ok, type Reply } from '#contract/reply';
 import { flagsOf, type Kind } from '#contract/symbols';
+import { maxImageSpan } from './keys';
 import type { NativeModule } from './module';
 
 /** A part of Ghidra's C as rz-ghidra annotates it, with UTF-8 offsets and its address in hex. */
@@ -25,8 +26,11 @@ export interface CodeRows {
     fileId: number;
     /** The address of the decompiled function, whose name in the signature declares its row. */
     address: bigint;
-    /** Returns the key and kind of the row of a function or global at an address, or `undefined` without a row. */
-    findRow(address: bigint): { key: number; kind: Kind } | undefined;
+    /**
+     * Returns the key and kind of the row of a function or global at an address, or `undefined` without a row. A row
+     * without a kind takes the kind of its token's annotation.
+     */
+    findRow(address: bigint): { key: number; kind?: Kind } | undefined;
 }
 
 // a part of the C with UTF-16 offsets and the highlight, name and address of its annotations
@@ -230,6 +234,21 @@ export function decompileFunction(module: NativeModule, session: number, kind: K
     }
 
     return ok(writeCode(code, annotations, rows));
+}
+
+/**
+ * Decompiles the code at an address relative to the image like `decompileFunction`, without the file's rows, because
+ * the rows stop at a cap that a game's binary passes. Each target's key is its address relative to the image, which is
+ * the key of its row in an image that spans less than 2 GB.
+ */
+export function decompileAt(module: NativeModule, session: number, fileId: number, base: bigint, rva: number): Reply<Document> {
+    const rows: CodeRows = {
+        fileId,
+        address: base + BigInt(rva),
+        findRow: address => (address >= base && address - base < maxImageSpan ? { key: Number(address - base) } : undefined),
+    };
+
+    return decompileFunction(module, session, 'method', rows);
 }
 
 /** The documents of decompiled functions by file and key, which drops the documents read longest ago. */

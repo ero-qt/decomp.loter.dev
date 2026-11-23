@@ -29,7 +29,7 @@ export function loadOnce<T>(load: () => Promise<T>): () => Promise<T> {
  * Turns the load errors that the handlers throw into failed replies, because the worker stays usable after them and a
  * later call can load the part that failed to load.
  */
-export function refuseLoadErrors(handlers: EngineHandlers): EngineHandlers {
+export function refuseLoadErrors<Handlers extends EngineHandlers>(handlers: Handlers): Handlers {
     const calls = Object.entries(handlers as unknown as Record<string, (...args: never[]) => Promise<Reply<unknown>>>);
     const refusing = calls.map(([name, handler]) => {
         async function refuse(...args: never[]): Promise<Reply<unknown>> {
@@ -47,7 +47,7 @@ export function refuseLoadErrors(handlers: EngineHandlers): EngineHandlers {
         return [name, refuse];
     });
 
-    return Object.fromEntries(refusing) as unknown as EngineHandlers;
+    return Object.fromEntries(refusing) as unknown as Handlers;
 }
 
 /** Fetches a file's bytes, or throws a load error with the engine's name, like `native`, and what it couldn't load. */

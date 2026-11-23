@@ -85,6 +85,17 @@ test("a caller's C keeps the call of a callee with a long name on one line", asy
     expect(lines.find(line => line.includes(longName))).toMatch(/\(.*\);$/);
 }, 120000);
 
+test("il2cpp binary resolves and reads a function without a row by its address, and a global's address as its data", async () => {
+    const { engine, fileId } = await openBinary();
+    const [update, registration] = [await readRva('Player__Update'), await readRva('g_CodeRegistration')];
+
+    expect(readRows(await engine.list(fileId)).some(row => row.name === 'Player__Update')).toBe(false);
+    expect(await engine.resolve(formatTarget({ fileId, key: update }))).toBe(formatTarget({ fileId, key: update }));
+    expect((await engine.read(fileId, update, 'c')).text).toContain('return ');
+    expect(await engine.resolve(formatTarget({ fileId, key: registration }))).toBe(formatTarget({ fileId, key: registration }));
+    expect((await engine.read(fileId, registration, 'c')).text).toContain('holds data, not code.');
+}, 120000);
+
 test("provide refuses a names file whose addresses aren't in the binary's code, text that isn't a names file and the game's metadata", async () => {
     const { engine, fileId } = await openBinary();
     const other = writeNamesFile([[0x7fff0000, 'Other$$Method']]);

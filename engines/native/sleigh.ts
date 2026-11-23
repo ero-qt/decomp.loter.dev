@@ -98,3 +98,13 @@ export function createLanguageWriter(module: NativeModule): (processor?: string)
     };
 }
 
+/**
+ * Starts writing the languages of a session's processor without waiting for them, because the first decompile then
+ * doesn't wait for their fetch. A failed write gets ignored here because that decompile writes the languages again.
+ */
+export function writeLanguageEarly(writeLanguage: (processor?: string) => Promise<void>, module: NativeModule, session: number) {
+    const processor = findProcessor(module, session);
+    if (processor.value !== undefined) {
+        writeLanguage(processor.value).catch(() => undefined);
+    }
+}

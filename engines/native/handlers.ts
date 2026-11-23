@@ -7,17 +7,18 @@ import { matchesBinary } from '../shared/binary-identity';
 import { loadOnce, refuseLoadErrors } from '../shared/loading';
 import { isPeFile } from '../shared/pe';
 import { createRefusals } from '../shared/refusals';
+import { findSection, listSections, readAddress, type Section } from './addresses';
 import { assemblyHeader, cHeader, listClassParts, writeClassDocument } from './class-document';
-import { createDocumentCache, decompileFunction } from './code';
+import { createDocumentCache, decompileAt, decompileFunction } from './code';
 import { describeRow, findFullName } from './describe';
 import { checkArchitecture, disassembleFunction, type DisassemblyRows } from './disassembly';
 import { type MountedFile, type MountFile, writeShareFiles } from './files';
-import { claimsNativeFile } from './formats';
+import { claimsNativeFile, findRefusal } from './formats';
 import manifest from './manifest.json' with { type: 'json' };
 import type { NativeModule } from './module';
 import { namesFileName, readNamesFile } from './names-file';
 import { defaultMaxMembers, groupRows, type NativeRows } from './rows';
-import { createLanguageWriter, findProcessor } from './sleigh';
+import { createLanguageWriter, findProcessor, writeLanguageEarly } from './sleigh';
 import { listStrings } from './strings';
 import { createFunctionFinder, type FindFunction, findUsers, searchCode, splitCode } from './users';
 
@@ -38,6 +39,27 @@ interface NativeFile {
     listing?: FileListing;
     /** The parts of the file's code that Rizin didn't search for references yet, once a call needs the references. */
     unsearched?: [from: bigint, to: bigint][];
+    /** The address that the image loads at, once `readCode` needs it. */
+    base?: bigint;
+    /** The sections of the image, once a call needs an address without a row. */
+    sections?: Section[];
+    /** The sections of the image for `readAddress`, which reads an address without the file's listing. */
+    imageSections?: Section[];
+}
+
+/** The native engine's handlers with the call that the IL2CPP engine makes in its own worker. */
+export interface NativeHandlers extends EngineHandlers {
+    /**
+     * Decompiles the code at an address relative to the image into C without a row of the file's listing, like a
+     * method's code that a game's metadata points at. Each target of the C has the address relative to the image as
+     * its key.
+     */
+    readCode(fileId: number, rva: number, signal: AbortSignal): Promise<Reply<Document>>;
+    /**
+     * Reads the code at an address relative to the image like `readCode`, or a note with the bytes of the data there,
+     * without the file's listing. Refuses an address outside the image's sections.
+     */
+    readAddress(fileId: number, rva: number, signal: AbortSignal): Promise<Reply<Document>>;
 }
 
 /** The loaded module with the function that writes a processor's languages before its first decompile. */
@@ -54,40 +76,12 @@ const refusals = createRefusals('native');
 // a folder of its own
 let mountCount = 0;
 
-// checks whether a binary only imports from mscoree.dll, like a .NET assembly without its CLI header
-function isManagedStub(module: NativeModule, session: number): boolean {
-    const imports: { libname?: string }[] = JSON.parse(module.runCommand(session, 'iij') || '[]');
-
-    return imports.length > 0 && imports.every(({ libname }) => /^mscoree\.dll$/i.test(libname ?? ''));
-}
-
-// returns why the engine can't read the binary of a session's open file, or `undefined` for a binary that it reads
-function findRefusal(module: NativeModule, session: number, path: string, name: string): string | undefined {
-    if (!module.openSession(session, path)) {
-        return `${name} isn't a readable ELF, PE or Mach-O file.`;
-    }
-    if (isManagedStub(module, session)) {
-        return `${name} only imports mscoree.dll, so its code is .NET IL and not machine code.`;
-    }
-
-    return undefined;
-}
-
-// starts writing the languages of a session's processor without waiting for them, because the first decompile then
-// doesn't wait for their fetch. A failed write gets ignored here because that decompile writes the languages again.
-function writeLanguageEarly(writeLanguage: (processor?: string) => Promise<void>, module: NativeModule, session: number) {
-    const processor = findProcessor(module, session);
-    if (processor.value !== undefined) {
-        writeLanguage(processor.value).catch(() => undefined);
-    }
-}
-
 /**
  * Returns the native engine's handlers, which load the module with the first call that needs it, because `claims` then
  * only reads the file's headers. Each open file gets a Rizin session. `mountFile` puts the file's bytes where the
  * session reads them.
  */
-export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mountFile: MountFile): EngineHandlers {
+export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mountFile: MountFile): NativeHandlers {
     const files = new Map<number, NativeFile>();
     const cache = createDocumentCache();
 
@@ -200,6 +194,37 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
         return searchCode(module, file.session, file.unsearched, signal);
     }
 
+    // writes the languages of a file's processor before its first C, because Ghidra needs them and Rizin disassembles a
+    // processor that Ghidra doesn't decompile
+    async function writeFileLanguage({ module, writeLanguage }: LoadedModule, file: NativeFile, signal: AbortSignal): Promise<Reply<void>> {
+        const processor = findProcessor(module, file.session);
+        if (processor.error !== undefined) {
+            return processor;
+        }
+
+        await writeLanguage(processor.value);
+        signal.throwIfAborted();
+
+        return ok(undefined);
+    }
+
+    function readBase(module: NativeModule, file: NativeFile): bigint {
+        file.base ??= BigInt(JSON.parse(module.runCommand(file.session, 'iIj')).baddr ?? 0);
+
+        return file.base;
+    }
+
+    // finds the section of an address without a row in an image whose keys are the addresses' offsets from its base
+    function findAddressSection(module: NativeModule, file: NativeFile, key: number): Section | undefined {
+        if (!file.sections) {
+            const base = readBase(module, file);
+            const isOffsetKeyed = [...readListing(module, file).keys.addresses].every(([found, address]) => BigInt(found) === address - base);
+            file.sections = isOffsetKeyed ? listSections(module, file.session, base) : [];
+        }
+
+        return findSection(file.sections, key);
+    }
+
     function findFile(fileId: number): Reply<NativeFile> {
         const file = files.get(fileId);
 
@@ -306,12 +331,17 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
                 return refusals.view(view);
             }
 
-            const { module, writeLanguage } = await useLoaded();
+            const loaded = await useLoaded();
+            const { module } = loaded;
             signal.throwIfAborted();
 
             const file = found.value;
             const listing = readListing(module, file);
             const index = listing.indexes.get(key);
+            const section = index === undefined && view === 'c' ? findAddressSection(module, file, key) : undefined;
+            if (section) {
+                return readAddress(module, file.session, fileId, readBase(module, file), key, section);
+            }
             if (index === undefined) {
                 return refusals.key(file.name, `0x${(key >>> 0).toString(16)}`);
             }
@@ -324,16 +354,9 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
                 return architecture;
             }
 
-            // writes the languages of the file's processor only for C, because Ghidra needs them and Rizin disassembles
-            // a processor that Ghidra doesn't decompile
-            if (view === 'c') {
-                const processor = findProcessor(module, file.session);
-                if (processor.error !== undefined) {
-                    return processor;
-                }
-
-                await writeLanguage(processor.value);
-                signal.throwIfAborted();
+            const language = view === 'c' ? await writeFileLanguage(loaded, file, signal) : ok(undefined);
+            if (language.error !== undefined) {
+                return language;
             }
 
             const decompile = (methodKey: number) => readFunction(module, fileId, file, listing, methodKey);
@@ -348,6 +371,42 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
             const parts = listClassParts(listing, index, fileId, name => module.describeStruct(file.session, name));
 
             return writeClassDocument(parts, readMethod, signal, view === 'c' ? cHeader : assemblyHeader);
+        },
+        async readCode(fileId, rva, signal) {
+            const found = findFile(fileId);
+            if (found.error !== undefined) {
+                return found;
+            }
+
+            const loaded = await useLoaded();
+            const file = found.value;
+            const language = await writeFileLanguage(loaded, file, signal);
+            if (language.error !== undefined) {
+                return language;
+            }
+
+            const base = readBase(loaded.module, file);
+
+            return decompileAt(loaded.module, file.session, fileId, base, rva);
+        },
+        async readAddress(fileId, rva, signal) {
+            const found = findFile(fileId);
+            if (found.error !== undefined) {
+                return found;
+            }
+
+            const loaded = await useLoaded();
+            const file = found.value;
+            const base = readBase(loaded.module, file);
+            file.imageSections ??= listSections(loaded.module, file.session, base);
+            const section = findSection(file.imageSections, rva);
+            if (!section) {
+                return refusals.key(file.name, `0x${rva.toString(16)}`);
+            }
+
+            const language = section.isCode ? await writeFileLanguage(loaded, file, signal) : ok(undefined);
+
+            return language.error === undefined ? readAddress(loaded.module, file.session, fileId, base, rva, section) : language;
         },
         async describe(target, view, signal) {
             if (!views.includes(view)) {
@@ -366,8 +425,13 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
 
             return ok(describeRow(listing, index, address => module.describeFunction(file.session, address), decompiled));
         },
+        // resolves an address without a row too, like a function that only a call names, which `read` decompiles
         async resolve(target) {
-            return ok((await findTarget(target)) ? target : null);
+            const parsed = parseTarget(target);
+            const file = 'fileId' in parsed ? files.get(parsed.fileId) : undefined;
+            const isAddress = file !== undefined && 'key' in parsed && findAddressSection(await useModule(), file, parsed.key) !== undefined;
+
+            return ok(isAddress || (await findTarget(target)) ? target : null);
         },
         // leaves the places of the uses to the page, which finds them in the users' documents, because the C of a user
         // doesn't exist before its decompile

@@ -25,7 +25,9 @@ SetEnvIf Request_URI "^/engines/[^/]+/[^/]+-[a-z0-9]{8}\.js$" long_cache
 Header set Cache-Control "public, max-age=31536000, immutable" env=long_cache
 Header set Cache-Control "no-cache" env=!long_cache
 
-# answers a missing file with the site's own page. Apache serves the page through a redirect that sets REDIRECT_STATUS,
-# so the page keeps the status 404 and gets the headers above, but not a cache header.
+# answers a missing file and a folder without an index with the site's own page. Apache serves the page through a
+# redirect that sets REDIRECT_STATUS, so the page keeps the status 404 or 403 and gets the headers above, but not a
+# cache header.
 ErrorDocument 404 /404.html
+ErrorDocument 403 /404.html
 Header unset Cache-Control env=REDIRECT_STATUS

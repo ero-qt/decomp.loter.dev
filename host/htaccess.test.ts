@@ -97,8 +97,9 @@ test('htaccess keeps each file with a fingerprint for a year and lets browsers a
     expect(paths.filter(path => path.startsWith('/engines/java/vf.runtime-')).map(isKeptLong)).toEqual([true]);
 });
 
-test("htaccess answers a missing file with the site's page for it", async () => {
+test("htaccess answers a missing file and a folder without an index with the site's page, which gets the site's headers", async () => {
     expect(lines).toContain('ErrorDocument 404 /404.html');
+    expect(lines).toContain('ErrorDocument 403 /404.html');
     expect(await Bun.file(`${siteFolder}/404.html`).exists()).toBe(true);
 });
 

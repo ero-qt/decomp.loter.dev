@@ -16,7 +16,7 @@ afterEach(() => server?.stop());
 /**
  * Serves the built site like Apache with host/htaccess, with the built site's checksums and each path and text of
  * `files` as a file of the site, or as a missing file for `undefined`, after `change` changed each response's status
- * and headers. Sends `notFoundPage` for a missing file.
+ * and headers. Sends `notFoundPage` for a missing file and with the status 403 for `/assets/`, a folder without an index.
  */
 function serveLikeHtaccess(
     change: (path: string, status: number, headers: Headers) => number = (path, status) => status,
@@ -46,7 +46,7 @@ function serveLikeHtaccess(
                 headers.set('Content-Type', 'application/json');
             }
 
-            const status = change(pathname, isFound ? 200 : 404, headers);
+            const status = change(pathname, isFound ? 200 : pathname.endsWith('/assets/') ? 403 : 404, headers);
 
             return new Response(isFound ? file : notFoundPage, { status, headers });
         },
@@ -95,6 +95,7 @@ test("live check finds a missing file without the site's page for it, like Apach
     expect(await checkSiteResponses(url, siteFolder)).toEqual([
         "/missing isn't the built 404.html",
         "/assets/missing-12345678.js isn't the built 404.html",
+        "/assets/ isn't the built 404.html",
     ]);
 });
 
@@ -120,6 +121,7 @@ test('live check finds a cached missing file and a fingerprinted file that brows
     expect(await checkSiteResponses(url, siteFolder)).toEqual([
         '/missing sends Cache-Control "no-cache", not null',
         '/assets/missing-12345678.js sends Cache-Control "no-cache", not null',
+        '/assets/ sends Cache-Control "no-cache", not null',
         expect.stringMatching(/^\/assets\/.+ sends Cache-Control "no-cache", not "public, max-age=31536000, immutable"$/),
         expect.stringMatching(/^\/engines\/dotnet\/_framework\/.+ sends Cache-Control "no-cache", not "public, max-age=31536000, immutable"$/),
         '/balance.json sends Cache-Control "no-cache", not null',
@@ -137,9 +139,23 @@ test('live check finds wasm without its type, a wrong status and a folder listin
 
     expect(await checkSiteResponses(url, siteFolder)).toEqual([
         '/missing has the status 200, not 404',
+        '/assets/ has the status 200, not 403',
         expect.stringMatching(/^\/engines\/dotnet\/_framework\/.+\.wasm sends Content-Type "application\/octet-stream", not application\/wasm$/),
         '/engines/native/rizin.wasm sends Content-Type "application/octet-stream", not application/wasm',
-        '/assets/ lists its files',
+    ]);
+});
+
+test("live check finds a folder without an index whose answer lacks the site's headers, like Apache's own 403 page", async () => {
+    const url = serveLikeHtaccess((path, status, headers) => {
+        if (status === 403) {
+            headers.delete('Content-Security-Policy');
+        }
+
+        return status;
+    });
+
+    expect(await checkSiteResponses(url, siteFolder)).toEqual([
+        `/assets/ sends Content-Security-Policy null, not ${JSON.stringify(siteHeaders['Content-Security-Policy'])}`,
     ]);
 });
 

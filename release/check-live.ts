@@ -12,7 +12,8 @@ interface ExpectedResponse {
     contentType?: string;
 }
 
-// lists the responses that Apache sends with host/htaccess for a few files of the built site and for missing files
+// lists the responses that Apache sends with host/htaccess for a few files of the built site, for missing files and for
+// a folder without an index, which Apache refuses to list
 function listExpectedResponses(siteFolder: string): ExpectedResponse[] {
     const asset = readdirSync(`${siteFolder}/assets`).sort()[0];
     const framework = readdirSync(`${siteFolder}/engines/dotnet/_framework`).sort().find(name => name.endsWith('.wasm'));
@@ -23,6 +24,7 @@ function listExpectedResponses(siteFolder: string): ExpectedResponse[] {
         { path: '/checksums.txt', status: 200, cacheControl: 'no-cache' },
         { path: '/missing', status: 404, cacheControl: null },
         { path: '/assets/missing-12345678.js', status: 404, cacheControl: null },
+        { path: '/assets/', status: 403, cacheControl: null },
         { path: `/assets/${asset}`, status: 200, cacheControl: longCache },
         { path: `/engines/dotnet/_framework/${framework}`, status: 200, cacheControl: longCache, contentType: 'application/wasm' },
         { path: '/engines/dotnet/_framework/dotnet.js', status: 200, cacheControl: 'no-cache' },
@@ -58,15 +60,15 @@ function checkResponse(response: Response, { path, status, cacheControl, content
 /**
  * Lists each response of the site at the URL that differs from host/htaccess, for a few files of the built site in the
  * folder and for missing files. Also checks that the site's page is the built `index.html`, so a deploy that didn't
- * switch the site shows. Checks too that a missing file gets the built `404.html`, not the host's own page, and that
- * the site's `checksums.txt` lists the built site's files.
+ * switch the site shows. Checks too that a missing file and a folder get the built `404.html`, not the host's own page,
+ * and that the site's `checksums.txt` lists the built site's files.
  */
 export async function checkSiteResponses(siteUrl: URL, siteFolder: string): Promise<string[]> {
     const problems: string[] = [];
 
     for (const expected of listExpectedResponses(siteFolder)) {
         const response = await fetch(new URL(expected.path, siteUrl), { redirect: 'manual' });
-        const page = expected.path === '/' ? 'index.html' : expected.status === 404 ? '404.html' : undefined;
+        const page = expected.path === '/' ? 'index.html' : expected.status >= 400 ? '404.html' : undefined;
         if (expected.path === '/checksums.txt') {
             if ((await response.text()) !== listChecksums(siteFolder)) {
                 problems.push("/checksums.txt isn't the site's checksums");
@@ -90,12 +92,6 @@ export async function checkSiteResponses(siteUrl: URL, siteFolder: string): Prom
         cacheControl: isBalanceFound ? 'no-cache' : null,
         contentType: isBalanceFound ? 'application/json' : undefined,
     }));
-
-    const listing = await fetch(new URL('/assets/', siteUrl), { redirect: 'manual' });
-    await listing.body?.cancel();
-    if (listing.ok) {
-        problems.push('/assets/ lists its files');
-    }
 
     return problems;
 }

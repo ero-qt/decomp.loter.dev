@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ### Security
 
+- A folder like `/assets/` shows the site's own page with the site's security headers when the host refuses to list it, instead of the host's bare 403 page.
 - The host copies an upload into its release folder before it checks the files, so an upload that's still running can't sneak files into a release after the checks.
 
 ## [1.2.1] - 2026-11-22

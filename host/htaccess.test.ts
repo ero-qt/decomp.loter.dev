@@ -9,7 +9,7 @@ const siteFolder = new URL('../artifacts/site/', import.meta.url).pathname;
 const scriptFiles = ['a.php', 'A.PHP', 'a.php3', 'a.php8', 'a.phtml', 'a.phar', 'a.pht', 'a.cgi', 'a.pl', 'a.py', 'a.sh', 'a.shtml', 'a.inc'];
 // the files whose names stay the same from build to build
 const lastingNames = new RegExp(
-    '^/(index\\.html|404\\.html|favicon\\.svg|robots\\.txt|sitemap\\.xml|balance\\.json'
+    '^/(index\\.html|404\\.html|favicon\\.svg|robots\\.txt|sitemap\\.xml|balance\\.json|third-party-notices\\.txt'
         + '|engines/index\\.json|engines/[^/]+/(manifest\\.json|worker\\.js)'
         + '|engines/dotnet/(_framework/dotnet\\.js|THIRD-PARTY-NOTICES\\.TXT)|engines/native/(rizin\\.mjs|rizin\\.wasm|(share|sleigh|source)/.+))$',
 );

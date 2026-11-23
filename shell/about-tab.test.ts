@@ -21,7 +21,7 @@ const pageLines = [
     'A file can list the files it needs below its row in the Symbols view. Click one to load it. A PDB file adds names and types '
         + 'to a native program, and a referenced assembly lets Go to definition and Find references reach into it.',
     'Keyboard shortcuts',
-    'Source on GitHub',
+    'Source on GitHub, third-party notices',
     `Version ${version} (${commit.slice(0, 7)})`,
 ];
 // has a row for each engine that the site serves, in the order of the format texts, with its manifest's texts
@@ -182,7 +182,7 @@ test("footer shows the version right of the source link, on the source link's li
     expect(Math.round(version.right)).toBe(Math.round(version.lineRight));
 }, testTimeoutMs);
 
-test('source and version links open in a new tab without the opener and the referrer', async () => {
+test('source, notices and version links open in a new tab without the opener and the referrer', async () => {
     const { page } = await openWorkbench();
 
     const linkValues = await findAboutPage(page).getByRole('link').evaluateAll(links =>
@@ -191,6 +191,7 @@ test('source and version links open in a new tab without the opener and the refe
 
     expect(linkValues).toEqual([
         ['GitHub', repository, '_blank', 'noopener noreferrer'],
+        ['third-party notices', new URL('/third-party-notices.txt', page.url()).href, '_blank', 'noopener noreferrer'],
         ...(version === 'dev' ? [] : [[version, `${repository}/releases/tag/${version}`, '_blank', 'noopener noreferrer']]),
         [commit.slice(0, 7), `${repository}/commit/${commit}`, '_blank', 'noopener noreferrer'],
     ]);
@@ -255,4 +256,13 @@ test('command palette lists Help: About as the only About command', async () => 
     await page.locator('.quick-input-list .monaco-list-row').first().waitFor();
 
     expect(await page.locator('.quick-input-list .monaco-list-row .label-name').allInnerTexts()).toEqual(['Help: About']);
+}, testTimeoutMs);
+
+test("notices link serves the repo's third-party notices", async () => {
+    const { page } = await openWorkbench();
+    const href = await findAboutPage(page).getByRole('link', { name: 'third-party notices' }).getAttribute('href');
+
+    const response = await page.request.get(new URL(href!, page.url()).href);
+
+    expect(await response.text()).toBe(await Bun.file(new URL('../third-party-notices.md', import.meta.url)).text());
 }, testTimeoutMs);

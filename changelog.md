@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- The About tab links the third-party notices, which the site serves as `third-party-notices.txt`.
+
 ### Changed
 
 - The .NET engine runs on the final .NET 11 runtime (11.0.0). Building the site needs the .NET SDK 11.0.100 or a later 11.0 SDK.

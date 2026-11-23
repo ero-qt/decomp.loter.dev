@@ -155,7 +155,19 @@ test("activate doesn't copy a live balance that is a link, like a link to the da
     expect(existsSync(join(web, 'releases', '1.0.1', 'balance.json'))).toBe(false);
 });
 
-test("activate refuses to replace the live release, so a deploy that runs again keeps the live release's balance", async () => {
+test("activate of the live release with the same upload drops the upload and keeps the live release's balance", async () => {
+    upload('1.0.0');
+    activate('1.0.0');
+    writeFileSync(join(web, 'html', 'balance.json'), '{"balance":"12.50"}');
+    upload('1.0.0');
+
+    expect(activate('1.0.0')).toEqual({ exitCode: 0, error: '' });
+    expect(readLive()).toBe('releases/1.0.0');
+    expect(await Bun.file(join(web, 'html', 'balance.json')).text()).toBe('{"balance":"12.50"}');
+    expect(readdirSync(join(web, 'uploads'))).toEqual([]);
+});
+
+test("activate refuses to replace the live release with another upload, so the live release keeps its balance", async () => {
     upload('1.0.0');
     activate('1.0.0');
     writeFileSync(join(web, 'html', 'balance.json'), '{"balance":"12.50"}');

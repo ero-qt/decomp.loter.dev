@@ -26,8 +26,15 @@ take_upload() {
     if [[ ! -d $uploads/$tag ]]; then
         return
     fi
+    # drops an upload of the live release that has the same files, because a deploy that runs again uploads the release
+    # again and the live release keeps the balance that the host's timer writes
     if [[ $(readlink "$web/html" || true) == "releases/$tag" ]]; then
-        fail "The release $tag is live. Upload a new version."
+        if ! diff -rq --no-dereference -x balance.json -- "$uploads/$tag" "$releases/$tag" > /dev/null; then
+            fail "The release $tag is live. Upload a new version."
+        fi
+
+        rm -rf -- "${uploads:?}/$tag"
+        return
     fi
 
     rm -rf -- "${releases:?}/$tag"

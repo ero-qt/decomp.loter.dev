@@ -84,7 +84,7 @@ test('receiver hands an upload to rrsync, which only writes into the uploads fol
     expect((await Bun.file(join(folder, 'rrsync-args')).text()).split('\n')).toEqual(['-wo', '-munge', join(web, 'uploads'), command, '']);
 });
 
-test("activate moves the upload into the releases, where the key can't write, and points the site at it", () => {
+test("activate copies the upload into the releases, where the key can't write, and points the site at it", () => {
     upload('1.0.0');
 
     expect(activate('1.0.0')).toEqual({ exitCode: 0, error: '' });
@@ -92,6 +92,20 @@ test("activate moves the upload into the releases, where the key can't write, an
     expect(listReleases()).toEqual(['1.0.0']);
     expect(readdirSync(join(web, 'uploads'))).toEqual([]);
     expect(readdirSync(web).sort()).toEqual(['html', 'releases', 'uploads']);
+});
+
+// rsync's receiver changes into the upload's folder and writes by relative path, so it follows a rename of the folder
+test("a write into the upload after activate doesn't reach the release", async () => {
+    const release = upload('1.0.0');
+    const writer = Bun.spawn(['sh', '-c', 'read line; echo late > late.php'], { cwd: release, stdin: 'pipe', stderr: 'ignore' });
+
+    expect(activate('1.0.0').exitCode).toBe(0);
+
+    writer.stdin.write('\n');
+    writer.stdin.end();
+    await writer.exited;
+
+    expect(readdirSync(join(web, 'releases', '1.0.0')).sort()).toEqual(['.htaccess', 'index.html']);
 });
 
 test('activate replaces the link to the live release', () => {

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+### Security
+
+- The host copies an upload into its release folder before it checks the files, so an upload that's still running can't sneak files into a release after the checks.
+
 ## [1.2.1] - 2026-11-22
 
 ### Fixed

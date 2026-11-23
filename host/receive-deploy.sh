@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Runs the deploy key's command from SSH_ORIGINAL_COMMAND: an upload into the uploads folder through rrsync, or
-# `activate <version>`, which moves an upload into the releases folder, checks it and switches the site to it.
+# `activate <version>`, which copies an upload into the releases folder, checks it and switches the site to it.
 # Usage in ~/.ssh/authorized_keys: restrict,command="receive-deploy <web folder> <host's copy of htaccess>" <key>
 set -euo pipefail
 
@@ -16,7 +16,8 @@ fail() {
     exit 1
 }
 
-# moves the upload out of the key's reach before the checks, because rrsync could otherwise change it after them
+# copies the upload into a new folder and removes the upload before the checks, because a running rsync keeps writing
+# into the folder that it changed into, also after a rename
 take_upload() {
     local tag=$1
     if [[ -L $uploads/$tag ]]; then
@@ -30,7 +31,8 @@ take_upload() {
     fi
 
     rm -rf -- "${releases:?}/$tag"
-    mv -T "$uploads/$tag" "$releases/$tag"
+    cp -rT -- "$uploads/$tag" "$releases/$tag"
+    rm -rf -- "${uploads:?}/$tag"
 }
 
 # refuses a release with a link or a file that the host could run, because the site only has static files

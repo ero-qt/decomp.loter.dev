@@ -23,6 +23,7 @@ const char *names_raw_of_symbol(RzBinObject *object, const RzBinSymbol *symbol);
 char *names_of_symbol(RzBinObject *object, const RzBinSymbol *symbol);
 void names_add_msvc_words(PJ *j, const char *name);
 char *names_for_code(RzCore *core, ut64 addr);
+RzBinSymbol *names_symbol_at(RzBinObject *object, ut64 addr);
 
 bool listing_is_function(const RzBinSymbol *symbol);
 void listing_add_symbol(PJ *j, ut64 addr, ut64 size, const char *raw_name, bool global);

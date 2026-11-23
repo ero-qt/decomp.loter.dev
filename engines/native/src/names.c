@@ -183,7 +183,7 @@ static char *name_at(RzCore *core, ut64 addr) {
 		return NULL;
 	}
 
-	RzBinSymbol *symbol = rz_bin_object_get_symbol_at(object, addr, true);
+	RzBinSymbol *symbol = names_symbol_at(object, addr);
 	char *name = symbol ? names_of_symbol(object, symbol) : NULL;
 	if (name) {
 		return name;
@@ -205,6 +205,38 @@ static char *name_at(RzCore *core, ut64 addr) {
 			if (((RzBinAddr *)*it)->vaddr == addr) {
 				return rz_str_dup("entry");
 			}
+		}
+	}
+	return NULL;
+}
+
+/**
+ * \brief Checks whether a symbol only marks a place: a section, a file or an ARM mapping symbol like `$x` or `$d.1`.
+ */
+static bool is_marker(const RzBinSymbol *symbol) {
+	const char *name = symbol->name;
+	bool is_mapping = name && name[0] == '$' && name[1] && strchr("adtx", name[1]) && (!name[2] || name[2] == '.');
+	bool is_section_or_file = symbol->type && (!strcmp(symbol->type, RZ_BIN_TYPE_SECTION_STR) || !strcmp(symbol->type, RZ_BIN_TYPE_FILE_STR));
+	return is_mapping || is_section_or_file;
+}
+
+/**
+ * \brief Returns the first symbol at an address that isn't a marker, or NULL.
+ *
+ * An object file has a section symbol at the start of each section, at the address of the section's first function,
+ * and an ARM file has mapping symbols at the starts of its code and data.
+ */
+RzBinSymbol *names_symbol_at(RzBinObject *object, ut64 addr) {
+	const RzPVector *symbols = rz_bin_object_get_symbols(object);
+	if (!symbols) {
+		return NULL;
+	}
+
+	void **it;
+	rz_pvector_foreach (symbols, it) {
+		RzBinSymbol *symbol = *it;
+		if (symbol->vaddr == addr && !is_marker(symbol)) {
+			return symbol;
 		}
 	}
 	return NULL;

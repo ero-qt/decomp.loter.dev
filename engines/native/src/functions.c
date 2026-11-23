@@ -16,7 +16,7 @@ static int compare_addresses(const void *a, const void *b, void *user) {
 static ut64 function_end(Session *session, ut64 addr) {
 	RzBinObject *object = rz_bin_cur_object(session->core->bin);
 	const RzPVector *symbols = object ? rz_bin_object_get_symbols(object) : NULL;
-	RzBinSymbol *own = object ? rz_bin_object_get_symbol_at(object, addr, true) : NULL;
+	RzBinSymbol *own = object ? names_symbol_at(object, addr) : NULL;
 	if (own && own->size) {
 		return UT64_ADD_OVFCHK(addr, own->size) ? UT64_MAX : addr + own->size;
 	}
@@ -251,7 +251,7 @@ EMSCRIPTEN_KEEPALIVE char *session_describe(Session *session, const char *addr) 
 	}
 
 	RzBinObject *object = rz_bin_cur_object(core->bin);
-	RzBinSymbol *symbol = object ? rz_bin_object_get_symbol_at(object, fcn->addr, true) : NULL;
+	RzBinSymbol *symbol = object ? names_symbol_at(object, fcn->addr) : NULL;
 	const char *name = symbol && RZ_STR_ISNOTEMPTY(symbol->dname) ? symbol->dname : NULL;
 	const RzList *flags = name ? NULL : rz_flag_get_list(core->flags, fcn->addr);
 	RzListIter *it;

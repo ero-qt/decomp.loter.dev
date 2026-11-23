@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 ### Fixed
 
 - The C of an object file (`.o`) shows each global under its own name. Before, a global in `.bss` could show up as a string that sat at the same place. A few 32-bit x86 functions in object files decompile now too.
+- The C of an object file calls each function by its own symbol. Before, the first function of a section could show up as `.text` or as an ARM marker like `$x`.
 
 ### Security
 

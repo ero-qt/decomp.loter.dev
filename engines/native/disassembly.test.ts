@@ -125,7 +125,7 @@ test('disassembly of big_sum, a function of 188,168 bytes, decodes every instruc
     expect(addresses.at(-1)! - addresses[0]).toBeGreaterThan(188_000);
 }, 120000);
 
-test("32-bit ARM code disassembles, though the engine can't decompile it", async () => {
+test('32-bit ARM code disassembles', async () => {
     const { text } = await readDisassembly(await openFile('extras-arm.so'), 'extras_name');
 
     expect(text).toContain('  add r0, pc, r0\n');

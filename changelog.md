@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 - The native engine's C keeps each statement on 1 line, even a call with a long name.
 - A game's `GameAssembly.dll` or `libil2cpp.so` in the native engine lists `script.json` and the game's `global-metadata.dat` as missing files. Pick a `script.json` from Il2CppDumper on its row and the tree and the C show the game's functions by name, like `Player$$Update`.
 - The native engine reads the lists `ScriptMetadata`, `ScriptMetadataMethod` and `ScriptString` of Il2CppDumper's `script.json`, so its C shows the globals that a game fills with metadata by name, like `UnityEngine.Debug_TypeInfo`.
+- The native engine decompiles 32-bit ARM code, like the `libil2cpp.so` of an Android game, in ARM mode and in Thumb mode. It reads bit 0 of a method's address as the mark of Thumb code, like Unity sets it.
 - Files you open together find each other now. If one of them is a missing file of another, like `GameAssembly.dll` or `libil2cpp.so` next to its `global-metadata.dat`, the site adds it to that file without a pick. You can also open them one after the other from the same folder, like the metadata after its `GameAssembly.dll`.
 
 ### Changed

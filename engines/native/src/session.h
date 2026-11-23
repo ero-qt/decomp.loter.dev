@@ -15,7 +15,6 @@ typedef struct {
 	bool is_rtti_recovered; ///< whether the analysis has the classes of the binary's RTTI
 } Session;
 
-RzCore *session_use(Session *session);
 void session_put_address(PJ *j, const char *key, ut64 addr);
 
 char *names_clean(const char *name);
@@ -24,6 +23,7 @@ const char *names_raw_of_symbol(RzBinObject *object, const RzBinSymbol *symbol);
 char *names_of_symbol(RzBinObject *object, const RzBinSymbol *symbol);
 void names_add_msvc_words(PJ *j, const char *name);
 char *names_for_code(RzCore *core, ut64 addr);
+RzBinSymbol *names_symbol_at(RzBinObject *object, ut64 addr);
 
 bool listing_is_function(const RzBinSymbol *symbol);
 void listing_add_symbol(PJ *j, ut64 addr, ut64 size, const char *raw_name, bool global);

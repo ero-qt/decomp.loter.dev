@@ -88,7 +88,7 @@ static size_t add_instruction(RzCore *core, PJ *j, ut64 addr, const ut8 *bytes, 
  * with free().
  */
 EMSCRIPTEN_KEEPALIVE char *session_disassemble(Session *session, const char *addr, size_t size, size_t max_bytes) {
-	RzCore *core = session_use(session);
+	RzCore *core = session->core;
 	ut64 start = strtoull(addr, NULL, 16);
 	size_t length = RZ_MIN(size, max_bytes + MAX_INSTRUCTION_BYTES);
 	ut8 *bytes = malloc(RZ_MAX(length, 1));

@@ -32,7 +32,7 @@ The .NET engine runs in the .NET runtime 11.0.0 for WebAssembly, with the parts 
 
 ## Rizin
 
-The native engine reads, disassembles and analyzes programs with [Rizin](https://github.com/rizinorg/rizin) v0.9.1 at commit `c3a90e9226d977f58f4e9c75f78fa6b07afe13c7`, which the build compiles for the browser with Emscripten. It takes Rizin from the fork [ero-qt/rizin](https://github.com/ero-qt/rizin/tree/4ab956e9d0058ad614167c74b8a5854c4a49a934) at commit `4ab956e9d0058ad614167c74b8a5854c4a49a934`, which adds the changes for the browser to that commit. The build leaves out Rizin's GPL parts, so Rizin's code in the module is under the GNU Lesser General Public License 3.0. Its text and the text of the GNU General Public License 3.0, which it adds to, are at the end of this file. Rizin's files have the copyright lines of their authors. Its type and format databases, which the site serves in `engines/native/share`, have "Copyright 2009 RadareOrg <pancake@nopcode.org>". Some of Rizin's own files are under other licenses, which the next part lists.
+The native engine reads, disassembles and analyzes programs with [Rizin](https://github.com/rizinorg/rizin) v0.10.0 from its `dev` branch at commit `7de16746c8ecd1927acf1d952939d85e16e21126`, which the build compiles for the browser with Emscripten. It takes Rizin from the fork [ero-qt/rizin](https://github.com/ero-qt/rizin/tree/93221df081094d83b65b6e907684cb787190efbf) at commit `93221df081094d83b65b6e907684cb787190efbf`, which adds the changes for the browser to that commit. The build leaves out Rizin's GPL parts, so Rizin's code in the module is under the GNU Lesser General Public License 3.0. Its text and the text of the GNU General Public License 3.0, which it adds to, are at the end of this file. Rizin's files have the copyright lines of their authors. Its type and format databases, which the site serves in `engines/native/share`, have "Copyright 2009 RadareOrg <pancake@nopcode.org>". Some of Rizin's own files are under other licenses, which the next part lists.
 
 The module also links folders of Rizin's `subprojects` that are part of Rizin's repository. `rzar`, `rzgdb`, `rzwinkd` and the shell grammar `rizin-shell-parser` are under the LGPL 3.0. `rzspp` is under the MIT License with the copyright line "Copyright (c) 2009-2016 pancake <pancake@nopcode.org>".
 
@@ -96,7 +96,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 ## Source of the native engine
 
-The LGPL lets you change the LGPL parts of the native engine's module and build the module again. The site serves what you need in `engines/native/source`: the file `build/versions.json` with the pinned commit or tarball hash of each Meson subproject of Rizin, the file `submodules.txt` with links to the commits of the forks of Rizin and rz-ghidra and of Ghidra and pugixml, the engine's own C code, the build scripts, the texts of the GPL and the LGPL, and a readme that tells how to build the module. Each entry below links its pinned commit or tarball. The forks are at https://github.com/ero-qt/rizin/tree/4ab956e9d0058ad614167c74b8a5854c4a49a934 and https://github.com/ero-qt/rz-ghidra/tree/cb7e58bdc6929e7f36ac40839de6569e5731f808, where each change for the browser is a commit of its own.
+The LGPL lets you change the LGPL parts of the native engine's module and build the module again. The site serves what you need in `engines/native/source`: the file `build/versions.json` with the pinned commit or tarball hash of each Meson subproject of Rizin, the file `submodules.txt` with links to the commits of the forks of Rizin and rz-ghidra and of Ghidra and pugixml, the engine's own C code, the build scripts, the texts of the GPL and the LGPL, and a readme that tells how to build the module. Each entry below links its pinned commit or tarball. The forks are at https://github.com/ero-qt/rizin/tree/93221df081094d83b65b6e907684cb787190efbf and https://github.com/ero-qt/rz-ghidra/tree/d134d654509297962b6feec886209928ac308bd7, where each change for the browser is a commit of its own.
 
 ## rzwasi
 
@@ -104,7 +104,7 @@ Three commits of the Rizin fork port the changes that [rzwasi](https://github.co
 
 ## rz-ghidra
 
-The native engine decompiles functions with [rz-ghidra](https://github.com/rizinorg/rz-ghidra) v0.9.0 at commit `999df7b8e78919b75a330b4710acaf8f956f65cc`. It takes rz-ghidra from the fork [ero-qt/rz-ghidra](https://github.com/ero-qt/rz-ghidra/tree/cb7e58bdc6929e7f36ac40839de6569e5731f808) at commit `cb7e58bdc6929e7f36ac40839de6569e5731f808`, which adds changes to that commit. Its files have copyright lines like "Copyright 2019-2021 Florian Märkl <info@florianmaerkl.de>". It's under the GNU Lesser General Public License 3.0 or later, whose text is at the end of this file.
+The native engine decompiles functions with [rz-ghidra](https://github.com/rizinorg/rz-ghidra) from its `dev` branch at commit `20da9f1f2dc9eb8b476b92a6711b5f6e2ca5d476`. It takes rz-ghidra from the fork [ero-qt/rz-ghidra](https://github.com/ero-qt/rz-ghidra/tree/d134d654509297962b6feec886209928ac308bd7) at commit `d134d654509297962b6feec886209928ac308bd7`, which adds changes to that commit. Its files have copyright lines like "Copyright 2019-2021 Florian Märkl <info@florianmaerkl.de>". It's under the GNU Lesser General Public License 3.0 or later, whose text is at the end of this file.
 
 ## Ghidra
 
@@ -168,7 +168,7 @@ rz-ghidra reads Ghidra's files with [pugixml](https://github.com/zeux/pugixml/tr
 
 ## Capstone
 
-The native engine disassembles ARM code with [Capstone](https://github.com/capstone-engine/capstone) at commit `3df6ff015fb6afd81307e325fdd9c82dbf184b28`. It's under this license:
+The native engine disassembles ARM code with [Capstone](https://github.com/capstone-engine/capstone) at commit `ccd25ab39eea534afbb70cfb047310c5a9962553`. It's under this license:
 
 ```
 This is the software license for Capstone disassembly framework.
@@ -290,7 +290,7 @@ Rizin reads cabinet files with [libmspack](https://github.com/kyz/libmspack) at 
 
 ## rz-libdemangle
 
-Rizin demangles names with [rz-libdemangle](https://github.com/rizinorg/rz-libdemangle) at commit `e633061e901208a20ed90f8aaf0b64f25caf73eb`, with the fix in `subprojects/packagefiles/libdemangle-base-name-loop.diff` of the Rizin fork. Its files have the copyright lines of their authors, like "Copyright 2025-2026 RizinOrg <info@rizin.re>". It's under the GNU Lesser General Public License 3.0, except 1 file under the MIT License.
+Rizin demangles names with [rz-libdemangle](https://github.com/rizinorg/rz-libdemangle) at commit `4a0af6896daf4122cc9a02c3f58a7768f4e27b2d`. Its files have the copyright lines of their authors, like "Copyright 2025-2026 RizinOrg <info@rizin.re>". It's under the GNU Lesser General Public License 3.0, except 1 file under the MIT License.
 
 ## BLAKE2 and BLAKE3
 
@@ -516,7 +516,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## PCRE2
 
-Rizin searches with regular expressions with [PCRE2](https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.47/pcre2-10.47.tar.gz), the tarball `pcre2-10.47.tar.gz` with the SHA-256 hash `c08ae2388ef333e8403e670ad70c0a11f1eed021fd88308d7e02f596fcd9dc16` 10.47, under this license:
+Rizin searches with regular expressions with [PCRE2](https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.49/pcre2-10.49.tar.gz), the tarball `pcre2-10.49.tar.gz` with the SHA-256 hash `929f0b20e62879252a15886b06c89f1edef61a363cbd5826fb041080a5e557ae` 10.49, under this license:
 
 ```
 PCRE2 Licence
@@ -627,7 +627,7 @@ PCRE2 independently.
 
 ## Build tools of Rizin
 
-The build also compiles [SoftFloat](https://github.com/rizinorg/softfloat) at commit `537d18e71a51aea70f6b54334854f7014c6458c7` and [PCRE2](https://github.com/PCRE2Project/pcre2) at commit `f454e231fe5006dd7ff8f4693fd2b8eb94333429` for the build host as `softfloat_cross_native` and `pcre2_cross_native`. They make tables for the build and aren't part of the module. Their licenses are in the entries above.
+The build also compiles [SoftFloat](https://github.com/rizinorg/softfloat) at commit `537d18e71a51aea70f6b54334854f7014c6458c7` and [PCRE2](https://github.com/PCRE2Project/pcre2) at commit `6f9d7c1373262c541324a16a358785b33ef116cf` for the build host as `softfloat_cross_native` and `pcre2_cross_native`. They make tables for the build and aren't part of the module. Their licenses are in the entries above.
 
 ## xxHash
 

@@ -4,16 +4,6 @@
 extern RzCorePlugin rz_core_plugin_ghidra;
 
 /**
- * \brief Points the shared console at the session's core and returns the core.
- *
- * Rizin has 1 console for all cores and calls back into the core that registered last.
- */
-RzCore *session_use(Session *session) {
-	rz_core_bind_cons(session->core);
-	return session->core;
-}
-
-/**
  * \brief Writes an address as a hex string, because the worker's numbers lose the low bits of addresses above 2^53.
  */
 void session_put_address(PJ *j, const char *key, ut64 addr) {
@@ -60,13 +50,10 @@ EMSCRIPTEN_KEEPALIVE Session *session_new(void) {
 }
 
 /**
- * \brief Frees a session and clears the shared console's break state.
- *
- * A freed core leaves the break state set, which makes every later command stop at once.
+ * \brief Frees a session.
  */
 EMSCRIPTEN_KEEPALIVE void session_free(Session *session) {
 	rz_core_free(session->core);
-	rz_cons_break_clear();
 	rz_set_u_free(session->prepared);
 	rz_vector_fini(&session->starts);
 	rz_bin_pdb_free(session->pdb);
@@ -99,7 +86,7 @@ EMSCRIPTEN_KEEPALIVE bool session_open(Session *session, const char *path) {
 		int bits;
 	} slices[] = { { "arm", 64 }, { "x86", 64 } };
 
-	RzCore *core = session_use(session);
+	RzCore *core = session->core;
 	if (!rz_core_file_open(core, path, RZ_PERM_R, 0)) {
 		return false;
 	}
@@ -121,5 +108,5 @@ EMSCRIPTEN_KEEPALIVE bool session_open(Session *session, const char *path) {
  * \brief Runs a Rizin command and returns its output, which the caller frees with free().
  */
 EMSCRIPTEN_KEEPALIVE char *session_cmd(Session *session, const char *cmd) {
-	return rz_core_cmd_str(session_use(session), cmd);
+	return rz_core_cmd_str(session->core, cmd);
 }

@@ -133,7 +133,6 @@ static void mark_parameters(RzAnalysisFunction *fcn, RzCallable *callable) {
 /**
  * \brief Adds the names and types of the DWARF information to a function.
  *
- * Rizin only adds them in the analysis of the whole binary, so this runs that step on a table with only this function.
  * Sets the parameters from the signature in the type database, because a parameter's DWARF location is often right
  * only at the start of the function.
  */
@@ -144,13 +143,7 @@ void debug_info_apply_dwarf(RzCore *core, RzAnalysisFunction *fcn) {
 		return;
 	}
 
-	HtUP *all = debug_info->function_by_addr;
-	HtUP *one = ht_up_new(NULL, NULL);
-	ht_up_insert(one, fcn->addr, dwarf_fcn);
-	debug_info->function_by_addr = one;
-	rz_analysis_dwarf_integrate_functions(core->analysis, core->flags);
-	debug_info->function_by_addr = all;
-	ht_up_free(one);
+	rz_analysis_dwarf_integrate_function(core->analysis, dwarf_fcn);
 
 	RzCallable *callable = dwarf_fcn->prefer_name
 		? rz_type_func_get(rz_analysis_get_type_db(core->analysis), dwarf_fcn->prefer_name)
@@ -182,7 +175,7 @@ void debug_info_apply_pdb(Session *session, RzAnalysisFunction *fcn) {
  * The caller frees the result with free().
  */
 EMSCRIPTEN_KEEPALIVE char *session_struct(Session *session, const char *name) {
-	RzTypeDB *typedb = rz_analysis_get_type_db(session_use(session)->analysis);
+	RzTypeDB *typedb = rz_analysis_get_type_db(session->core->analysis);
 	RzBaseType *type = rz_type_db_get_base_type(typedb, name);
 	if (!type || type->kind != RZ_BASE_TYPE_KIND_STRUCT) {
 		return NULL;

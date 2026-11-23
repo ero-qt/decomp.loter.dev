@@ -120,10 +120,13 @@ function takeText(module: RizinModule, pointer: number): string {
 }
 
 // reads the JSON that the glue returns, or throws a module error that names what the engine couldn't read, because
-// a file with millions of symbols can give a text above the size of a JavaScript string
+// a file with millions of symbols can give a text above the size of a JavaScript string. Makes the call outside the
+// `try` because a trap leaves the module broken and has to restart the worker.
 function takeJson<T>(module: RizinModule, what: string, call: () => number): T {
+    const pointer = call();
+
     try {
-        return JSON.parse(takeText(module, call()));
+        return JSON.parse(takeText(module, pointer));
     } catch (error) {
         throw new LoadError(`The native engine couldn't read ${what}: ${error instanceof Error ? error.message : error}`);
     }

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- The native engine starts over after it crashes inside Rizin or Ghidra while it lists, decompiles or searches a file. Before, the next clicks could fail in odd ways until you reloaded the page.
+
 ### Security
 
 - The host copies an upload into its release folder before it checks the files, so an upload that's still running can't sneak files into a release after the checks.

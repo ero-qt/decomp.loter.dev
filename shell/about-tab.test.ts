@@ -66,6 +66,27 @@ function readLinkInsidePane(page: Page) {
     });
 }
 
+// reads whether the last shortcut's row lies inside the About tab's pane, above the pinned source line
+function readLastRowShown(page: Page) {
+    return findAboutPage(page).locator('td:text-is("Change shortcuts")').evaluate(cell => {
+        const aboutPage = cell.closest('.about-page')!;
+        const area = aboutPage.parentElement!.getBoundingClientRect();
+        const footer = aboutPage.querySelector('.links')!.getBoundingClientRect();
+        const box = cell.getBoundingClientRect();
+
+        return box.top >= area.top && box.bottom <= Math.min(area.bottom, footer.top);
+    });
+}
+
+// reads how many pixels the source line ends above the About pane's bottom
+function readFooterRise(page: Page) {
+    return findAboutPage(page).locator('.links').evaluate(footer => {
+        const area = footer.closest('.about-page')!.parentElement!.getBoundingClientRect();
+
+        return Math.round(area.bottom - footer.getBoundingClientRect().bottom);
+    });
+}
+
 // reads whether the page lies inside the About tab's pane from left to right and whether the pane scrolls sideways
 function readPageWidthFit(page: Page) {
     return findAboutPage(page).evaluate(aboutPage => {
@@ -114,7 +135,7 @@ test("Supported files table shows each file's views on one line in an 800 by 600
     expect(lineCounts).toEqual([1, 1, 1]);
 }, testTimeoutMs);
 
-test("page fits the About tab's width in an 800 by 600 window and scrolls down to the source link in a 300 pixel high window", async () => {
+test("page fits the About tab's width in an 800 by 600 window and scrolls under the pinned source line in a 300 pixel high window", async () => {
     const { page } = await openWorkbench();
 
     await page.setViewportSize({ width: 800, height: 600 });
@@ -127,20 +148,22 @@ test("page fits the About tab's width in an 800 by 600 window and scrolls down t
     // points at the pane because a pointer on the page would first scroll the page's top into view
     await findAboutPage(page).locator('..').hover();
 
-    expect(await readLinkInsidePane(page)).toBe(false);
+    expect(await readLinkInsidePane(page)).toBe(true);
+    expect(await readLastRowShown(page)).toBe(false);
 
     // turns the wheel once per read because the workbench scrolls by about 50 pixels per turn, whatever the turn's size
     const scrollAndRead = async () => {
         await page.mouse.wheel(0, 100);
 
-        return readLinkInsidePane(page);
+        return readLastRowShown(page);
     };
 
     expect(await readUntil(scrollAndRead, true)).toBe(true);
+    expect(await readLinkInsidePane(page)).toBe(true);
     expect(await readPageWidthFit(page)).toEqual({ insidePaneWidth: true, scrollsSideways: false });
 }, testTimeoutMs);
 
-test('a swipe up on a touch screen scrolls the About tab down to the source link in a 300 pixel high window', async () => {
+test("a swipe up on a touch screen scrolls the About tab's last row above the pinned source line in a 300 pixel high window", async () => {
     const { page } = await openWorkbench('dark', { hasTouch: true });
     await page.setViewportSize({ width: 800, height: 300 });
     await page.waitForFunction(() => document.querySelector('.part.editor')!.getBoundingClientRect().height < 300);
@@ -156,11 +179,24 @@ test('a swipe up on a touch screen scrolls the About tab down to the source link
         }
         await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
 
-        return readLinkInsidePane(page);
+        return readLastRowShown(page);
     };
 
-    expect(await readLinkInsidePane(page)).toBe(false);
+    expect(await readLastRowShown(page)).toBe(false);
     expect(await readUntil(swipeAndRead, true)).toBe(true);
+    expect(await readLinkInsidePane(page)).toBe(true);
+}, testTimeoutMs);
+
+test("source line sits at the About tab's bottom in a tall window and in a 300 pixel high window", async () => {
+    const { page } = await openWorkbench();
+    await findAboutPage(page).waitFor();
+
+    expect(await readFooterRise(page)).toBe(0);
+
+    await page.setViewportSize({ width: 800, height: 300 });
+    await page.waitForFunction(() => document.querySelector('.part.editor')!.getBoundingClientRect().height < 300);
+
+    expect(await readFooterRise(page)).toBe(0);
 }, testTimeoutMs);
 
 test("footer shows the version right of the source link, on the source link's line", async () => {

@@ -199,6 +199,23 @@ body,
     padding-top: 32px;
 }
 
+/* keeps the source line at the About tab's bottom while the rest of the page scrolls under it, because the pane scrolls
+   its content natively */
+.about-page {
+    padding-bottom: 0;
+}
+
+.about-page .usage {
+    padding-bottom: 32px;
+}
+
+.about-page .links {
+    position: sticky;
+    bottom: 0;
+    padding: 0 0 16px;
+    background: var(--vscode-editor-background);
+}
+
 .tab-page .links p {
     flex: 1 0 auto;
     margin: 0;

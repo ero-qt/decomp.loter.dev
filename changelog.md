@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 - The .NET engine keeps the symbols of an open assembly when another assembly opens or closes that it doesn't reference. Before, each open and close made the engine read the symbols of every open assembly again.
 - Go to Symbol in Workspace answers each key faster in files with many symbols, because it keeps the list of names between the keys.
 - Ctrl+Shift+F opens the new search. Before, it opened Go to Symbol in Workspace with a quote. Ctrl+T still opens Go to Symbol in Workspace.
+- The About tab keeps the line with the source link and the version at its bottom. The rest of the page scrolls under it, also on a phone.
 
 ### Fixed
 

@@ -12,6 +12,27 @@ using System.Text.RegularExpressions;
 namespace Decomp.Dotnet;
 
 /// <summary>
+///     Finds the targets of the symbols that a document uses.
+/// </summary>
+internal interface ISymbolTargets
+{
+    /// <summary>
+    ///     Finds the target of a type, or <see langword="null"/> for a type without one, like a type parameter.
+    /// </summary>
+    string? FindTypeTarget(IType type);
+
+    /// <summary>
+    ///     Finds the target of a type or a member, or <see langword="null"/> for a symbol without one.
+    /// </summary>
+    string? FindTarget(IEntity entity);
+
+    /// <summary>
+    ///     Checks whether a target is a row target whose row a view hides, with the view's bit in the hidden views.
+    /// </summary>
+    bool IsHiddenIn(string target, int view);
+}
+
+/// <summary>
 ///     Finds the targets of the symbols that a document of a file uses: <c>&lt;file id&gt;:&lt;key in hex&gt;</c> for a
 ///     row of an open file and <c>|&lt;assembly name&gt;|&lt;ID string&gt;</c> for a symbol outside the open files.
 /// </summary>
@@ -23,7 +44,7 @@ internal sealed partial class Targets(
     MetadataFile file,
     Func<MetadataFile, int?> findFileId,
     Func<int, int, bool> hasRow,
-    Func<int, int, int> findHiddenViews)
+    Func<int, int, int> findHiddenViews) : ISymbolTargets
 {
     // top-level type name -> the name of the assembly that the file references it from, read on the first type from
     // another assembly

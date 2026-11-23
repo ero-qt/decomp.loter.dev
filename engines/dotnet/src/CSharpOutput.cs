@@ -26,6 +26,7 @@ internal sealed class CSharpOutput : ITextOutput, IDisposable
     private readonly PlainTextOutput _output;
     private readonly DocumentTokens _tokens;
     private readonly CSharpFormattingOptions _formattingOptions;
+    private readonly ICollection<(IMethod Method, int Offset)>? _emptyBodies;
 
     // only keeps a token while the token writer writes a name, because the decompiler also passes the symbols of
     // keywords like `string` and of punctuation like the `;` of an accessor
@@ -35,11 +36,15 @@ internal sealed class CSharpOutput : ITextOutput, IDisposable
     // indentation that the output writes before a line's first text
     private int _nameStart;
 
-    private CSharpOutput(Targets targets, CSharpFormattingOptions formattingOptions)
+    private CSharpOutput(
+        ISymbolTargets targets,
+        CSharpFormattingOptions formattingOptions,
+        ICollection<(IMethod Method, int Offset)>? emptyBodies)
     {
         _output = new(_writer);
         _tokens = new(targets, Rows.CSharpView);
         _formattingOptions = formattingOptions;
+        _emptyBodies = emptyBodies;
     }
 
     public string IndentationString
@@ -51,11 +56,17 @@ internal sealed class CSharpOutput : ITextOutput, IDisposable
     private int NameLength => _writer.GetStringBuilder().Length - _nameStart;
 
     /// <summary>
-    ///     Writes the C# of a syntax tree with the tokens of its names and their targets.
+    ///     Writes the C# of a syntax tree with the tokens of its names and their targets. Each method with an empty
+    ///     body goes into <paramref name="emptyBodies" /> with the start of the line of its body's <c>}</c>, for an
+    ///     engine that fills the bodies in later.
     /// </summary>
-    public static Document Write(SyntaxTree syntaxTree, DecompilerSettings settings, Targets targets)
+    public static Document Write(
+        SyntaxTree syntaxTree,
+        DecompilerSettings settings,
+        ISymbolTargets targets,
+        ICollection<(IMethod Method, int Offset)>? emptyBodies = null)
     {
-        using CSharpOutput output = new(targets, settings.CSharpFormattingOptions);
+        using CSharpOutput output = new(targets, settings.CSharpFormattingOptions, emptyBodies);
         NameTokenWriter tokenWriter = new(new TextTokenWriter(output, settings), output);
 
         syntaxTree.AcceptVisitor(new CSharpOutputVisitor(tokenWriter, settings.CSharpFormattingOptions));
@@ -266,6 +277,22 @@ internal sealed class CSharpOutput : ITextOutput, IDisposable
             {
                 output._tokens.AddMember(output._nameStart, output.NameLength, member, keyword, isDeclaration: true);
             }
+        }
+
+        // notes the start of the line of an empty body's `}`, which the output writes after the line break and before
+        // the line's indentation
+        public override void WriteToken(string token)
+        {
+            if (output._emptyBodies is not null
+                && token == "}"
+                && _nodes.TryPeek(out AstNode? node)
+                && node is BlockStatement { Statements.Count: 0, Parent: { } parent }
+                && parent.GetSymbol() is IMethod method)
+            {
+                output._emptyBodies.Add((method, output._writer.GetStringBuilder().Length));
+            }
+
+            base.WriteToken(token);
         }
 
         // finds the kind of a name that the decompiler writes without a symbol, like a type parameter, a parameter of a

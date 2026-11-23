@@ -68,9 +68,7 @@ export function createDotnetHandlers(loadRuntime: () => Promise<DotnetRuntime>):
                 return refusals.largeFile(name, maxFileBytes);
             }
 
-            const exports = await useExports();
-
-            return readVoidReply(exports.Open(fileId, name, await file.bytes()));
+            return readVoidReply((await useExports()).Open(fileId, name, await file.bytes()));
         },
         async close(fileId) {
             return readVoidReply((await useExports()).Close(fileId));

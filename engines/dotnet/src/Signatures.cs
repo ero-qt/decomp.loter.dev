@@ -55,15 +55,16 @@ internal static class Signatures
 
     /// <summary>
     ///     Describes a type or a member from its definition in the language of a view, with its token and, for a method
-    ///     or a field with data, its RVA.
+    ///     or a field with data, its RVA. Without <paramref name="writesExtern" />, a member without a body doesn't get
+    ///     <c>extern</c>, for an engine whose members only lack the body that it doesn't have.
     /// </summary>
-    public static Description Describe(IEntity entity, View view, CSharpFormattingOptions options)
+    public static Description Describe(IEntity entity, View view, CSharpFormattingOptions options, bool writesExtern = true)
     {
         string text = (view, entity) switch
         {
             (View.Il, _) => WriteIlHeader(entity),
             (_, IField { DeclaringType.Kind: TypeKind.Enum } field) => WriteEnumMember(field),
-            _ => WriteDeclaration(entity, options),
+            _ => WriteDeclaration(entity, options, writesExtern),
         };
         EntityHandle handle = entity.MetadataToken;
         int address = entity.ParentModule?.MetadataFile?.Metadata is { } metadata ? ReadRelativeVirtualAddress(metadata, handle) : 0;
@@ -150,11 +151,12 @@ internal static class Signatures
         return string.Create(CultureInfo.InvariantCulture, $"{field.DeclaringType.Name}.{field.Name} = {field.GetConstantValue()}");
     }
 
-    private static string WriteDeclaration(IEntity entity, CSharpFormattingOptions options)
+    private static string WriteDeclaration(IEntity entity, CSharpFormattingOptions options, bool writesExtern)
     {
         using StringWriter writer = new(CultureInfo.InvariantCulture);
+        NestedTypeTokenWriter tokenWriter = new(new TextWriterTokenWriter(writer), options, writesExtern ? entity : null);
 
-        _signatureAmbience.ConvertSymbol(entity, new NestedTypeTokenWriter(new TextWriterTokenWriter(writer), options, entity), options);
+        _signatureAmbience.ConvertSymbol(entity, tokenWriter, options);
 
         return writer.ToString();
     }

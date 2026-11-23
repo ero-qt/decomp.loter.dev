@@ -16,7 +16,7 @@ beforeEach(() => {
 
 afterEach(() => rmSync(site, { recursive: true, force: true }));
 
-function hash(text: string | Buffer) {
+function hash(text: string | Uint8Array) {
     return createHash('sha256').update(text).digest('hex');
 }
 

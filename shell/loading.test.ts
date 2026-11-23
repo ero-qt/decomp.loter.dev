@@ -24,8 +24,8 @@ const drawingRows = ['drawing.fake 1 class left out', 'drawing.notes not loaded'
 
 /**
  * Serves an engine that claims each file whose name ends with `.test` and lists a missing companion file with the
- * file's name and the extension `.notes`. The engine crashes on `provide` for a file whose name starts with `crash` and
- * refuses `provide` for any other file.
+ * file's name and the extension `.notes`. The engine crashes on `provide` for a file whose name starts with `crash`,
+ * takes an empty companion and refuses any other companion.
  */
 function serveCompanionEngine() {
     // file's id -> the file's name
@@ -46,7 +46,7 @@ function serveCompanionEngine() {
         const listing = { values: new Int32Array(), names: [], details: [], note: '', missingFiles };
         // method -> the method's value
         const values: Record<string, unknown> = { claims: String(args[0]).endsWith('.test'), list: listing, listStrings: [] };
-        if (method !== 'provide') {
+        if (method !== 'provide' || (args[2] as Blob).size === 0) {
             postMessage({ reply: { value: values[method] } });
         } else if (name.startsWith('crash')) {
             postMessage({ fatal: 'the test engine crashed' });
@@ -213,6 +213,24 @@ test("file's row keeps the engine's refusal text after another file opens", asyn
 
     const expected = ['other.test', `refusing.test ${refusal}`, 'refusing.notes not loaded'];
     expect(await readUntil(() => readRowTexts(page), expected)).toEqual(expected);
+}, testTimeoutMs);
+
+test("collapsed file's row drops the refusal text after the engine takes a later picked companion", async () => {
+    const { page } = await openWorkbench();
+    await startWithEngines(page, { companion: companionEngine });
+    await dropFiles(page, { 'refusing.test': '' });
+    await expandRows(page, 'refusing.test');
+    const refusal = "The test engine can't read refusing.notes.";
+    await pickFile(page, findRow(page, 'refusing.notes'), 'refusing.notes', 'A note.');
+    await findRow(page, 'refusing.test').locator('.label-description').filter({ hasText: refusal }).waitFor();
+
+    const fileChooser = await openFileDialog(page, findRow(page, 'refusing.notes'));
+    await findRow(page, 'refusing.test').locator('.monaco-tl-twistie').click();
+    await findRow(page, 'refusing.notes').waitFor({ state: 'detached' });
+    await fileChooser.setFiles({ name: 'refusing.notes', mimeType: 'application/octet-stream', buffer: Buffer.alloc(0) });
+    await waitForEngineReplies(page, 'provide', 2);
+
+    expect(await readUntil(() => readRowTexts(page), ['refusing.test'])).toEqual(['refusing.test']);
 }, testTimeoutMs);
 
 test("file's row shows the crash text after the engine crashes on a picked companion and logs 1 error", async () => {

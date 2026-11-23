@@ -78,11 +78,13 @@ export interface InnerClassEntry {
     access?: number;
 }
 
-/** A class without methods that `classFile` writes, for the classes of hostile files that javac doesn't write. */
+/** A class that `classFile` writes, for the classes of hostile files that javac doesn't write. */
 export interface ClassFileShape {
     name: string;
     /** Fields with an optional constant text, which the class file has in the field's `ConstantValue` attribute. */
     fields?: { name: string; descriptor: string; value?: string }[];
+    /** Methods with the bytes of their code, which the class file has in each method's `Code` attribute. */
+    methods?: { name: string; descriptor: string; code: number[] }[];
     innerClasses?: InnerClassEntry[];
     /** The class whose method contains a local or anonymous class. */
     enclosingClass?: string;
@@ -104,7 +106,7 @@ function encodeUnit(unit: number): number[] {
  * Writes a class file with public fields and its texts in modified UTF-8, which writes the character 0 as 2 bytes and a
  * character outside the BMP as 2 surrogates.
  */
-export function classFile({ name, fields = [], innerClasses = [], enclosingClass }: ClassFileShape): Uint8Array<ArrayBuffer> {
+export function classFile({ name, fields = [], methods = [], innerClasses = [], enclosingClass }: ClassFileShape): Uint8Array<ArrayBuffer> {
     const pool: number[][] = [];
     // tagged text of a constant -> its index in the pool
     const indexes = new Map<string, number>();
@@ -139,6 +141,13 @@ export function classFile({ name, fields = [], innerClasses = [], enclosingClass
         return [...u2(0x19), ...head, ...u2(1), ...u2(utf8('ConstantValue')), ...u4(2), ...u2(constant)];
     });
 
+    // writes a `Code` attribute with a stack and locals of 8 and without exceptions or attributes of its own
+    const methodBytes = methods.flatMap(({ name: methodName, descriptor, code }) => {
+        const codeAttribute = [...u2(utf8('Code')), ...u4(12 + code.length), ...u2(8), ...u2(8), ...u4(code.length), ...code, ...u2(0), ...u2(0)];
+
+        return [...u2(1), ...u2(utf8(methodName)), ...u2(utf8(descriptor)), ...u2(1), ...codeAttribute];
+    });
+
     const inner = innerClasses.flatMap(({ inner: innerName, outer, simpleName, access = 1 }) => {
         return [...u2(classRef(innerName)), ...u2(outer ? classRef(outer) : 0), ...u2(simpleName ? utf8(simpleName) : 0), ...u2(access)];
     });
@@ -152,7 +161,7 @@ export function classFile({ name, fields = [], innerClasses = [], enclosingClass
         ...[0xca, 0xfe, 0xba, 0xbe, ...u2(0), ...u2(65), ...u2(pool.length + 1)],
         ...pool.flat(),
         ...header,
-        ...[...u2(fields.length), ...fieldBytes, ...u2(0), ...u2(attributes.length)],
+        ...[...u2(fields.length), ...fieldBytes, ...u2(methods.length), ...methodBytes, ...u2(attributes.length)],
         ...attributes.flat(),
     ]);
 }

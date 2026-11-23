@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ### Fixed
 
+- The Java engine skips a class with a broken switch instruction and counts it with the classes it can't read, so that class can't freeze the engine.
 - The native engine starts over after it crashes inside Rizin or Ghidra while it lists, decompiles or searches a file. Before, the next clicks could fail in odd ways until you reloaded the page.
 
 ### Security

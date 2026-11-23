@@ -26,6 +26,7 @@ import { ConstantType, ElementTag } from '@katana-project/asm/spec';
 import { type Type, tryParseType } from '@katana-project/asm/type';
 import type { Kind } from '../../contract/symbols';
 import { access, readClassFlags, writeModifiers } from './flags';
+import { findEndlessSwitch } from './switches';
 import { writeType, writeTypeParameters } from './types';
 
 export type ClassKeyword = 'class' | 'interface' | 'enum' | 'record' | '@interface';
@@ -90,8 +91,14 @@ function decodeModifiedUtf8(bytes: Uint8Array): string {
 
 /**
  * Reads a class file and decodes again each text with a surrogate or the character 0, which the reader decodes wrong.
+ * Refuses a switch with a negative count first, because the reader loops on it until memory runs out.
  */
 export function readClass(bytes: Uint8Array): Node {
+    const endlessSwitch = findEndlessSwitch(bytes);
+    if (endlessSwitch !== undefined) {
+        throw new Error(`A method has ${endlessSwitch}.`);
+    }
+
     const node = read(bytes);
 
     for (const entry of node.pool) {

@@ -257,6 +257,31 @@ test('activate refuses a release with a file that the host could run', () => {
     }
 });
 
+test('activate refuses a release with a fifo, which would block the web server that reads it', () => {
+    upload('1.0.0');
+    activate('1.0.0');
+    const release = upload('1.0.1', { 'assets/a.js': '' });
+    Bun.spawnSync(['mkfifo', join(release, 'assets', 'pipe')]);
+
+    expect(activate('1.0.1')).toEqual({ exitCode: 1, error: "The release 1.0.1 has a file that isn't a plain file: assets/pipe.\n" });
+    expect(readLive()).toBe('releases/1.0.0');
+});
+
+test("activate removes a release that fails its checks, so it doesn't push out a kept release, but never the live release", () => {
+    upload('1.0.0');
+    activate('1.0.0');
+    upload('1.0.1', { 'a.php': '' });
+
+    expect(activate('1.0.1').exitCode).toBe(1);
+    expect(listReleases()).toEqual(['1.0.0']);
+
+    writeFileSync(join(folder, 'receive-deploy.htaccess'), `${htaccess}# changed on the host\n`);
+
+    expect(activate('1.0.0').exitCode).toBe(1);
+    expect(readLive()).toBe('releases/1.0.0');
+    expect(listReleases()).toEqual(['1.0.0']);
+});
+
 test(".htaccess of a release has to match the host's copy, so a deploy can't loosen it", () => {
     upload('1.0.0');
     activate('1.0.0');

@@ -226,8 +226,7 @@ test("hover in `Circle.ops` shows the symbol's declaration in the ops view", asy
     expect(await readHover(page, 'uses Shapes.Shape.Area', 'Shapes.Shape.Area')).toEqual([
         '.public abstract method Area',
         'in Shapes.Shape',
-        'file shapes.fake',
-        'key 3',
+        'file shapes.fake · key 3',
     ]);
 }, testTimeoutMs);
 

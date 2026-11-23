@@ -93,7 +93,7 @@ test("click on a missing file's row opens the file dialog and opens the picked f
     await pickFile(page, findRow(page, 'shapes.fake'), 'shapes.fake', shapes);
     await waitForTopRow(page, 'shapes.fake');
 
-    const expected = ['public abstract method Area', 'in Shapes.Shape', 'file shapes.fake', 'key 3'];
+    const expected = ['public abstract method Area', 'in Shapes.Shape', 'file shapes.fake · key 3'];
     expect(await readUntil(() => readHover(page, 'uses Shapes.Shape.Area', 'Shapes.Shape.Area'), expected)).toEqual(expected);
 }, testTimeoutMs);
 

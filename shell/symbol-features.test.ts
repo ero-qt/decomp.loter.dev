@@ -99,7 +99,7 @@ function readOutline(page: Page): Promise<string[]> {
     });
 }
 
-test("hover on `Area` in `Circle.code` shows the method's declaration and `in Shapes.Shape`", async () => {
+test("hover on `Area` in `Circle.code` shows the method's declaration, `in Shapes.Shape` and the facts on 1 line", async () => {
     const { page } = await openWorkbench();
 
     await openCircleWithShapes(page);
@@ -107,8 +107,7 @@ test("hover on `Area` in `Circle.code` shows the method's declaration and `in Sh
     expect(await readHover(page, 'uses Shapes.Shape.Area', 'Shapes.Shape.Area')).toEqual([
         'public abstract method Area',
         'in Shapes.Shape',
-        'file shapes.fake',
-        'key 3',
+        'file shapes.fake · key 3',
     ]);
 }, testTimeoutMs);
 
@@ -141,8 +140,7 @@ test('hover shows markdown and HTML in names as plain text', async () => {
     expect(await readHover(page, 'public method Run', 'Run')).toEqual([
         'public method Run',
         `in N.${craftedName}`,
-        'file crafted.fake',
-        'key 3',
+        'file crafted.fake · key 3',
     ]);
     expect(await readHover(page, 'uses X.Y', 'X.Y')).toEqual(['X.Y', "<b>w</b>.fake isn't loaded. Click here to load."]);
 }, testTimeoutMs);

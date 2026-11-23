@@ -34,6 +34,20 @@ function appendCode(markdown: MarkdownString, code: string, language: string): M
     return markdown.appendMarkdown(`\n${fence}${language}\n${code}\n${fence}\n`);
 }
 
+// writes a text as inline code, fenced by more backticks than its longest backtick run and padded by a space where
+// the text starts or ends with a backtick, because markdown ends the code at the first run of the fence's length
+function formatInlineCode(text: string): string {
+    const fence = '`'.repeat(Math.max(1, ...(text.match(/`+/g) ?? []).map(run => run.length + 1)));
+    const padding = text.startsWith('`') || text.endsWith('`') ? ' ' : '';
+
+    return `${fence}${padding}${text}${padding}${fence}`;
+}
+
+// escapes the characters that markdown reads as formatting, because a label shows as plain text
+function escapeMarkdown(text: string): string {
+    return text.replace(/[\\`*_{}[\]()#+\-.!<>|~]/g, character => `\\${character}`);
+}
+
 // reads the documents of at most 50 users without places because the engine can take seconds to write each document,
 // like a decompile
 const maxUserDocuments = 50;
@@ -120,13 +134,14 @@ export class SymbolFeatures implements HoverProvider, DefinitionProvider, Refere
             return undefined;
         }
 
+        // writes the facts on 1 line with each value as code, like VS Code's hovers write names and numbers
         const { text, container, facts, missingFile } = description;
-        const lines = [
-            ...(container === null ? [] : [`in ${container}`]),
-            ...facts.map(([label, value]) => `${label} ${value}`),
-            ...(missingFile === null ? [] : [`${missingFile} isn't loaded.`]),
-        ];
-        appendCode(markdown, text, language).appendText(lines.join('\n'));
+        const factLine = facts.map(([label, value]) => `${escapeMarkdown(label)} ${formatInlineCode(value)}`).join(' · ');
+        const lines = [...(container === null ? [] : [`in ${formatInlineCode(container)}`]), ...(factLine === '' ? [] : [factLine])];
+        appendCode(markdown, text, language).appendMarkdown(lines.join('\n\n'));
+        if (missingFile !== null) {
+            markdown.appendMarkdown(lines.length > 0 ? '\n\n' : '').appendText(`${missingFile} isn't loaded.`);
+        }
 
         return new vscode.Hover(missingFile === null ? markdown : appendLoadLink(markdown, missingFile, found.file.picked.path), found.range);
     }

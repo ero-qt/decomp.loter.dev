@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ### Changed
 
+- A symbol's hover shows its facts on 1 line under its declaration, with each value in code font, like `token 0x06000012`.
 - The search for symbols and strings shows each file's results as soon as that file is searched, so a slow file doesn't hold back the others.
 
 ## [1.3.0] - 2026-11-25

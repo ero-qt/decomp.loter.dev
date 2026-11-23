@@ -1,21 +1,25 @@
 import type { Engine } from './engine';
 import { failed, type Reply } from './reply';
 
-/** A call that the page sends to an engine's worker. */
+/**
+ * A call that the page sends to an engine's worker. A call with an id runs beside the call without one, like a
+ * `describe` while a `read` waits. Its reply has the id too.
+ */
 export interface CallRequest {
     method: keyof Engine;
     args: unknown[];
+    id?: number;
 }
 
-/** A message that the page sends to an engine's worker: a call, or `cancel` for the running call. */
-export type WorkerRequest = CallRequest | { cancel: true };
+/** A message that the page sends to an engine's worker, a call or the `cancel` of the running call with the id. */
+export type WorkerRequest = CallRequest | { cancel: true; id?: number };
 
 /**
  * A message that an engine's worker sends to the page. The worker sends `ready` once after the engine loads, then the
  * reply of each request, or `fatal` with the error text of a handler that throws, which leaves the worker in an unknown
  * state.
  */
-export type WorkerMessage = { ready: true } | { reply: Reply<unknown>; wasmMemoryBytes?: number } | { fatal: string };
+export type WorkerMessage = { ready: true } | { reply: Reply<unknown>; wasmMemoryBytes?: number; id?: number } | { fatal: string };
 
 type Handler<Args extends unknown[], Value> = (...args: [...Args, signal: AbortSignal]) => Reply<Value> | Promise<Reply<Value>>;
 
@@ -48,27 +52,32 @@ export interface WorkerPort {
  * handler. A worker passes `self` as the port after the worker's engine loads.
  */
 export function serveEngine(port: WorkerPort, handlers: EngineHandlers, readWasmMemoryBytes?: () => number): void {
-    let running: AbortController | undefined;
+    // the running calls by their ids, with `undefined` for the call without an id
+    const running = new Map<number | undefined, AbortController>();
     port.onmessage = async function ({ data }) {
         if ('cancel' in data) {
-            running?.abort();
+            running.get(data.id)?.abort();
             return;
         }
 
+        const { id } = data;
         const controller = new AbortController();
-        running = controller;
+        running.set(id, controller);
+        const reply = (value: Reply<unknown>) => {
+            port.postMessage({ reply: value, wasmMemoryBytes: readWasmMemoryBytes?.(), ...(id === undefined ? {} : { id }) });
+        };
         try {
             const handler = handlers[data.method] as Handler<unknown[], unknown>;
-            port.postMessage({ reply: await handler(...data.args, controller.signal), wasmMemoryBytes: readWasmMemoryBytes?.() });
+            reply(await handler(...data.args, controller.signal));
         } catch (error) {
             if (controller.signal.aborted) {
-                port.postMessage({ reply: failed('The call was canceled.'), wasmMemoryBytes: readWasmMemoryBytes?.() });
+                reply(failed('The call was canceled.'));
             } else {
                 port.postMessage({ fatal: error instanceof Error ? error.message : String(error) });
             }
         } finally {
-            if (running === controller) {
-                running = undefined;
+            if (running.get(id) === controller) {
+                running.delete(id);
             }
         }
     };

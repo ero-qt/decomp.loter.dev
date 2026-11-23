@@ -38,6 +38,11 @@ export interface Manifest {
      * whose call can't stop in the middle, like a decompile. The page's own limit applies without it.
      */
     cancelLimitMs?: number;
+    /**
+     * Whether the engine replies to `describe` and `resolve` while a `read` waits, like an engine whose read waits for
+     * decompiles in the background, so a hover doesn't wait for the read.
+     */
+    repliesDuringReads?: boolean;
     /** The rank of the engine in the page's search for an engine that claims a file, higher first, 0 by default. */
     priority?: number;
     /** The text of the engine's row in the About tab's table of supported files, like `Java classes and archives`. */
@@ -152,6 +157,7 @@ const manifestKeys = [
     'keepsCompanions',
     'memoryLimitBytes',
     'cancelLimitMs',
+    'repliesDuringReads',
     'priority',
     'formats',
     'fileNote',
@@ -205,6 +211,7 @@ export function readManifest(value: unknown): Manifest {
         keepsCompanions: readOptionalBoolean(manifest.keepsCompanions, 'keepsCompanions'),
         memoryLimitBytes: readOptionalPositiveInteger(manifest.memoryLimitBytes, 'memoryLimitBytes'),
         cancelLimitMs: readOptionalPositiveInteger(manifest.cancelLimitMs, 'cancelLimitMs'),
+        repliesDuringReads: readOptionalBoolean(manifest.repliesDuringReads, 'repliesDuringReads'),
         priority: readOptionalInteger(manifest.priority, 'priority'),
         formats: readOptionalString(manifest.formats, 'formats'),
         fileNote: readOptionalString(manifest.fileNote, 'fileNote'),

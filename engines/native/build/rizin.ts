@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { hashInputs, isStampFresh, writeStamp } from './stamp';
@@ -41,28 +41,6 @@ const mesonOptions = [
     '-Duse_sys_lzma=disabled',
     '-Duse_sys_libzstd=disabled',
 ];
-// the configure checks find these functions in Emscripten's headers, but the browser can't run them
-const missingFeatures = ['HAVE_FORK', 'HAVE_PTHREAD', 'HAVE_OPENPTY', 'HAVE_FORKPTY', 'HAVE_LOGIN_TTY', 'HAVE_JEMALLOC'];
-
-function listNinjaFiles(folder: string): string[] {
-    return readdirSync(folder, { recursive: true, encoding: 'utf8' })
-        .filter(path => path.endsWith('.ninja'))
-        .map(path => join(folder, path));
-}
-
-// drops the thread flags that Meson adds, because a module without threads can't link them, and turns off the
-// functions that the configure checks found
-function fixConfiguration() {
-    for (const path of listNinjaFiles(rizinBuildFolder)) {
-        const text = readFileSync(path, 'utf8');
-        const fixed = text.replace(/ -pthread| "-pthread"| --shared-memory| --import-memory/g, '');
-        writeFileSync(path, fixed);
-    }
-
-    const userconf = join(rizinBuildFolder, 'rz_userconf.h');
-    const features = new RegExp(`#define (${missingFeatures.join('|')}) .*1`, 'g');
-    writeFileSync(userconf, readFileSync(userconf, 'utf8').replace(features, '#define $1 0'));
-}
 
 /** Lists the files that Rizin's configure depends on: the versions, the cross file and this script. */
 export function listConfigureInputs(): string[] {
@@ -86,13 +64,8 @@ export function configureRizin(toolVersions: string): void {
     rmSync(rizinBuildFolder, { recursive: true, force: true });
     mkdirSync(workFolder, { recursive: true });
 
-    // configures with a copy of the cross file because Meson configures again when the file at its path changes, and a
-    // new configure would undo the fixes
-    const workCrossFile = join(workFolder, 'emscripten.ini');
-    copyFileSync(crossFile, workCrossFile);
     const meson = findTool('meson');
-    runTool([meson, 'setup', rizinBuildFolder, rizinFolder, '--cross-file', workCrossFile, ...mesonOptions], workFolder, buildEnvironment(), true);
-    fixConfiguration();
+    runTool([meson, 'setup', rizinBuildFolder, rizinFolder, '--cross-file', crossFile, ...mesonOptions], workFolder, buildEnvironment(), true);
 
     writeStamp(stamp, inputs);
 }
@@ -106,12 +79,6 @@ function runNinja(args: string[]): string {
  * of the libraries in their link order.
  */
 export function buildRizin(): string[] {
-    // lets Meson configure again before the build and fixes the configuration again, because Ninja runs Meson again when
-    // a file of the checkout is newer than the build folder, like after a fresh clone in CI. That configure undoes the
-    // fixes.
-    runNinja(['build.ninja']);
-    fixConfiguration();
-
     const linkCommand = runNinja(['-t', 'commands', 'binrz/rizin/rizin.js']).trim().split('\n').at(-1) ?? '';
     const libraries = linkCommand.split(' ').filter(part => part.endsWith('.a'));
     const databases = runNinja(['-t', 'targets', 'all'])

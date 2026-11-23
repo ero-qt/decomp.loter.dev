@@ -1,17 +1,26 @@
+import { findRow } from '#contract/checking';
+import type { Document } from '#contract/document';
 import type { Engine } from '#contract/engine';
 import { connectEngine } from '#contract/queue';
-import { beforeAll } from 'bun:test';
+import { readRows } from '#contract/rows';
+import type { EngineHandlers } from '#contract/serve';
+import { afterEach, beforeAll } from 'bun:test';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { frameworkFolder, publishEngine } from '../dotnet/build';
+import { mountInMemory } from '../native/files';
+import { createNativeHandlers } from '../native/handlers';
+import { loadTestModule } from '../native/testing';
 import { useEngine } from '../shared/testing';
 import { buildFixture, buildFixtureInto } from './fixture/build';
+import { codeImages } from './fixture/code-game';
 import { fixtureLayouts } from './fixture/metadata';
 import { fieldAttributes, type FixtureType, images, methodAttributes, typeAttributes } from './fixture/model';
 import type { Game } from './game';
 import { readGameReply } from './game-reader';
 import { createIl2CppHandlers } from './handlers';
+import { writeNativeNames } from './names-file';
 import { type Il2CppRuntime, loadRuntime } from './runtime';
 
 let runtimeLoad: Promise<Il2CppRuntime> | undefined;
@@ -120,6 +129,76 @@ export async function readBigGame(name: string): Promise<File> {
     return new File([await Bun.file(join(bigGameFolder, name)).bytes()], name);
 }
 
+const codeGameFolder = fileURLToPath(new URL('../../artifacts/il2cpp-test/code-game/', import.meta.url));
+
+/** Reads a file of the game of `codeImages`, whose methods have code like IL2CPP's, or its linker's map. */
+export async function readCodeGame(name: string): Promise<File> {
+    // builds again after a change of the game, whose folder doesn't have the fixture's hash in its name
+    const stamp = join(codeGameFolder, 'images.json');
+    const written = JSON.stringify(codeImages);
+    if (!existsSync(stamp) || (await Bun.file(stamp).text()) !== written) {
+        buildFixtureInto(codeGameFolder, codeImages);
+        await Bun.write(stamp, written);
+    }
+
+    return new File([await Bun.file(join(codeGameFolder, name)).bytes()], name);
+}
+
+/**
+ * Opens the game of `codeImages` with its Windows binary, or with another of its binaries, in handlers with the native
+ * engine, or with the native handlers of `createNative`, as file 1. Returns the handlers and a read of the document of a type of the game's scripts, which reads
+ * until the engine wrote all of the document, like the page does.
+ */
+export async function openCodeGame(binaryName = 'GameAssembly.dll', createNative = () => createNativeHandlers(loadTestModule, mountInMemory)) {
+    const signal = new AbortController().signal;
+    const handlers = createIl2CppHandlers(loadTestRuntime, createNative);
+    const metadata = await readCodeGame('global-metadata.dat');
+    await handlers.open(1, metadata.name, metadata, signal);
+    await handlers.provide(1, binaryName, await readCodeGame(binaryName), signal);
+    const rows = readRows((await handlers.list(1, signal)).value!);
+
+    async function readType(name: string): Promise<Document> {
+        const { key } = findRow(rows, `Assembly-CSharp.dll.${name}`, metadata.name);
+        for (;;) {
+            const reply = await handlers.read(1, key, 'csharp', signal);
+            if (!reply.value?.isPartial) {
+                return reply.value!;
+            }
+        }
+    }
+
+    return { handlers, rows, readType, close: () => handlers.close(1, signal) };
+}
+
+/**
+ * Opens a game's binary in native handlers as file 1, with the names that the IL2CPP engine writes for it. Returns the
+ * game, its names and a read of the native engine's code of a method, with the structs and globals that the code
+ * needs, like a body's read.
+ */
+export async function openNativeGame(metadata: File, binary: File) {
+    const [runtime] = await Promise.all([loadTestRuntime(), loadTestModule()]);
+    const signal = new AbortController().signal;
+    const game = readGame(runtime, await metadata.bytes(), await binary.bytes(), binary.name);
+    // clears bit 0 of a method's address in a 32-bit binary, which marks Thumb code in the fixture's armv7 build
+    const findCode = (rva: number) => (game.pointerSize === 4 ? rva - (rva & 1) : rva);
+    const native = createNativeHandlers(loadTestModule, mountInMemory);
+    const names = writeNativeNames(game, findCode);
+    await native.open(1, binary.name, binary, signal);
+    await native.loadNames(1, names.lines, new Blob());
+
+    async function readMethod(typeName: string, methodName: string, isCSharp = false): Promise<string> {
+        const methods = game.types.flatMap(type => (type.name === typeName ? type.methods : []));
+        const code = findCode(methods.find(method => method.name === methodName)!.rva!);
+        const targets = await native.listCodeTargets(1, code);
+        const types = names.writeTypes([code, ...targets.value!]);
+        await native.loadTypes(1, new Blob([types.header]), new Blob([types.globals]));
+
+        return (await native.readCode(1, code, signal, isCSharp)).value!.text;
+    }
+
+    return { game, names, readMethod, close: () => native.close(1, signal) };
+}
+
 /** Cuts a member's lines out of a type's document, from its header to the line before the `}` of its body. */
 export function cutMember(text: string, header: string): string {
     const start = text.indexOf(header);
@@ -183,12 +262,36 @@ export function loadTestRuntime(): Promise<Il2CppRuntime> {
     return runtimeLoad;
 }
 
-/** Serves the IL2CPP engine in an in-thread worker during each test of a file and returns the function that connects a test. */
-export function useIl2CppEngine(): () => Engine {
+/**
+ * Serves the IL2CPP engine in an in-thread worker during each test of a file and returns the function that connects
+ * a test. The engine fills the methods' bodies with the C of the native engine's module when `withNative` is set.
+ */
+export function useIl2CppEngine({ withNative = false } = {}): () => Engine {
     // publishes before the file's first test because a publish on a fresh checkout takes longer than a test's 5 seconds
     beforeAll(loadTestRuntime, connectOptions.timeLimitMs);
 
-    return useEngine(() => createIl2CppHandlers(loadTestRuntime), connectOptions, () => runtime?.readMemoryBytes() ?? 0);
+    const createNative = withNative ? () => createNativeHandlers(loadTestModule, mountInMemory) : undefined;
+    // closes the files that a test leaves open, because their decompiles in the background would outlast the test
+    let closes: (() => Promise<unknown>)[] = [];
+    afterEach(async () => {
+        await Promise.all(closes.map(close => close()));
+        closes = [];
+    });
+
+    function create(): EngineHandlers {
+        const handlers = createIl2CppHandlers(loadTestRuntime, createNative);
+
+        return {
+            ...handlers,
+            open(fileId, ...rest) {
+                closes.push(async () => handlers.close(fileId, new AbortController().signal));
+
+                return handlers.open(fileId, ...rest);
+            },
+        };
+    }
+
+    return useEngine(create, connectOptions, () => runtime?.readMemoryBytes() ?? 0);
 }
 
 /** Connects a test to the IL2CPP engine in the in-thread worker that the test serves. */

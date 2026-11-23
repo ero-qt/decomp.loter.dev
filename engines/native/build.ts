@@ -29,7 +29,7 @@ function copySource(sourceFolder: string, builtFolder: string): void {
  * Returns the folder in NATIVE_MODULE, which has a module that another job of the CI built from the same commit, else
  * builds the module when its stamp is stale and returns the module's folder.
  */
-async function findBuiltFolder(): Promise<string> {
+export async function findBuiltFolder(): Promise<string> {
     if (process.env.NATIVE_MODULE) {
         return resolve(process.env.NATIVE_MODULE);
     }

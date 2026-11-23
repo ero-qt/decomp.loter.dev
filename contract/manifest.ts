@@ -31,6 +31,11 @@ export interface Manifest {
      * and the page opens the engine's files first, so a companion among the picked files goes to them.
      */
     keepsCompanions?: boolean;
+    /**
+     * The view of the documents of symbols without a row, like a function that only a call names, for an engine that
+     * doesn't write them in its first view.
+     */
+    unlistedView?: View;
     /** The size in bytes of the worker's wasm memory above which the page stops the worker after a call. */
     memoryLimitBytes?: number;
     /**
@@ -155,6 +160,7 @@ const manifestKeys = [
     'views',
     'hasLinkedFiles',
     'keepsCompanions',
+    'unlistedView',
     'memoryLimitBytes',
     'cancelLimitMs',
     'repliesDuringReads',
@@ -209,6 +215,7 @@ export function readManifest(value: unknown): Manifest {
         views,
         hasLinkedFiles: readOptionalBoolean(manifest.hasLinkedFiles, 'hasLinkedFiles'),
         keepsCompanions: readOptionalBoolean(manifest.keepsCompanions, 'keepsCompanions'),
+        unlistedView: manifest.unlistedView === undefined ? undefined : readView(manifest.unlistedView, views.length),
         memoryLimitBytes: readOptionalPositiveInteger(manifest.memoryLimitBytes, 'memoryLimitBytes'),
         cancelLimitMs: readOptionalPositiveInteger(manifest.cancelLimitMs, 'cancelLimitMs'),
         repliesDuringReads: readOptionalBoolean(manifest.repliesDuringReads, 'repliesDuringReads'),

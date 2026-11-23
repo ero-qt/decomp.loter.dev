@@ -335,6 +335,24 @@ export class RowDocuments implements TextDocumentContentProvider, DocumentSemant
     }
 
     /**
+     * Finds the URI of the document of a target without a row, like a function that only a call names, with the name
+     * of the document, in the engine's view for such documents or else in its first view. Returns `undefined` for a
+     * target with a row.
+     */
+    async findUnlistedUri(siteEngine: SiteEngine, target: string, name: string): Promise<Uri | undefined> {
+        const parsed = parseTarget(target);
+        const found = await this.findTargetRow(siteEngine, target);
+        if (!('fileId' in parsed) || !found || found.index >= 0) {
+            return undefined;
+        }
+
+        const view = siteEngine.manifest.unlistedView ?? siteEngine.manifest.views[0];
+        const parts = { engineId: siteEngine.manifest.id, viewId: view.id, fileId: parsed.fileId, key: parsed.key };
+
+        return vscode.Uri.from({ scheme: documentScheme, path: formatDocumentPath(parts, name, view.extension) });
+    }
+
+    /**
      * Reads a document like `readOpenDocument` after dropping a failed read, because the engine's next read can
      * succeed.
      */

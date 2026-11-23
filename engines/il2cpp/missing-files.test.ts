@@ -51,6 +51,18 @@ test("il2cpp engine takes the game's binary for the missing file and lists the m
     ]);
 });
 
+test("il2cpp engine lists the game's binary as a file of the game once it has the binary", async () => {
+    const engine = connect();
+    const fileId = await openMetadata(engine);
+    const listFiles = async () => readRows(await engine.list(fileId)).filter(row => row.kind === 'resource');
+
+    expect(await listFiles()).toEqual([]);
+
+    await engine.provide(fileId, 'GameAssembly.dll', await readFixture('GameAssembly.dll'));
+
+    expect(await listFiles()).toEqual([expect.objectContaining({ name: 'GameAssembly.dll', parent: -1 })]);
+});
+
 test('il2cpp engine takes an android build of the binary under the missing file of the windows build', async () => {
     const engine = connect();
     const fileId = await openMetadata(engine);

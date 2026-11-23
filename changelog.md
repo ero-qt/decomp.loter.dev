@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- The C of an object file (`.o`) shows each global under its own name. Before, a global in `.bss` could show up as a string that sat at the same place. A few 32-bit x86 functions in object files decompile now too.
+
+### Security
+
+- The native engine runs on a newer Rizin, which fixes memory bugs that a broken or hostile file could hit. Rizin fixed a use-after-free in PE relocations, an out-of-bounds write when it reads length-prefixed strings, a bad free and a NULL pointer crash in PDB type records, a double free in DWARF data, a heap overflow in `rz_analysis_mask()` and undefined behavior in the ELF reader.
+
 ## [1.2.2] - 2026-11-23
 
 ### Added

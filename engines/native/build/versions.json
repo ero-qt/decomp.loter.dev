@@ -5,7 +5,7 @@
       "name": "capstone-next",
       "directory": "capstone-next",
       "url": "https://github.com/capstone-engine/capstone.git",
-      "commit": "3df6ff015fb6afd81307e325fdd9c82dbf184b28"
+      "commit": "ccd25ab39eea534afbb70cfb047310c5a9962553"
     },
     {
       "name": "zydis",
@@ -24,7 +24,7 @@
       "name": "libdemangle",
       "directory": "libdemangle",
       "url": "https://github.com/rizinorg/rz-libdemangle.git",
-      "commit": "e633061e901208a20ed90f8aaf0b64f25caf73eb"
+      "commit": "4a0af6896daf4122cc9a02c3f58a7768f4e27b2d"
     },
     {
       "name": "blake2",
@@ -93,18 +93,18 @@
     },
     {
       "name": "pcre2",
-      "directory": "pcre2-10.47",
-      "url": "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.47/pcre2-10.47.tar.gz",
-      "file": "pcre2-10.47.tar.gz",
-      "sha256": "c08ae2388ef333e8403e670ad70c0a11f1eed021fd88308d7e02f596fcd9dc16"
+      "directory": "pcre2-10.49",
+      "url": "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.49/pcre2-10.49.tar.gz",
+      "file": "pcre2-10.49.tar.gz",
+      "sha256": "929f0b20e62879252a15886b06c89f1edef61a363cbd5826fb041080a5e557ae"
     },
     {
       "name": "pcre2_cross_native",
       "directory": "pcre2_cross_native",
       "url": "https://github.com/PCRE2Project/pcre2.git",
-      "commit": "f454e231fe5006dd7ff8f4693fd2b8eb94333429",
+      "commit": "6f9d7c1373262c541324a16a358785b33ef116cf",
       "submodules": [
-        { "path": "deps/sljit", "url": "https://github.com/zherczeg/sljit.git", "commit": "45f910b78c6605ebf5b53d3ec7cb00f2312fe417" }
+        { "path": "deps/sljit", "url": "https://github.com/zherczeg/sljit.git", "commit": "de0259c7aaf36aa40cba8014f3fad3edde9307f9" }
       ]
     }
   ]

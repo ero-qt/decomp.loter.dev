@@ -15,7 +15,6 @@ typedef struct {
 	bool is_rtti_recovered; ///< whether the analysis has the classes of the binary's RTTI
 } Session;
 
-RzCore *session_use(Session *session);
 void session_put_address(PJ *j, const char *key, ut64 addr);
 
 char *names_clean(const char *name);

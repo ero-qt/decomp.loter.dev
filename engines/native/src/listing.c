@@ -225,7 +225,7 @@ static void add_string_count(PJ *j, RzBinObject *object) {
  * them into rows. The caller frees the result with free().
  */
 EMSCRIPTEN_KEEPALIVE char *session_listing(Session *session, size_t max) {
-	RzCore *core = session_use(session);
+	RzCore *core = session->core;
 	RzBinObject *object = rz_bin_cur_object(core->bin);
 	if (!object) {
 		return NULL;

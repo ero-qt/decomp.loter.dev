@@ -14,7 +14,7 @@ static int compare_xrefs(const void *a, const void *b, void *user) {
  * The caller frees the result with free().
  */
 EMSCRIPTEN_KEEPALIVE char *session_references(Session *session, const char *addr) {
-	RzCore *core = session_use(session);
+	RzCore *core = session->core;
 	RzList *xrefs = rz_analysis_xrefs_get_to(core->analysis, strtoull(addr, NULL, 16));
 	if (xrefs) {
 		rz_list_sort(xrefs, compare_xrefs, NULL);
@@ -40,7 +40,7 @@ EMSCRIPTEN_KEEPALIVE char *session_references(Session *session, const char *addr
  * Only cuts a string between 2 characters of UTF-8. The caller frees the result with free().
  */
 EMSCRIPTEN_KEEPALIVE char *session_strings(Session *session, size_t max, size_t max_bytes) {
-	RzBinObject *object = rz_bin_cur_object(session_use(session)->bin);
+	RzBinObject *object = rz_bin_cur_object(session->core->bin);
 	const RzPVector *strings = object ? rz_bin_object_get_strings(object) : NULL;
 	size_t count = strings ? rz_pvector_len(strings) : 0;
 

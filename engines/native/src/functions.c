@@ -180,7 +180,7 @@ static void name_parts(Session *session, RzAnalysisFunction *fcn) {
  * information.
  */
 static RzAnalysisFunction *prepare(Session *session, ut64 addr) {
-	RzCore *core = session_use(session);
+	RzCore *core = session->core;
 	RzAnalysisFunction *fcn = rz_analysis_get_function_at(core->analysis, addr);
 	if (fcn && rz_set_u_contains(session->prepared, addr)) {
 		return fcn;

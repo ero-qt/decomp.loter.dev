@@ -43,7 +43,7 @@ static bool pdb_matches(RzBinObject *object, RzPdb *pdb) {
  * again.
  */
 EMSCRIPTEN_KEEPALIVE int session_load_pdb(Session *session, const char *path) {
-	RzCore *core = session_use(session);
+	RzCore *core = session->core;
 	RzPdb *pdb = rz_bin_pdb_parse_from_file(path);
 	if (!pdb) {
 		return PDB_UNREADABLE;

@@ -23,12 +23,12 @@ async function loadFakeModule(name: string, members: string): Promise<NativeModu
     return loadModule(pathToFileURL(path).href);
 }
 
-test('module loads in bun and reports rizin 0.9.1', async () => {
+test('module loads in bun and reports rizin 0.10.0', async () => {
     const module = await loadTestModule();
     const session = module.newSession();
 
     expect(session).not.toBe(0);
-    expect(module.runCommand(session, 'verq').trim()).toBe('0.9.1');
+    expect(module.runCommand(session, 'verq').trim()).toBe('0.10.0');
     module.freeSession(session);
 }, buildTimeoutMs);
 

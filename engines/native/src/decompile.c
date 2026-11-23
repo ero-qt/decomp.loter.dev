@@ -70,7 +70,7 @@ static void add_annotation(PJ *j, const RzCodeAnnotation *annotation) {
  * caller frees the result with free().
  */
 EMSCRIPTEN_KEEPALIVE char *session_decompile(Session *session, const char *addr) {
-	RzAnnotatedCode *code = rz_ghidra_decompile_annotated_code(session_use(session), strtoull(addr, NULL, 16));
+	RzAnnotatedCode *code = rz_ghidra_decompile_annotated_code(session->core, strtoull(addr, NULL, 16));
 	if (!code) {
 		return NULL;
 	}

@@ -182,7 +182,7 @@ void debug_info_apply_pdb(Session *session, RzAnalysisFunction *fcn) {
  * The caller frees the result with free().
  */
 EMSCRIPTEN_KEEPALIVE char *session_struct(Session *session, const char *name) {
-	RzTypeDB *typedb = rz_analysis_get_type_db(session_use(session)->analysis);
+	RzTypeDB *typedb = rz_analysis_get_type_db(session->core->analysis);
 	RzBaseType *type = rz_type_db_get_base_type(typedb, name);
 	if (!type || type->kind != RZ_BASE_TYPE_KIND_STRUCT) {
 		return NULL;

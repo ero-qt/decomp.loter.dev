@@ -9,7 +9,7 @@ const siteFolder = new URL('../artifacts/site/', import.meta.url).pathname;
 const scriptFiles = ['a.php', 'A.PHP', 'a.php3', 'a.php8', 'a.phtml', 'a.phar', 'a.pht', 'a.cgi', 'a.pl', 'a.py', 'a.sh', 'a.shtml', 'a.inc'];
 // the files whose names stay the same from build to build
 const lastingNames = new RegExp(
-    '^/(index\\.html|404\\.html|favicon\\.svg|robots\\.txt|sitemap\\.xml|balance\\.json'
+    '^/(index\\.html|404\\.html|favicon\\.svg|robots\\.txt|sitemap\\.xml|balance\\.json|third-party-notices\\.txt'
         + '|engines/index\\.json|engines/[^/]+/(manifest\\.json|worker\\.js)'
         + '|engines/dotnet/(_framework/dotnet\\.js|THIRD-PARTY-NOTICES\\.TXT)|engines/native/(rizin\\.mjs|rizin\\.wasm|(share|sleigh|source)/.+))$',
 );
@@ -97,8 +97,9 @@ test('htaccess keeps each file with a fingerprint for a year and lets browsers a
     expect(paths.filter(path => path.startsWith('/engines/java/vf.runtime-')).map(isKeptLong)).toEqual([true]);
 });
 
-test("htaccess answers a missing file with the site's page for it", async () => {
+test("htaccess answers a missing file and a folder without an index with the site's page, which gets the site's headers", async () => {
     expect(lines).toContain('ErrorDocument 404 /404.html');
+    expect(lines).toContain('ErrorDocument 403 /404.html');
     expect(await Bun.file(`${siteFolder}/404.html`).exists()).toBe(true);
 });
 

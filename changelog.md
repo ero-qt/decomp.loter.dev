@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-11-23
+
+### Added
+
+- The About tab links the third-party notices, which the site serves as `third-party-notices.txt`.
+
+### Changed
+
+- The .NET engine runs on the final .NET 11 runtime (11.0.0). Building the site needs the .NET SDK 11.0.100 or a later 11.0 SDK.
+
+### Fixed
+
+- On a Mac, both Cmd+Backspace and the Delete key close the selected file in the Symbols view, like in VS Code's explorer.
+- A collapsed file's row in the Symbols view clears the error of a picked companion file once a later pick works.
+- A deploy job that I run again after the site switched to its release goes through. The host drops an upload with the same files as the live release and keeps the live balance.
+- The .NET engine skips a type reference or a generic type that points back at itself in a broken file, so opening the C# of a type in that file can't crash the engine.
+- The Java engine skips a class with a broken switch instruction and counts it with the classes it can't read, so that class can't freeze the engine.
+- The native engine starts over after it crashes inside Rizin or Ghidra while it lists, decompiles or searches a file. Before, the next clicks could fail in odd ways until you reloaded the page.
+
+### Security
+
+- The readme's `gh attestation verify` command checks that the deploy workflow signed the checksums for the version's tag, so an attestation from another workflow or branch doesn't pass.
+- The host refuses a release with a FIFO or another file that isn't a plain file. It also removes a release that fails its checks, so a broken upload doesn't push out one of the 3 releases I keep.
+- A folder like `/assets/` shows the site's own page with the site's security headers when the host refuses to list it, instead of the host's bare 403 page.
+- The host copies an upload into its release folder before it checks the files, so an upload that's still running can't sneak files into a release after the checks.
+
 ## [1.2.1] - 2026-11-22
 
 ### Fixed
@@ -81,7 +107,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 - A native engine that opens ELF, PE and Mach-O programs and libraries with Rizin and Ghidra's decompiler and shows their functions and classes as C. It also reads a PE file's PDB file for names and types and finds the classes of stripped files through their RTTI.
 - A privacy notice about what stays in your browser and what the server keeps.
 
-[Unreleased]: https://github.com/ero-qt/decomp.loter.dev/compare/1.2.1...HEAD
+[Unreleased]: https://github.com/ero-qt/decomp.loter.dev/compare/1.2.2...HEAD
+[1.2.2]: https://github.com/ero-qt/decomp.loter.dev/compare/1.2.1...1.2.2
 [1.2.1]: https://github.com/ero-qt/decomp.loter.dev/compare/1.2.0...1.2.1
 [1.2.0]: https://github.com/ero-qt/decomp.loter.dev/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/ero-qt/decomp.loter.dev/compare/1.0.4...1.1.0

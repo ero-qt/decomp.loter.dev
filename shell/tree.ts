@@ -52,6 +52,8 @@ export class SymbolsTree implements TreeDataProvider<ViewRow> {
     private readonly changed = new vscode.EventEmitter<ViewRow | undefined>();
     // open file -> the file's row
     private readonly fileRows = new WeakMap<OpenFile, ViewRow>();
+    // open file -> the text of the file's last listing: the listing's note or why the listing failed
+    private readonly listedTexts = new WeakMap<OpenFile, string>();
     readonly onDidChangeTreeData = this.changed.event;
 
     constructor(private readonly openFiles: OpenFiles) {
@@ -72,9 +74,7 @@ export class SymbolsTree implements TreeDataProvider<ViewRow> {
         }
         // takes a failed `provide` call's text here too because the workbench only lists a collapsed file's rows once
         // the row expands
-        if (file.errorText !== undefined) {
-            fileRow.description = file.errorText;
-        }
+        fileRow.description = file.errorText ?? this.listedTexts.get(file);
 
         return fileRow;
     }
@@ -82,6 +82,7 @@ export class SymbolsTree implements TreeDataProvider<ViewRow> {
     private async listBelowFile(fileRow: ViewRow, file: OpenFile): Promise<ViewRow[]> {
         try {
             const { rows, note, missingFiles } = await this.openFiles.list(file);
+            this.listedTexts.set(file, note);
             const description = file.errorText ?? note;
             if ((fileRow.description || '') !== description) {
                 fileRow.description = description;
@@ -99,7 +100,9 @@ export class SymbolsTree implements TreeDataProvider<ViewRow> {
 
             return [...missingFileRows, ...createViewRows(file, rows, rowsBelow, -1)];
         } catch (error) {
-            fileRow.description = readErrorText(error, 'The engine crashed while it listed the file.');
+            const errorText = readErrorText(error, 'The engine crashed while it listed the file.');
+            this.listedTexts.set(file, errorText);
+            fileRow.description = errorText;
             // gives the file's row a new id because the workbench only lists an expanded row again as a new, collapsed
             // row
             fileRow.id = `failed listing ${++failedListingCount}`;

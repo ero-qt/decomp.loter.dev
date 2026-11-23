@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test';
 import { readRows, type Row } from '../../contract/rows';
+import { Opcode } from '@katana-project/asm/spec';
 import { accessibilityOf, modifiersOf } from '../../contract/symbols';
 import { fixture } from './fixture';
 import { classFile, useJavaEngine, zipFile } from './testing';
@@ -147,4 +148,23 @@ test("java engine counts the classes that it can't read and a default package's 
     expect((await listFile(new File([jar], 'app.jar'))).note).toBe(
         "1 class whose name doesn't match its path and 2 classes that the engine can't read not shown",
     );
+});
+
+// asm's reader steps back by a switch's negative length and reads the same instructions again until memory runs out
+test('java engine refuses a class with a lookupswitch of a negative count or a tableswitch whose high is below its low', async () => {
+    const engine = connect();
+    const nops: number[] = Array(11).fill(Opcode.NOP);
+    // the operands start at 12 with the default jump, then the count of pairs, -2
+    const lookupswitch = [...nops, Opcode.LOOKUPSWITCH, 0, 0, 0, 0, 0xff, 0xff, 0xff, 0xfe];
+    // the operands start at 12 with the default jump, then low, 0, and high, -10
+    const tableswitch = [...nops, Opcode.TABLESWITCH, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0xff, 0xf6];
+
+    for (const [code, found] of [
+        [lookupswitch, 'a lookupswitch with a negative count of pairs'],
+        [tableswitch, 'a tableswitch whose high is below its low'],
+    ] as const) {
+        const file = new File([classFile({ name: 'a/B', methods: [{ name: 'run', descriptor: '()V', code: [...code] }] })], 'B.class');
+
+        await expect(engine.open(file.name, file)).rejects.toThrow(`The engine can't read B.class: A method has ${found}.`);
+    }
 });

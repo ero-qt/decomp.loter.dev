@@ -45,6 +45,15 @@ export default defineConfig({
             },
         },
         {
+            name: 'notices',
+            // serves the third-party notices beside the page because the MIT, Apache 2.0 and CC BY licenses of the parts
+            // that the site ships require their notices in every copy
+            buildStart() {
+                const notices = readFileSync(`${import.meta.dirname}/../third-party-notices.md`);
+                this.emitFile({ type: 'asset', fileName: 'third-party-notices.txt', source: notices });
+            },
+        },
+        {
             name: 'version',
             // writes the version into the About tab's template because the version comes from the build's commit
             transformIndexHtml(html, { filename }) {

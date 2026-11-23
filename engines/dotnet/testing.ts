@@ -105,14 +105,14 @@ export function peFile({ is64Bit = false, hasCliHeader = true }: PeShape): Uint8
 
 /**
  * Replaces the only run of bytes from `start` to `end` that matches a pattern, where `undefined` matches any byte, for
- * tests that break 1 part of an assembly. Throws when no run or several runs match.
+ * tests that break 1 part of an assembly, and returns the run's offset. Throws when no run or several runs match.
  */
 export function patchBytes(
     bytes: Uint8Array,
     pattern: (number | undefined)[],
     replacement: number[],
     { start = 0, end = bytes.length } = {},
-): void {
+): number {
     const matches: number[] = [];
     for (let offset = start; offset + pattern.length <= end; offset++) {
         if (pattern.every((byte, index) => byte === undefined || bytes[offset + index] === byte)) {
@@ -125,6 +125,8 @@ export function patchBytes(
     }
 
     bytes.set(replacement, matches[0]);
+
+    return matches[0];
 }
 
 /** Finds a metadata stream, like `#Strings`, in the stream headers after the metadata root's `BSJB` signature. */

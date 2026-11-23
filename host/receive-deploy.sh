@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Runs the deploy key's command from SSH_ORIGINAL_COMMAND: an upload into the uploads folder through rrsync, or
-# `activate <version>`, which moves an upload into the releases folder, checks it and switches the site to it.
+# `activate <version>`, which copies an upload into the releases folder, checks it and switches the site to it.
 # Usage in ~/.ssh/authorized_keys: restrict,command="receive-deploy <web folder> <host's copy of htaccess>" <key>
 set -euo pipefail
 
@@ -16,7 +16,23 @@ fail() {
     exit 1
 }
 
-# moves the upload out of the key's reach before the checks, because rrsync could otherwise change it after them
+is_live() {
+    [[ $(readlink "$web/html" || true) == "releases/$1" ]]
+}
+
+# removes a release that fails its checks unless the site shows it, because the release would count as 1 of the kept
+# releases at the next deploy
+refuse() {
+    local tag=$1
+    if ! is_live "$tag"; then
+        rm -rf -- "${releases:?}/$tag"
+    fi
+
+    fail "$2"
+}
+
+# copies the upload into a new folder and removes the upload before the checks, because a running rsync keeps writing
+# into the folder that it changed into, also after a rename
 take_upload() {
     local tag=$1
     if [[ -L $uploads/$tag ]]; then
@@ -25,12 +41,20 @@ take_upload() {
     if [[ ! -d $uploads/$tag ]]; then
         return
     fi
-    if [[ $(readlink "$web/html" || true) == "releases/$tag" ]]; then
-        fail "The release $tag is live. Upload a new version."
+    # drops an upload of the live release that has the same files, because a deploy that runs again uploads the release
+    # again and the live release keeps the balance that the host's timer writes
+    if is_live "$tag"; then
+        if ! diff -rq --no-dereference -x balance.json -- "$uploads/$tag" "$releases/$tag" > /dev/null; then
+            fail "The release $tag is live. Upload a new version."
+        fi
+
+        rm -rf -- "${uploads:?}/$tag"
+        return
     fi
 
     rm -rf -- "${releases:?}/$tag"
-    mv -T "$uploads/$tag" "$releases/$tag"
+    cp -rT -- "$uploads/$tag" "$releases/$tag"
+    rm -rf -- "${uploads:?}/$tag"
 }
 
 # refuses a release with a link or a file that the host could run, because the site only has static files
@@ -39,22 +63,27 @@ check_release() {
     local release=$releases/$tag
     local found
     if [[ -L $release || ! -f $release/index.html || -L $release/index.html ]]; then
-        fail "The release $tag isn't uploaded."
+        refuse "$tag" "The release $tag isn't uploaded."
     fi
 
     found=$(find "$release" -type l -printf '%P\n' | head -n 1)
     if [[ -n $found ]]; then
-        fail "The release $tag has a link: $found."
+        refuse "$tag" "The release $tag has a link: $found."
+    fi
+
+    found=$(find "$release" ! -type f ! -type d -printf '%P\n' | head -n 1)
+    if [[ -n $found ]]; then
+        refuse "$tag" "The release $tag has a file that isn't a plain file: $found."
     fi
 
     found=$(find "$release" -mindepth 1 \( -path "$release/*/.htaccess" -o -name .user.ini \
         -o -iregex '.*\.\(php[3-8]?\|phtml\|phar\|pht\|cgi\|pl\|py\|sh\|shtml\|inc\)' \) -printf '%P\n' | head -n 1)
     if [[ -n $found ]]; then
-        fail "The release $tag has a file that the host could run: $found."
+        refuse "$tag" "The release $tag has a file that the host could run: $found."
     fi
 
     if ! cmp -s "$release/.htaccess" "$htaccess"; then
-        fail "The release $tag's .htaccess differs from the host's copy."
+        refuse "$tag" "The release $tag's .htaccess differs from the host's copy."
     fi
 }
 

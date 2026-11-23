@@ -10,7 +10,13 @@ The site ships parts of other projects, which [third-party-notices.md](third-par
 
 The About tab shows the site's version and commit. Each deploy signs the SHA-256 hash of every file it uploads through GitHub's artifact attestations and serves the hashes as [checksums.txt](https://decomp.loter.dev/checksums.txt). The GitHub release of that version has the same file.
 
-`gh attestation verify checksums.txt -R ero-qt/decomp.loter.dev` shows that the deploy workflow signed the release's copy and which tag it built. `bun release/verify-live.ts https://decomp.loter.dev checksums.txt` then fetches every file in that copy from the live site and compares it with its hash. Both only cover what the server sent you at that moment.
+This command checks that the deploy workflow signed the release's copy when it built the version's tag, here 1.2.1:
+
+```sh
+gh attestation verify checksums.txt -R ero-qt/decomp.loter.dev --signer-workflow ero-qt/decomp.loter.dev/.github/workflows/deploy.yml --source-ref refs/tags/1.2.1
+```
+
+`bun release/verify-live.ts https://decomp.loter.dev checksums.txt` then fetches every file in that copy from the live site and compares it with its hash. Both only cover what the server sent you at that moment.
 
 ## Hosting
 
@@ -21,7 +27,7 @@ bun install --frozen-lockfile --ignore-scripts
 bun run build
 ```
 
-The build needs the .NET SDK 11.0.100-rc.3.26522.148 on the `PATH` because it publishes the .NET engine with it. `engines/dotnet/global.json` asks for exactly that SDK, because the engine is built with the packages that come with it.
+The build needs the .NET SDK 11.0.100 or a later 11.0 SDK on the `PATH` because it publishes the .NET engine with it. `engines/dotnet/global.json` asks for that SDK and takes the newest 11.0 SDK that's installed.
 
 The build puts the site in `artifacts/site`. Serve that folder with a web server. The web server has to send the headers in `shell/headers.ts` with every response, also with a missing file. For Apache, `host/htaccess` sends them and the cache headers. Put it into the site as `.htaccess`, like the deploy does. `bun release/check-live.ts <site's URL>` then checks a few of the server's responses against `host/htaccess`.
 

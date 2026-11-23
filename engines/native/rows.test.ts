@@ -1,11 +1,14 @@
 import { expect, test } from 'bun:test';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { readRows, type Row } from '../../contract/rows';
+import { serveEngine, type WorkerMessage, type WorkerPort } from '../../contract/serve';
 import { accessibilityOf, modifiersOf } from '../../contract/symbols';
 import { LoadError } from '../shared/loading';
+import { moduleFolder } from './build/link';
 import { mountInMemory } from './files';
 import { createNativeHandlers } from './handlers';
-import type { NativeModule } from './module';
+import { loadModule, type NativeModule } from './module';
 import { groupRows, type GlueListing } from './rows';
 import { loadTestModule, readFixture, useNativeEngine } from './testing';
 
@@ -169,7 +172,7 @@ test('the note counts the functions, globals and imports that the glue left out'
     expect(rows[0]).toMatchObject({ name: 'Imports', detail: '3' });
 });
 
-test("a listing that the module can't read becomes a failed reply", async () => {
+test("a listing above the size of a JavaScript string becomes a failed reply", async () => {
     const module = await loadTestModule();
     const broken: NativeModule = {
         ...module,
@@ -183,6 +186,38 @@ test("a listing that the module can't read becomes a failed reply", async () => 
     await handlers.open(1, file.name, file, signal);
 
     expect(await handlers.list(1, signal)).toEqual({ error: "The native engine couldn't read the symbols of the file." });
+}, 120000);
+
+// loads Rizin from a wrapper whose listing call traps like an out-of-bounds read, so the trap passes the module's own
+// reading of the listing
+async function loadTrappingModule(): Promise<NativeModule> {
+    const wrapper = join(moduleFolder, '..', 'native-test', 'trapping-rizin.mjs');
+    await Bun.write(wrapper, [
+        `import createRizin from ${JSON.stringify(pathToFileURL(join(moduleFolder, 'rizin.mjs')).href)};`,
+        'export default async options => {',
+        '    const module = await createRizin(options);',
+        "    module._session_listing = () => { throw new WebAssembly.RuntimeError('memory access out of bounds'); };",
+        '    return module;',
+        '};',
+    ].join('\n'));
+
+    const module = await loadModule(pathToFileURL(wrapper).href, await Bun.file(join(moduleFolder, 'rizin.wasm')).arrayBuffer());
+
+    // fetches the databases and languages through the real module because they sit beside the real `rizin.mjs`
+    return { ...module, fetchFile: (await loadTestModule()).fetchFile };
+}
+
+test('a trap in a listing reaches the queue as fatal, so the queue restarts the worker', async () => {
+    const trapping = await loadTrappingModule();
+    const sent: WorkerMessage[] = [];
+    const port: WorkerPort = { onmessage: null, postMessage: message => sent.push(message) };
+    serveEngine(port, createNativeHandlers(async () => trapping, mountInMemory));
+    const file = await readFixture('shapes-x64.so');
+
+    await port.onmessage?.(new MessageEvent('message', { data: { method: 'open', args: [1, file.name, file] } }));
+    await port.onmessage?.(new MessageEvent('message', { data: { method: 'list', args: [1] } }));
+
+    expect(sent.at(-1)).toEqual({ fatal: 'memory access out of bounds' });
 }, 120000);
 
 test('a class of methods without a known size counts each as 1 kb', () => {

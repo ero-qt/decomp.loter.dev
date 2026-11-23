@@ -100,3 +100,47 @@ test('dotnet engine lists the strings of a file but one whose length runs past t
 
     expect((await engine.listStrings(fileId)).map(string => string.text)).toEqual(['kept']);
 });
+
+// points the TypeRef row of `Lib.Other\`3` at itself as its scope. The row's number comes from its offset in the #~
+// stream, where the TypeRef rows of 6 bytes follow the header, a row count per table and the Module row of 10 bytes
+// (ECMA-335 II.24.2.6).
+function pointScopeAtItself(bytes: Uint8Array<ArrayBuffer>) {
+    const tables = findMetadataStream(bytes, '#~');
+    const strings = findMetadataStream(bytes, '#Strings');
+    const heap = Buffer.from(bytes.subarray(strings.start, strings.end));
+    const [name, space] = ['Other`3', 'Lib'].map(text => heap.indexOf(`\0${text}\0`) + 1);
+    const offset = patchBytes(bytes, [undefined, undefined, name & 0xff, name >> 8, space & 0xff, space >> 8], [], tables);
+
+    const presentTables = new DataView(bytes.buffer, bytes.byteOffset).getBigUint64(tables.start + 8, true);
+    const tableCount = [...presentTables.toString(2)].filter(bit => bit === '1').length;
+    const row = (offset - (tables.start + 24 + tableCount * 4 + 10)) / 6 + 1;
+    const scope = (row << 2) | 3;
+    bytes.set([scope & 0xff, scope >> 8], offset);
+}
+
+// puts the file's only TypeSpec into its own signature as a modifier, so `Other<int, int, int>` becomes
+// `Other<modopt(TypeSpec 1) int>` in a blob of the same length
+function putSpecificationInItself(bytes: Uint8Array<ArrayBuffer>) {
+    const offset = patchBytes(bytes, [7, 0x15, 0x12, undefined, 3, 8, 8, 8], [], findMetadataStream(bytes, '#Blob'));
+    const typeSpecification = (1 << 2) | 2;
+    bytes.set([1, 0x20, typeSpecification, 8], offset + 4);
+}
+
+test('dotnet engine writes the C# of a file with a generic instance whose type is its own scope or contains itself', async () => {
+    await compileAssembly('Lib', 'namespace Lib { public class Other<A, B, C> { public void Run() { } } }');
+    const text = [
+        'public static class Kept { public static void Run() { System.Console.WriteLine(); } }',
+        'public static class Broken { public static void Use() { new Lib.Other<int, int, int>().Run(); } }',
+    ].join('\n');
+    const compiled = await compileBytes('SelfNamed', text, ['Lib']);
+
+    for (const breakFile of [pointScopeAtItself, putSpecificationInItself]) {
+        const engine = connect();
+        const bytes = compiled.slice();
+        breakFile(bytes);
+        const fileId = await engine.open('SelfNamed.dll', new File([bytes], 'SelfNamed.dll'));
+        const rows = readRows(await engine.list(fileId));
+
+        expect((await engine.read(fileId, rows.find(row => row.name === 'Kept')!.key, 'csharp')).text).toContain('Console.WriteLine();');
+    }
+});

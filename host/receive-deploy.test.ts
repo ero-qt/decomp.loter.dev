@@ -84,7 +84,7 @@ test('receiver hands an upload to rrsync, which only writes into the uploads fol
     expect((await Bun.file(join(folder, 'rrsync-args')).text()).split('\n')).toEqual(['-wo', '-munge', join(web, 'uploads'), command, '']);
 });
 
-test("activate moves the upload into the releases, where the key can't write, and points the site at it", () => {
+test("activate copies the upload into the releases, where the key can't write, and points the site at it", () => {
     upload('1.0.0');
 
     expect(activate('1.0.0')).toEqual({ exitCode: 0, error: '' });
@@ -92,6 +92,20 @@ test("activate moves the upload into the releases, where the key can't write, an
     expect(listReleases()).toEqual(['1.0.0']);
     expect(readdirSync(join(web, 'uploads'))).toEqual([]);
     expect(readdirSync(web).sort()).toEqual(['html', 'releases', 'uploads']);
+});
+
+// rsync's receiver changes into the upload's folder and writes by relative path, so it follows a rename of the folder
+test("a write into the upload after activate doesn't reach the release", async () => {
+    const release = upload('1.0.0');
+    const writer = Bun.spawn(['sh', '-c', 'read line; echo late > late.php'], { cwd: release, stdin: 'pipe', stderr: 'ignore' });
+
+    expect(activate('1.0.0').exitCode).toBe(0);
+
+    writer.stdin.write('\n');
+    writer.stdin.end();
+    await writer.exited;
+
+    expect(readdirSync(join(web, 'releases', '1.0.0')).sort()).toEqual(['.htaccess', 'index.html']);
 });
 
 test('activate replaces the link to the live release', () => {
@@ -141,7 +155,19 @@ test("activate doesn't copy a live balance that is a link, like a link to the da
     expect(existsSync(join(web, 'releases', '1.0.1', 'balance.json'))).toBe(false);
 });
 
-test("activate refuses to replace the live release, so a deploy that runs again keeps the live release's balance", async () => {
+test("activate of the live release with the same upload drops the upload and keeps the live release's balance", async () => {
+    upload('1.0.0');
+    activate('1.0.0');
+    writeFileSync(join(web, 'html', 'balance.json'), '{"balance":"12.50"}');
+    upload('1.0.0');
+
+    expect(activate('1.0.0')).toEqual({ exitCode: 0, error: '' });
+    expect(readLive()).toBe('releases/1.0.0');
+    expect(await Bun.file(join(web, 'html', 'balance.json')).text()).toBe('{"balance":"12.50"}');
+    expect(readdirSync(join(web, 'uploads'))).toEqual([]);
+});
+
+test("activate refuses to replace the live release with another upload, so the live release keeps its balance", async () => {
     upload('1.0.0');
     activate('1.0.0');
     writeFileSync(join(web, 'html', 'balance.json'), '{"balance":"12.50"}');
@@ -229,6 +255,31 @@ test('activate refuses a release with a file that the host could run', () => {
         expect([path, activate('1.0.1')]).toEqual([path, { exitCode: 1, error: `The release 1.0.1 has a file that the host could run: ${path}.\n` }]);
         expect(readLive()).toBe('releases/1.0.0');
     }
+});
+
+test('activate refuses a release with a fifo, which would block the web server that reads it', () => {
+    upload('1.0.0');
+    activate('1.0.0');
+    const release = upload('1.0.1', { 'assets/a.js': '' });
+    Bun.spawnSync(['mkfifo', join(release, 'assets', 'pipe')]);
+
+    expect(activate('1.0.1')).toEqual({ exitCode: 1, error: "The release 1.0.1 has a file that isn't a plain file: assets/pipe.\n" });
+    expect(readLive()).toBe('releases/1.0.0');
+});
+
+test("activate removes a release that fails its checks, so it doesn't push out a kept release, but never the live release", () => {
+    upload('1.0.0');
+    activate('1.0.0');
+    upload('1.0.1', { 'a.php': '' });
+
+    expect(activate('1.0.1').exitCode).toBe(1);
+    expect(listReleases()).toEqual(['1.0.0']);
+
+    writeFileSync(join(folder, 'receive-deploy.htaccess'), `${htaccess}# changed on the host\n`);
+
+    expect(activate('1.0.0').exitCode).toBe(1);
+    expect(readLive()).toBe('releases/1.0.0');
+    expect(listReleases()).toEqual(['1.0.0']);
 });
 
 test(".htaccess of a release has to match the host's copy, so a deploy can't loosen it", () => {

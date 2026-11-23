@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-11-23
+
 ### Added
 
 - The About tab links the third-party notices, which the site serves as `third-party-notices.txt`.
@@ -105,7 +107,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 - A native engine that opens ELF, PE and Mach-O programs and libraries with Rizin and Ghidra's decompiler and shows their functions and classes as C. It also reads a PE file's PDB file for names and types and finds the classes of stripped files through their RTTI.
 - A privacy notice about what stays in your browser and what the server keeps.
 
-[Unreleased]: https://github.com/ero-qt/decomp.loter.dev/compare/1.2.1...HEAD
+[Unreleased]: https://github.com/ero-qt/decomp.loter.dev/compare/1.2.2...HEAD
+[1.2.2]: https://github.com/ero-qt/decomp.loter.dev/compare/1.2.1...1.2.2
 [1.2.1]: https://github.com/ero-qt/decomp.loter.dev/compare/1.2.0...1.2.1
 [1.2.0]: https://github.com/ero-qt/decomp.loter.dev/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/ero-qt/decomp.loter.dev/compare/1.0.4...1.1.0

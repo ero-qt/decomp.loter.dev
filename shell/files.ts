@@ -366,6 +366,8 @@ export class OpenFiles {
     async read(file: OpenFile, key: number, viewId: string, signal?: AbortSignal): Promise<ReadDocument> {
         const engineDocument = await file.siteEngine!.engine.read(file.fileId!, key, viewId, signal);
 
-        return { text: engineDocument.text, tokens: readTokens(engineDocument), locals: engineDocument.locals };
+        const { text, locals, isPartial } = engineDocument;
+
+        return { text, tokens: readTokens(engineDocument), locals, isPartial };
     }
 }

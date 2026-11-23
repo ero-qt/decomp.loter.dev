@@ -71,6 +71,7 @@ const documentRules: FieldRules = {
     tokens: [value => value instanceof Int32Array, "tokens that aren't an Int32Array"],
     targets: [value => isListOf(value, isString), "targets that aren't a list of strings"],
     locals: [value => isListOf(value, isString), "locals that aren't a list of strings"],
+    isPartial: [value => value === undefined || typeof value === 'boolean', "an isPartial that isn't a boolean"],
 };
 
 const descriptionRules: FieldRules = {

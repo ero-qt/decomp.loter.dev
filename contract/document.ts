@@ -22,6 +22,8 @@ export interface Document {
     targets: string[];
     /** The declaration of each symbol that only this document has, at the number of its `L:<number>` target. */
     locals: string[];
+    /** Whether the engine still writes parts of the document, so the page reads the document again. */
+    isPartial?: boolean;
 }
 
 /**

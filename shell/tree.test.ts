@@ -279,6 +279,18 @@ test("engine's worker stops after the Delete key closes the last file", async ()
     expect(violations).toEqual([]);
 }, testTimeoutMs);
 
+test('Cmd+Backspace closes a file on a Mac, like in the explorer of VS Code', async () => {
+    const userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36';
+    const { page } = await openWorkbench('dark', { userAgent });
+    await dropFiles(page, { 'shapes.fake': shapes, 'drawing.fake': drawing });
+
+    await findRow(page, 'shapes.fake').click();
+    await page.keyboard.press('Meta+Backspace');
+    await findRow(page, 'shapes.fake').waitFor({ state: 'detached' });
+
+    expect(await readRowTexts(page)).toEqual(['drawing.fake']);
+}, testTimeoutMs);
+
 test("Delete key doesn't close a file while a symbol's row or no row is selected", async () => {
     const { page } = await openWorkbench();
     await dropFiles(page, { 'shapes.fake': shapes });

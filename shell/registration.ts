@@ -35,6 +35,7 @@ const manifest: IExtensionManifest = {
         },
         keybindings: [
             { command: 'decomp.close', key: 'delete', when: `focusedView == ${symbolsViewId}` },
+            { command: 'decomp.close', key: 'cmd+backspace', when: `isMac && focusedView == ${symbolsViewId}` },
             // casts the query that finds the strings because the command takes a text while the manifest's type takes
             // an object
             { command: 'workbench.action.quickOpen', args: '#"' as never, key: 'ctrl+shift+f', mac: 'cmd+shift+f' },

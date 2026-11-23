@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ### Fixed
 
+- On a Mac, both Cmd+Backspace and the Delete key close the selected file in the Symbols view, like in VS Code's explorer.
 - A collapsed file's row in the Symbols view clears the error of a picked companion file once a later pick works.
 - A deploy job that I run again after the site switched to its release goes through. The host drops an upload with the same files as the live release and keeps the live balance.
 - The .NET engine skips a type reference or a generic type that points back at itself in a broken file, so opening the C# of a type in that file can't crash the engine.

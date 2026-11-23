@@ -212,8 +212,9 @@ export async function waitForEngineReplies(page: Page, method: string, count = 1
 /**
  * Starts the site server and Chromium before a file's tests and stops both after the last test. Returns the function
  * `openWorkbench`, which opens the site in a new page that closes after the test and waits for the Symbols view's
- * buttons, in a page with a touch screen for `hasTouch`. `openWorkbench` returns the page, the message of each content
- * security policy violation in the page and in the engines' workers, and the URL of each request.
+ * buttons, in a page with a touch screen for `hasTouch` and with `userAgent` as the browser's user agent, like a Mac's.
+ * `openWorkbench` returns the page, the message of each content security policy violation in the page and in the
+ * engines' workers, and the URL of each request.
  */
 export function startWorkbench() {
     let server: ReturnType<typeof startSiteServer> | undefined;
@@ -234,12 +235,15 @@ export function startWorkbench() {
         server?.stop();
     });
 
-    return async function openWorkbench(colorScheme: 'dark' | 'light' = 'dark', { hasTouch = false } = {}) {
+    return async function openWorkbench(
+        colorScheme: 'dark' | 'light' = 'dark',
+        { hasTouch = false, userAgent }: { hasTouch?: boolean; userAgent?: string } = {},
+    ) {
         const violations: string[] = [];
         const requests: string[] = [];
         // gives the page a screen taller than the window because the workbench takes a window with the screen's height
         // as full screen
-        page = await browser!.newPage({ colorScheme, hasTouch, screen: { width: 1920, height: 1080 } });
+        page = await browser!.newPage({ colorScheme, hasTouch, userAgent, screen: { width: 1920, height: 1080 } });
         // gives each step a third of a test's time because a step that hangs then fails with the step's own message
         page.setDefaultTimeout(testTimeoutMs / 3);
         page.on('request', request => requests.push(request.url()));

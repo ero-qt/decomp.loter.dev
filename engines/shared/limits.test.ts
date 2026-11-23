@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { capStrings, cutString, formatNote, maxStringLength, maxStrings } from './limits';
+import { capStrings, cutString, maxStringLength, maxStrings } from './limits';
 
 test('cutString keeps a string of up to 1,000 characters whole', () => {
     expect(cutString('x'.repeat(maxStringLength))).toBe('x'.repeat(maxStringLength));
@@ -19,8 +19,4 @@ test('capStrings keeps the first strings up to the limit and cuts each', () => {
 
     expect(capped).toHaveLength(maxStrings);
     expect(capped[0]).toEqual({ text: `${'y'.repeat(999)}…`, user: null });
-});
-
-test('formatNote joins the parts that have text with semicolons on 1 line', () => {
-    expect(formatNote(['3 classes not shown', '', 'first 50,000 strings listed'])).toBe('3 classes not shown; first 50,000 strings listed');
 });

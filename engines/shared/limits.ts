@@ -22,8 +22,3 @@ export function cutString(text: string): string {
 export function capStrings(strings: StringUse[]): StringUse[] {
     return strings.slice(0, maxStrings).map(({ text, user }) => ({ text: cutString(text), user }));
 }
-
-/** Writes the note of a file's row from the parts that have text, joined with semicolons, because it has 1 line. */
-export function formatNote(parts: string[]): string {
-    return parts.filter(part => part !== '').join('; ');
-}

@@ -1,11 +1,11 @@
 import { expect, test } from 'bun:test';
-import { rmSync, statSync } from 'node:fs';
+import { mkdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { LoadError } from '../shared/loading';
 import { writeCompileRules } from './build/ghidra';
 import { buildModule, moduleFolder } from './build/link';
-import { listConfigureInputs, rizinBuildFolder } from './build/rizin';
+import { checkConfiguration, listConfigureInputs } from './build/rizin';
 import { readToolVersions } from './build/stamp';
 import { mountInMemory } from './files';
 import { loadModule, type NativeModule } from './module';
@@ -67,24 +67,29 @@ test("rizin's configure stamp hashes the script that configures it", () => {
     expect(listConfigureInputs()).toContain(fileURLToPath(new URL('build/rizin.ts', import.meta.url)));
 });
 
-// leaves out the host's tools, whose rules end with `_FOR_BUILD`, because they run threads on the build host
-test("rizin's configure leaves out the module's thread flags and the functions that a browser can't run", async () => {
-    await buildModule();
-    const ninja = await Bun.file(join(rizinBuildFolder, 'build.ninja')).text();
-    const moduleSteps = ninja.split('\n\n').filter(step => /^build [^\n]*: \S+(?<!_FOR_BUILD) /m.test(step));
-    const userconf = await Bun.file(join(rizinBuildFolder, 'rz_userconf.h')).text();
-    const features = [...userconf.matchAll(/#define (HAVE_(?:FORK|PTHREAD|OPENPTY|FORKPTY|LOGIN_TTY)) +(\d)/g)];
+// writes a configure output like Meson's, with one module step and one host step that the check leaves out
+function writeConfiguration(moduleFlags: string, fork: string): string {
+    const folder = fileURLToPath(new URL('../../artifacts/native-test/configure/', import.meta.url));
+    rmSync(folder, { recursive: true, force: true });
+    mkdirSync(folder, { recursive: true });
+    const hostStep = 'build sdb_gen: c_LINKER_FOR_BUILD sdb.o\n LINK_ARGS = -pthread';
+    writeFileSync(join(folder, 'build.ninja'), `build util.o: c_COMPILER util.c\n ARGS = -Oz ${moduleFlags}\n\n${hostStep}\n`);
+    writeFileSync(join(folder, 'rz_userconf.h'), ['FORK', 'PTHREAD', 'OPENPTY', 'FORKPTY', 'LOGIN_TTY'].map(name => {
+        return `#define HAVE_${name} ${name === 'FORK' ? fork : '0'}`;
+    }).join('\n'));
 
-    expect(moduleSteps.length).toBeGreaterThan(1000);
-    expect(moduleSteps.filter(step => /-pthread|--shared-memory|--import-memory/.test(step))).toEqual([]);
-    expect(Object.fromEntries(features.map(([, name, value]) => [name, value]))).toEqual({
-        HAVE_FORK: '0',
-        HAVE_PTHREAD: '0',
-        HAVE_OPENPTY: '0',
-        HAVE_FORKPTY: '0',
-        HAVE_LOGIN_TTY: '0',
-    });
-}, buildTimeoutMs);
+    return folder;
+}
+
+test("rizin's configure check passes a configure without the module's thread flags and functions a browser can't run", () => {
+    expect(() => checkConfiguration(writeConfiguration('-fPIC', '0'))).not.toThrow();
+});
+
+test("rizin's configure check refuses thread flags in a module step and a function that a browser can't run", () => {
+    expect(() => checkConfiguration(writeConfiguration('-pthread', '1'))).toThrow(
+        "Rizin's configure gave the module -pthread and HAVE_FORK, which the browser can't run.",
+    );
+});
 
 test("each compile of the decompiler's build writes a depfile, so a changed header compiles its sources again", () => {
     const rules = writeCompileRules('-Iinclude', '-DRIZIN').join('\n').split(/^rule /m).slice(1).map(rule => rule.trimEnd());

@@ -52,6 +52,27 @@ export function listConfigureInputs(): string[] {
  * the stamp of the last configure matches the checkout's commit, the versions, the cross file, this script, the
  * options and the tools.
  */
+// the flags of a module step and the features that a browser can't run, which the fork's meson.build turns off
+const threadFlags = ['-pthread', '--shared-memory', '--import-memory'];
+const processFeatures = ['FORK', 'PTHREAD', 'OPENPTY', 'FORKPTY', 'LOGIN_TTY'];
+
+/**
+ * Throws when Rizin's configure in the folder gives a module step a thread flag or turns on a feature that a browser
+ * can't run. Leaves out the host's tools, whose rules end with `_FOR_BUILD`, because they run on the build host.
+ */
+export function checkConfiguration(buildFolder: string): void {
+    const moduleSteps = readFileSync(join(buildFolder, 'build.ninja'), 'utf8')
+        .split('\n\n')
+        .filter(step => /^build [^\n]*: \S+(?<!_FOR_BUILD) /m.test(step));
+    const flags = threadFlags.filter(flag => moduleSteps.some(step => step.includes(flag)));
+    const userconf = readFileSync(join(buildFolder, 'rz_userconf.h'), 'utf8');
+    const features = processFeatures.filter(name => new RegExp(`#define HAVE_${name} +1`).test(userconf)).map(name => `HAVE_${name}`);
+    const problems = [...flags, ...features];
+    if (problems.length > 0) {
+        throw new Error(`Rizin's configure gave the module ${problems.join(' and ')}, which the browser can't run.`);
+    }
+}
+
 export function configureRizin(toolVersions: string): void {
     const stamp = join(workFolder, 'rizin.stamp');
     const commit = runTool(['git', 'rev-parse', 'HEAD'], rizinFolder, process.env).trim();
@@ -66,6 +87,7 @@ export function configureRizin(toolVersions: string): void {
 
     const meson = findTool('meson');
     runTool([meson, 'setup', rizinBuildFolder, rizinFolder, '--cross-file', crossFile, ...mesonOptions], workFolder, buildEnvironment(), true);
+    checkConfiguration(rizinBuildFolder);
 
     writeStamp(stamp, inputs);
 }

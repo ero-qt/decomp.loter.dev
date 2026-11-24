@@ -70,6 +70,21 @@ test("names file lists the functions at its addresses, and a caller's C and asse
     expect((await engine.read(fileId, update.key, 'assembly')).text).toContain('  call Shapes.Circle$$Area\n');
 }, 120000);
 
+test("a caller's C keeps the call of a callee with a long name on one line", async () => {
+    const { engine, fileId } = await openBinary();
+    const longName = `Shapes.Circle$$${'Area'.repeat(40)}`;
+    const names = writeNamesFile([
+        [await readRva('Player__Update'), 'Player$$Update'],
+        [await readRva('Shapes_Circle__Area'), longName],
+    ]);
+
+    await engine.provide(fileId, 'script.json', names);
+    const update = findRow(readRows(await engine.list(fileId)), 'Player$$Update', binary.name);
+    const lines = (await engine.read(fileId, update.key, 'c')).text.split('\n');
+
+    expect(lines.find(line => line.includes(longName))).toMatch(/\(.*\);$/);
+}, 120000);
+
 test("provide refuses a names file whose addresses aren't in the binary's code, text that isn't a names file and the game's metadata", async () => {
     const { engine, fileId } = await openBinary();
     const other = writeNamesFile([[0x7fff0000, 'Other$$Method']]);

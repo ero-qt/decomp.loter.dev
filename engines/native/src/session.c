@@ -47,7 +47,8 @@ EMSCRIPTEN_KEEPALIVE Session *session_new(void) {
 	// rz-ghidra's warnings are about its own mapping of variables and mean nothing to the reader of the code
 	rz_config_set_b(config, "ghidra.verbose", false);
 	rz_config_set_i(config, "ghidra.indent", 4);
-	rz_config_set_i(config, "ghidra.linelen", 120);
+	// keeps each statement on its line, because the editor wraps long lines itself, and 10000 is Ghidra's maximum
+	rz_config_set_i(config, "ghidra.linelen", 10000);
 	rz_config_set_b(config, "ghidra.cmt.cpp", true);
 	session->core->parser->localvar_only = true;
 	return session;

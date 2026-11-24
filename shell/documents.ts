@@ -275,16 +275,22 @@ export class RowDocuments implements TextDocumentContentProvider, DocumentSemant
     // fires a change of the tokens after a drop cancels the read of a document that's still open, because the workbench
     // keeps the empty tokens until the next change
     // doesn't return tokens for a failed document because the document's text already shows the error
+    // cancels the request while the workbench still has the text of the read before, like a partial document's earlier
+    // part, because the read's tokens only fit its own text and the workbench requests the tokens again with that text
     async provideDocumentSemanticTokens(document: TextDocument) {
         const builder = new vscode.SemanticTokensBuilder();
         const documentRead = this.start(document.uri);
-        const { tokens } = await documentRead.read.catch((error: unknown) => {
+        const { text, tokens } = await documentRead.read.catch((error: unknown) => {
             if (error instanceof CanceledError && !documentRead.isClosed) {
                 this.changedTokens.fire();
             }
 
-            return { tokens: [] };
+            return { text: undefined, tokens: [] };
         });
+        if (text !== undefined && text !== document.getText()) {
+            throw new vscode.CancellationError();
+        }
+
         for (const { start, length, kind, flags } of tokens) {
             const { line, character } = document.positionAt(start);
             builder.push(line, character, length, kinds.indexOf(kind), readTokenModifiers(flags));

@@ -218,10 +218,16 @@ export class SymbolFeatures implements HoverProvider, DefinitionProvider, Refere
         }
     }
 
+    // cancels the request while the workbench still has the text of the read before, like a partial document's earlier
+    // part, because the read's declarations only fit its own text and the workbench requests the outline again with
+    // that text
     async provideDocumentSymbols(document: TextDocument): Promise<DocumentSymbol[]> {
         const found = await this.documents.readOpenDocument(document.uri);
         if (!found) {
             return [];
+        }
+        if (found.read.text !== document.getText()) {
+            throw new vscode.CancellationError();
         }
 
         const { rows } = await this.openFiles.list(found.file);

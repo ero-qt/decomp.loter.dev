@@ -23,6 +23,7 @@ class FakeEmitter<Value> {
 mock.module('./api', () => ({
     vscode: {
         EventEmitter: FakeEmitter,
+        CancellationError: class extends Error {},
         TabInputText: class {},
         SemanticTokensBuilder: class {
             private readonly data: number[][] = [];
@@ -62,7 +63,11 @@ test("a token request whose read a search drops before the document's tab shows 
     const documents = new RowDocuments(openFiles);
     const path = formatDocumentPath({ engineId: 'test', viewId: 'code', fileId: 1, key: 16 }, 'Listed', '.code');
     const uri = { path, toString: () => `decomp:${path}` } as Uri;
-    const textDocument = { uri, positionAt: (offset: number) => ({ line: 0, character: offset }) } as unknown as TextDocument;
+    const textDocument = {
+        uri,
+        getText: () => 'class Listed',
+        positionAt: (offset: number) => ({ line: 0, character: offset }),
+    } as unknown as TextDocument;
     const read: ReadDocument = { text: 'class Listed', tokens: [{ start: 6, length: 6, kind: 'class', flags: 0, target: null }], locals: [] };
     let changes = 0;
     documents.onDidChangeSemanticTokens(() => changes++);
@@ -77,4 +82,38 @@ test("a token request whose read a search drops before the document's tab shows 
 
     expect(changes).toBe(1);
     expect(((await nextTokens) as unknown as { data: number[][] }).data).toEqual([[0, 6, 6, 1, 0]]);
+}, 5000);
+
+test("a token request for the text of a partial read gets canceled once the next read came, whose tokens don't fit the text", async () => {
+    const reads: ((read: ReadDocument) => void)[] = [];
+    const file = { siteEngine: { manifest: { id: 'test' } }, fileId: 1 } as OpenFile;
+    const openFiles = {
+        files: [file],
+        onDidChange: () => ({ dispose: () => undefined }),
+        read() {
+            const { promise, resolve } = Promise.withResolvers<ReadDocument>();
+            reads.push(resolve);
+
+            return promise;
+        },
+    } as unknown as OpenFiles;
+    const documents = new RowDocuments(openFiles);
+    const path = formatDocumentPath({ engineId: 'test', viewId: 'code', fileId: 1, key: 16 }, 'Listed', '.code');
+    const uri = { path, toString: () => `decomp:${path}` } as Uri;
+    const partial = 'class A\n// …';
+    const textDocument = {
+        uri,
+        getText: () => partial,
+        positionAt: (offset: number) => ({ line: 0, character: offset }),
+    } as unknown as TextDocument;
+
+    const firstText = documents.provideTextDocumentContent(uri);
+    reads.at(-1)!({ text: partial, tokens: [{ start: 6, length: 1, kind: 'class', flags: 0, target: null }], locals: [], isPartial: true });
+    await firstText;
+    await Bun.sleep(150);
+    reads.at(-1)!({ text: 'class A\n{\n    return;\n}', tokens: [{ start: 16, length: 6, kind: 'class', flags: 0, target: null }], locals: [] });
+    const tokens = documents.provideDocumentSemanticTokens(textDocument);
+
+    expect(reads).toHaveLength(2);
+    await expect(tokens).rejects.toThrow();
 }, 5000);

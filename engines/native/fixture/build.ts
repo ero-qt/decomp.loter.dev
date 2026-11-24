@@ -8,6 +8,7 @@ const source = join(sourceFolder, 'shapes.cpp');
 const extrasSource = join(sourceFolder, 'extras.cpp');
 const stubSource = join(sourceFolder, 'managed-stub.c');
 const bigSource = join(sourceFolder, 'big.c');
+const relocationsSource = join(sourceFolder, 'relocations.c');
 const script = fileURLToPath(import.meta.url);
 const outputRoot = fileURLToPath(new URL('../../../artifacts/native-fixture/', import.meta.url));
 
@@ -84,6 +85,8 @@ const commands: Command[] = [
     // writes the PDB's name in capitals into the DLL's debug directory, like the builds of many Windows programs do
     ['clang++', '--target=x86_64-pc-windows-msvc', ...compileFlags, '-o', 'extras.obj', extrasSource],
     ['lld-link', ...peLinkFlags, '/pdbaltpath:EXTRAS.PDB', '/pdb:extras.pdb', '/out:extras.dll', 'extras.obj'],
+    ['clang', '--target=x86_64-pc-windows-msvc', ...compileFlags, '-o', 'relocations.obj', relocationsSource],
+    ['lld-link', '/dll', '/noentry', '/nodefaultlib', '/Brepro', '/out:relocations.dll', 'relocations.obj'],
     ['clang', '--target=x86_64-linux-gnu', '-c', '-o', 'symbols.o', 'symbols.s'],
     ['ld.lld', '-shared', '-o', 'symbols.so', 'symbols.o'],
 ];

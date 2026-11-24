@@ -4,6 +4,7 @@ import { writeRows } from '#contract/rows';
 import type { EngineHandlers } from '#contract/serve';
 import { modifiersOf } from '#contract/symbols';
 import { loadOnce, refuseLoadErrors } from '../shared/loading';
+import { isPeFile } from '../shared/pe';
 import { createRefusals } from '../shared/refusals';
 import { assemblyHeader, cHeader, listClassParts, writeClassDocument } from './class-document';
 import { createDocumentCache, decompileFunction } from './code';
@@ -184,6 +185,12 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
             if (session === 0) {
                 mounted.unmount();
                 return failed(`The engine ran out of memory before it opened ${name}.`);
+            }
+
+            // skips a PE file's base relocations, which only patch an image that loads at another address than its
+            // own, because Rizin loads it at its own and a game's binary takes a second and 170 MB for its 500,000
+            if (await isPeFile(file)) {
+                module.runCommand(session, 'e bin.relocs=false');
             }
 
             const refusal = findRefusal(module, session, mounted.path, name);

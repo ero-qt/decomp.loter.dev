@@ -44,15 +44,18 @@ static ut64 function_end(Session *session, ut64 addr) {
 }
 
 /**
- * \brief Removes the blocks outside of the function's range.
+ * \brief Removes the blocks outside of the function's range, and cuts a block that runs past the range at its end.
  *
- * The analysis follows jumps into cold parts and into the functions that a tail jump reaches.
+ * The analysis follows jumps into cold parts and into the functions that a tail jump reaches, and runs on into the
+ * next function after a call that doesn't return.
  */
 static void keep_own_blocks(RzAnalysisFunction *fcn, ut64 end) {
 	for (size_t i = rz_pvector_len(fcn->bbs); i > 0; i--) {
 		RzAnalysisBlock *block = rz_pvector_at(fcn->bbs, i - 1);
 		if (block->addr < fcn->addr || block->addr >= end) {
 			rz_analysis_function_remove_block(fcn, block);
+		} else if (block->addr + block->size > end) {
+			rz_analysis_block_set_size(block, end - block->addr);
 		}
 	}
 }
@@ -98,6 +101,41 @@ static void rename_function(Session *session, RzAnalysisFunction *fcn) {
 }
 
 /**
+ * \brief Gives a function without a name of its own the name of the names file's helper whose work it does, like
+ * `il2cpp_codegen_object_new`, with the helper's signature, and marks a function whose code doesn't return, so the
+ * decompiler ends the caller's path at its call.
+ */
+static void name_helper(Session *session, RzAnalysisFunction *fcn) {
+	RzCore *core = session->core;
+	char flag_name[32];
+	if (rz_flag_get(core->flags, rz_strf(flag_name, "names.%" PFMT64x, fcn->addr))) {
+		return;
+	}
+
+	bool is_noreturn = false;
+	const SessionHelper *helper = helpers_find(session, fcn->addr, &is_noreturn);
+	if (is_noreturn) {
+		fcn->is_noreturn = true;
+	}
+
+	RzFlagItem *item = helper ? rz_flag_set(core->flags, flag_name, fcn->addr, 1) : NULL;
+	if (item) {
+		rz_flag_item_set_realname(core->flags, item, helper->name);
+	}
+
+	RzTypeParser *parser = rz_analysis_get_type_db(core->analysis)->parser;
+	char *error = NULL;
+	RzType *type = helper && *helper->signature ? rz_type_parse_string_declaration_single(parser, helper->signature, &error) : NULL;
+	free(error);
+	if (type && type->kind == RZ_TYPE_KIND_CALLABLE && type->callable) {
+		debug_info_set_parameters(fcn, type->callable);
+		rz_pvector_push(&session->signature_types, type);
+	} else {
+		rz_type_free(type);
+	}
+}
+
+/**
  * \brief Creates the function at an address that the function calls or jumps to, or gives it its name.
  *
  * The decompiler then shows the call by the target's name and turns a jump to it into a call. Leaves a function that
@@ -119,6 +157,7 @@ static void name_target(Session *session, ut64 addr) {
 		debug_info_apply_dwarf(core, fcn);
 		debug_info_apply_pdb(session, fcn);
 		names_file_apply_signature(session, fcn);
+		name_helper(session, fcn);
 		rename_function(session, fcn);
 	}
 }
@@ -156,6 +195,34 @@ static void name_data(RzCore *core, ut64 from, ut64 addr) {
 }
 
 /**
+ * \brief Returns whether the instruction before a call takes the address of a global of the names file, like the call
+ * that fills a metadata global of an IL2CPP game.
+ */
+static bool takes_global(RzCore *core, RzList /*<RzAnalysisXRef *>*/ *xrefs, ut64 call) {
+	RzListIter *it;
+	RzAnalysisXRef *xref;
+	rz_list_foreach (xrefs, it, xref) {
+		// the longest instruction that takes an address has 8 bytes on the processors that IL2CPP builds for
+		bool is_before = xref->type == RZ_ANALYSIS_XREF_TYPE_DATA && xref->from < call && call - xref->from <= 8;
+		if (!is_before || !rz_analysis_var_global_get_byaddr_at(core->analysis, xref->to)) {
+			continue;
+		}
+
+		ut8 bytes[32] = { 0 };
+		rz_io_read_at_mapped(core->io, xref->from, bytes, sizeof(bytes));
+		RzAnalysisOp op;
+		rz_analysis_op_init(&op);
+		int size = rz_analysis_op(core->analysis, &op, xref->from, bytes, sizeof(bytes), RZ_ANALYSIS_OP_MASK_BASIC);
+		bool is_taken = (op.type & RZ_ANALYSIS_OP_TYPE_MASK) == RZ_ANALYSIS_OP_TYPE_LEA && xref->from + size == call;
+		rz_analysis_op_fini(&op);
+		if (is_taken) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
  * \brief Names the blocks that a function jumps to, like `loc_1040`, the targets of its calls and jumps and its data.
  */
 static void name_parts(Session *session, RzAnalysisFunction *fcn) {
@@ -176,6 +243,9 @@ static void name_parts(Session *session, RzAnalysisFunction *fcn) {
 		if (xref->type == RZ_ANALYSIS_XREF_TYPE_DATA) {
 			name_data(session->core, xref->from, xref->to);
 		} else if (xref->type != RZ_ANALYSIS_XREF_TYPE_STRING && !rz_analysis_function_contains(fcn, xref->to)) {
+			if (session->helpers && takes_global(session->core, xrefs, xref->from)) {
+				helpers_set_global_taker(session, xref->to);
+			}
 			name_target(session, xref->to);
 		}
 	}
@@ -214,6 +284,9 @@ static RzAnalysisFunction *prepare(Session *session, ut64 addr) {
 	names_file_apply_signature(session, fcn);
 	rename_function(session, fcn);
 	name_parts(session, fcn);
+	if (session->has_names) {
+		locals_apply_pointed_types(session, fcn);
+	}
 	return fcn;
 }
 
@@ -269,4 +342,48 @@ EMSCRIPTEN_KEEPALIVE char *session_describe(Session *session, const char *addr) 
 		}
 	}
 	return name && strchr(name, '(') ? names_signature(name) : NULL;
+}
+
+/**
+ * \brief Analyzes the function at an address and returns the addresses of the code that it calls or jumps to outside
+ * of itself and of the data that it refers to, as a JSON array of hex strings, or NULL when Rizin doesn't find a
+ * function there.
+ *
+ * Leaves a function that the session didn't prepare unprepared, without the names and signatures of its targets,
+ * because the caller first loads the types that their signatures need, and a signature parses once.
+ * The caller frees the result with free().
+ */
+EMSCRIPTEN_KEEPALIVE char *session_targets(Session *session, const char *addr_text) {
+	RzCore *core = session->core;
+	ut64 addr = strtoull(addr_text, NULL, 16);
+	RzAnalysisFunction *fcn = rz_analysis_get_function_at(core->analysis, addr);
+	bool is_prepared = fcn && rz_set_u_contains(session->prepared, addr);
+	if (!is_prepared) {
+		if (fcn) {
+			rz_analysis_function_delete(fcn);
+		}
+		fcn = rz_core_analysis_function_add(core, NULL, addr, false) ? rz_analysis_get_function_at(core->analysis, addr) : NULL;
+		if (!fcn) {
+			return NULL;
+		}
+		keep_own_blocks(fcn, function_end(session, addr));
+	}
+
+	RzList *xrefs = rz_analysis_function_get_xrefs_from(fcn);
+	PJ *j = pj_new();
+	pj_a(j);
+	RzListIter *it;
+	RzAnalysisXRef *xref;
+	rz_list_foreach (xrefs, it, xref) {
+		if (xref->type == RZ_ANALYSIS_XREF_TYPE_DATA || !rz_analysis_function_contains(fcn, xref->to)) {
+			char text[32];
+			pj_s(j, rz_strf(text, "0x%" PFMT64x, xref->to));
+		}
+	}
+	pj_end(j);
+	rz_list_free(xrefs);
+	if (!is_prepared) {
+		rz_analysis_function_delete(fcn);
+	}
+	return pj_drain(j);
 }

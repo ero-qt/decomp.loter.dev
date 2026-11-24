@@ -14,6 +14,7 @@ import { describeRow, findFullName } from './describe';
 import { checkArchitecture, disassembleFunction, type DisassemblyRows } from './disassembly';
 import { type MountedFile, type MountFile, writeShareFiles } from './files';
 import { claimsNativeFile, findRefusal } from './formats';
+import { maxImageSpan } from './keys';
 import manifest from './manifest.json' with { type: 'json' };
 import type { NativeModule } from './module';
 import { namesFileName, readNamesFile } from './names-file';
@@ -52,9 +53,26 @@ export interface NativeHandlers extends EngineHandlers {
     /**
      * Decompiles the code at an address relative to the image into C without a row of the file's listing, like a
      * method's code that a game's metadata points at. Each target of the C has the address relative to the image as
-     * its key.
+     * its key. The decompiler writes C# with the loaded names when `isCSharp` is set, see
+     * `NativeModule.decompileCSharp`.
      */
-    readCode(fileId: number, rva: number, signal: AbortSignal): Promise<Reply<Document>>;
+    readCode(fileId: number, rva: number, signal: AbortSignal, isCSharp?: boolean): Promise<Reply<Document>>;
+    /**
+     * Loads names in the lines that a names file becomes, see `writeNamesLines`, with the C header of their types, like
+     * `provide` loads a names file, without the JSON text of a million methods.
+     */
+    loadNames(fileId: number, lines: Blob, header: Blob): Promise<Reply<void>>;
+    /**
+     * Adds the C types of a header to the file's types and the globals of the lines that `writeNamesLines` writes for
+     * globals, like the structs and globals that the code at an address points to, which the C of a later `readCode`
+     * call then has, because the structs and globals of a whole game take seconds and a gigabyte.
+     */
+    loadTypes(fileId: number, header: Blob, globals: Blob): Promise<Reply<void>>;
+    /**
+     * Returns the addresses relative to the image of the code that the code at an address calls or jumps to and of
+     * the data that it refers to, like the methods and globals whose types its C needs.
+     */
+    listCodeTargets(fileId: number, rva: number): Promise<Reply<number[]>>;
     /**
      * Reads the code at an address relative to the image like `readCode`, or a note with the bytes of the data there,
      * without the file's listing. Refuses an address outside the image's sections.
@@ -372,7 +390,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
 
             return writeClassDocument(parts, readMethod, signal, view === 'c' ? cHeader : assemblyHeader);
         },
-        async readCode(fileId, rva, signal) {
+        async readCode(fileId, rva, signal, isCSharp = false) {
             const found = findFile(fileId);
             if (found.error !== undefined) {
                 return found;
@@ -387,7 +405,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
 
             const base = readBase(loaded.module, file);
 
-            return decompileAt(loaded.module, file.session, fileId, base, rva);
+            return decompileAt(loaded.module, file.session, fileId, base, rva, isCSharp);
         },
         async readAddress(fileId, rva, signal) {
             const found = findFile(fileId);
@@ -407,6 +425,38 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
             const language = section.isCode ? await writeFileLanguage(loaded, file, signal) : ok(undefined);
 
             return language.error === undefined ? readAddress(loaded.module, file.session, fileId, base, rva, section) : language;
+        },
+        async listCodeTargets(fileId, rva) {
+            const found = findFile(fileId);
+            if (found.error !== undefined) {
+                return found;
+            }
+
+            const module = await useModule();
+            const base = readBase(module, found.value);
+            const targets = module.listTargets(found.value.session, base + BigInt(rva)) ?? [];
+
+            return ok(targets.filter(target => target >= base && target - base < maxImageSpan).map(target => Number(target - base)));
+        },
+        async loadNames(fileId, lines, header) {
+            const found = findFile(fileId);
+
+            return found.error === undefined ? loadNames(await useModule(), fileId, found.value, namesFileName, lines, header) : found;
+        },
+        async loadTypes(fileId, header, globals) {
+            const found = findFile(fileId);
+            if (found.error !== undefined) {
+                return found;
+            }
+
+            const module = await useModule();
+            const mounted = await mountFile(module.fs, `/files/${++mountCount}`, 'il2cpp.h', header);
+            const mountedGlobals = await mountFile(module.fs, `/files/${++mountCount}`, namesFileName, globals);
+            module.loadTypes(found.value.session, mounted.path, mountedGlobals.path);
+            mounted.unmount();
+            mountedGlobals.unmount();
+
+            return ok(undefined);
         },
         async describe(target, view, signal) {
             if (!views.includes(view)) {

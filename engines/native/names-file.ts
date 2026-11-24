@@ -23,6 +23,8 @@ export interface ScriptMethod {
     Address: number;
     Name: string;
     Signature?: string;
+    /** What the function is in C#, in the text that the glue's `csharp_add_function` reads. */
+    CSharp?: string;
 }
 
 /**
@@ -44,6 +46,8 @@ export interface ScriptGlobal {
     Name?: string;
     Signature?: string;
     Value?: string;
+    /** What the global is in C#, in the text that the glue's `csharp_add_global` reads. */
+    CSharp?: string;
 }
 
 /** The C type of a string literal's global, the class struct of `System.String` that the IL2CPP engine's header has. */
@@ -65,10 +69,10 @@ function readGlobals(value: unknown): ScriptGlobal[] | undefined {
 }
 
 // writes a global's line, an `@` and its address relative to the image in hex, its name and its C type after a tab
-function writeGlobalLine(address: number, name: string, type: string): string {
-    const isClean = ![name, type].some(text => controlCharacters.test(text));
+function writeGlobalLine(address: number, name: string, type: string, csharp = ''): string {
+    const isClean = ![name, type, csharp.replaceAll('\t', '')].some(text => controlCharacters.test(text));
 
-    return isClean ? `@${address.toString(16)} ${name}\t${type}\n` : '';
+    return isClean ? `@${address.toString(16)} ${name}\t${type}${csharp === '' ? '' : `\t${csharp}`}\n` : '';
 }
 
 function isScriptMethod(value: unknown): value is ScriptMethod {
@@ -79,10 +83,12 @@ function isScriptMethod(value: unknown): value is ScriptMethod {
 }
 
 // writes a function's line, with its signature after a tab when the signature doesn't have a control character either
-function writeLine({ Address, Name, Signature }: ScriptMethod): string {
+function writeLine({ Address, Name, Signature, CSharp }: ScriptMethod): string {
     const hasSignature = Signature !== undefined && Signature !== '' && !controlCharacters.test(Signature);
+    const hasCSharp = CSharp !== undefined && !controlCharacters.test(CSharp.replaceAll('\t', ''));
+    const signature = hasSignature ? `\t${Signature}` : hasCSharp ? '\t' : '';
 
-    return `${Address.toString(16)} ${Name}${hasSignature ? `\t${Signature}` : ''}\n`;
+    return `${Address.toString(16)} ${Name}${signature}${hasCSharp ? `\t${CSharp}` : ''}\n`;
 }
 
 /** The functions and metadata globals of a names file, in the fields of Il2CppDumper's `script.json`. */
@@ -100,15 +106,15 @@ export interface ScriptNames {
  * methods pass the length of a string.
  */
 export function writeNamesLines(names: ScriptNames): string[] {
-    const writeMetadataLine = ({ Address, Name = '', Signature = '' }: ScriptGlobal) => {
-        return Name === '' ? '' : writeGlobalLine(Address, Name, Signature || 'void *');
+    const writeMetadataLine = ({ Address, Name = '', Signature = '', CSharp }: ScriptGlobal) => {
+        return Name === '' ? '' : writeGlobalLine(Address, Name, Signature || 'void *', CSharp);
     };
 
     return [
         ...names.ScriptMethod.filter(({ Name }) => !controlCharacters.test(Name)).map(writeLine),
         ...names.ScriptMetadata.map(writeMetadataLine),
-        ...names.ScriptMetadataMethod.map(({ Address, Name = '' }) => (Name === '' ? '' : writeGlobalLine(Address, Name, 'void *'))),
-        ...names.ScriptString.map(({ Address }, index) => writeGlobalLine(Address, `StringLiteral_${index}`, stringType)),
+        ...names.ScriptMetadataMethod.map(({ Address, Name = '', CSharp }) => (Name === '' ? '' : writeGlobalLine(Address, Name, 'void *', CSharp))),
+        ...names.ScriptString.map(({ Address, CSharp }, index) => writeGlobalLine(Address, `StringLiteral_${index}`, stringType, CSharp)),
     ];
 }
 

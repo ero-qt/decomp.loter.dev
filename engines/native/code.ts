@@ -14,11 +14,39 @@ export interface Annotation {
     offset?: string;
 }
 
-/** The C of a function with its annotations like `pdgj` writes them, or the decompiler's errors. */
+/**
+ * The C of a function with its annotations like `pdgj` writes them, or the decompiler's errors. C# code also has the
+ * links of the parts that name a type, a field, a called function's declaring type, a called accessor's property or the
+ * class of a raised exception, each with the struct's name, the function's address or the class's name.
+ */
 export interface Decompiled {
     code?: string;
     annotations?: Annotation[];
+    links?: Annotation[];
     errors?: string[];
+}
+
+/**
+ * Writes the target of a link of C# code, which only the engine that gave the names of the code can resolve, as a
+ * symbol outside the open files, `|#type:<struct>`, `|#field:<struct>:<offset in hex>`,
+ * `|#declaring_type:<key of the function's row in hex>`, `|#property:<key of the accessor's row in hex>` or
+ * `|#raised_type:<name of the exception's class>`.
+ */
+function formatLinkTarget({ type, name, offset }: Annotation, rows: CodeRows): string {
+    const address = BigInt(offset ?? 0);
+    const writePlace = () => {
+        switch (type) {
+            case 'type':
+            case 'raised_type':
+                return name;
+            case 'field':
+                return `${name}:${address.toString(16)}`;
+            default:
+                return (rows.findRow(address)?.key ?? 0).toString(16);
+        }
+    };
+
+    return formatTarget({ outside: `#${type}:${writePlace()}` });
 }
 
 /** The rows of the function's file, which the C's tokens point at. */
@@ -40,6 +68,8 @@ interface Part {
     highlight: string;
     name?: string;
     address?: bigint;
+    /** The link of C# code that starts with the part. */
+    link?: Annotation;
 }
 
 const encoder = new TextEncoder();
@@ -67,8 +97,9 @@ function readUtf16Offsets(text: string): (offset: number) => number {
     return offset => offsets[offset];
 }
 
-// reads the highlighted parts and the names and addresses that other annotations of the same start give them
-function readParts(code: string, annotations: Annotation[]): Part[] {
+// reads the highlighted parts and the names and addresses that other annotations of the same start give them, with
+// the links of C# code, each on the highlighted part of its start or as a part of its own
+function readParts(code: string, annotations: Annotation[], links: Annotation[]): Part[] {
     const toUtf16 = readUtf16Offsets(code);
     const details = new Map<number, Annotation>();
     for (const annotation of annotations) {
@@ -77,16 +108,20 @@ function readParts(code: string, annotations: Annotation[]): Part[] {
         }
     }
 
-    return annotations
+    const linksByStart = new Map(links.map(link => [link.start, link]));
+    const highlighted = annotations
         .filter(({ type, syntax_highlight }) => type === 'syntax_highlight' && syntax_highlight !== undefined)
-        .map(({ start, end, syntax_highlight }) => {
+        .map(({ start, end, syntax_highlight }): Part => {
             const { name, offset } = details.get(start) ?? {};
-
             const address = offset === undefined ? undefined : BigInt(offset);
+            const link = linksByStart.get(start);
+            linksByStart.delete(start);
 
-            return { start: toUtf16(start), end: toUtf16(end), highlight: syntax_highlight!, name, address };
-        })
-        .sort((first, second) => first.start - second.start);
+            return { start: toUtf16(start), end: toUtf16(end), highlight: syntax_highlight!, name, address, link };
+        });
+    const linked = [...linksByStart.values()].map((link): Part => ({ start: toUtf16(link.start), end: toUtf16(link.end), highlight: '', link }));
+
+    return [...highlighted, ...linked].sort((first, second) => first.start - second.start);
 }
 
 // moves the comments that Ghidra writes in front of a function to 1 block at its end, so the text starts with the
@@ -127,10 +162,11 @@ function describeVariable(text: string, parts: Part[], variable: Part): string {
 /**
  * Turns Ghidra's C with rz-ghidra's annotations into a document. The function's name in the signature declares the function's row.
  * A call points at its callee's row. Parameters, locals and the labels that a `goto` jumps to are locals of the
- * document, declared at their first token. A type is colored without a target.
+ * document, declared at their first token. A type is colored without a target. A link of C# code has the target of
+ * `formatLinkTarget`.
  */
-export function writeCode(code: string, annotations: Annotation[], rows: CodeRows): Document {
-    const { text, parts } = moveWarnings(code, readParts(code, annotations));
+export function writeCode(code: string, annotations: Annotation[], rows: CodeRows, links: Annotation[] = []): Document {
+    const { text, parts } = moveWarnings(code, readParts(code, annotations, links));
     const tokens: Token[] = [];
     const locals: string[] = [];
     // name of a variable or label -> its number in `locals`
@@ -159,10 +195,16 @@ export function writeCode(code: string, annotations: Annotation[], rows: CodeRow
 
     for (const part of parts) {
         const length = part.end - part.start;
-        if (part.highlight === 'function_name') {
+        if (part.link) {
+            const kind = part.link.type === 'field' || part.link.type === 'property' ? part.link.type : 'class';
+            tokens.push({ start: part.start, length, kind, flags: 0, target: formatLinkTarget(part.link, rows) });
+        } else if (part.highlight === 'function_name') {
             addRowToken(part, 'method');
         } else if (part.highlight === 'global_variable' || (part.address !== undefined && part.highlight === 'local_variable')) {
             addRowToken(part, 'field');
+        } else if (part.highlight === 'datatype' && part.address !== undefined) {
+            // the type that a global of C# code names, like the class of a `new` expression
+            addRowToken(part, 'class');
         } else if ((part.highlight === 'function_parameter' || part.highlight === 'local_variable') && part.name !== undefined) {
             const kind = part.highlight === 'function_parameter' ? 'parameter' : 'local';
             tokens.push({ start: part.start, length, kind, ...addLocal(part.name, () => describeVariable(text, parts, part)) });
@@ -219,7 +261,7 @@ export function writePrototype(signature: string, name: string, size: number, ro
  * prototype when its code is too large. Refuses an address without a function and a function that Ghidra can't
  * decompile.
  */
-export function decompileFunction(module: NativeModule, session: number, kind: Kind, rows: CodeRows): Reply<Document> {
+export function decompileFunction(module: NativeModule, session: number, kind: Kind, rows: CodeRows, isCSharp = false): Reply<Document> {
     const prepared = module.prepareFunction(session, rows.address);
     if (!prepared) {
         return failed(`Rizin doesn't find a function at 0x${rows.address.toString(16)}.`);
@@ -228,27 +270,28 @@ export function decompileFunction(module: NativeModule, session: number, kind: K
         return ok(writePrototype(prepared.signature, prepared.name, prepared.size, rows, kind));
     }
 
-    const { code, annotations = [], errors = [] } = module.decompile(session, BigInt(prepared.addr));
+    const decompile = isCSharp ? module.decompileCSharp : module.decompile;
+    const { code, annotations = [], links = [], errors = [] } = decompile(session, BigInt(prepared.addr));
     if (typeof code !== 'string') {
         return failed(errors.join(' ') || `Ghidra can't decompile the function at ${prepared.addr}.`);
     }
 
-    return ok(writeCode(code, annotations, rows));
+    return ok(writeCode(code, annotations, rows, links));
 }
 
 /**
  * Decompiles the code at an address relative to the image like `decompileFunction`, without the file's rows, because
  * the rows stop at a cap that a game's binary passes. Each target's key is its address relative to the image, which is
- * the key of its row in an image that spans less than 2 GB.
+ * the key of its row in an image that spans less than 2 GB. Writes C# with `isCSharp`.
  */
-export function decompileAt(module: NativeModule, session: number, fileId: number, base: bigint, rva: number): Reply<Document> {
+export function decompileAt(module: NativeModule, session: number, fileId: number, base: bigint, rva: number, isCSharp = false): Reply<Document> {
     const rows: CodeRows = {
         fileId,
         address: base + BigInt(rva),
         findRow: address => (address >= base && address - base < maxImageSpan ? { key: Number(address - base) } : undefined),
     };
 
-    return decompileFunction(module, session, 'method', rows);
+    return decompileFunction(module, session, 'method', rows, isCSharp);
 }
 
 /** The documents of decompiled functions by file and key, which drops the documents read longest ago. */

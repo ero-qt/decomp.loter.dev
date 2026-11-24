@@ -1,9 +1,6 @@
 #include <emscripten/emscripten.h>
 #include "session.h"
 
-// rz-ghidra's decompile of the function at an address, which writes Ghidra's error into the code when it fails
-RzAnnotatedCode *rz_ghidra_decompile_annotated_code(RzCore *core, ut64 addr);
-
 #define DECOMPILER_ERROR "Ghidra Decompiler Error: "
 
 static const char *const highlights[] = {
@@ -77,20 +74,28 @@ EMSCRIPTEN_KEEPALIVE char *session_decompile(Session *session, const char *addr)
 
 	PJ *j = pj_new();
 	pj_o(j);
+	decompile_put_code(j, code);
+	pj_end(j);
+	rz_annotated_code_free(code);
+	return pj_drain(j);
+}
+
+/**
+ * \brief Writes the code and annotations of a decompiled function, or Ghidra's error, into an open JSON object.
+ */
+void decompile_put_code(PJ *j, const RzAnnotatedCode *code) {
 	if (rz_str_startswith(code->code, DECOMPILER_ERROR) && rz_vector_empty(&code->annotations)) {
 		pj_ka(j, "errors");
 		pj_s(j, code->code);
 		pj_end(j);
-	} else {
-		pj_ks(j, "code", code->code);
-		pj_ka(j, "annotations");
-		RzCodeAnnotation *annotation;
-		rz_vector_foreach (&code->annotations, annotation) {
-			add_annotation(j, annotation);
-		}
-		pj_end(j);
+		return;
+	}
+
+	pj_ks(j, "code", code->code);
+	pj_ka(j, "annotations");
+	RzCodeAnnotation *annotation;
+	rz_vector_foreach (&code->annotations, annotation) {
+		add_annotation(j, annotation);
 	}
 	pj_end(j);
-	rz_annotated_code_free(code);
-	return pj_drain(j);
 }

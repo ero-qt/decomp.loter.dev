@@ -217,6 +217,11 @@ export function readRowTexts(page: Page): Promise<string[]> {
     });
 }
 
+/** Reads the labels of the rows that the Symbols view shows as selected. */
+export function readSelectedRows(page: Page): Promise<string[]> {
+    return findRows(page).and(page.locator('[aria-selected="true"]')).locator('.label-name').allTextContents();
+}
+
 /** Reads the SVG of a row's icon from the data URL that the row shows. */
 export async function readRowIcon(page: Page, label: string): Promise<string | undefined> {
     const image = await findRow(page, label).locator('.custom-view-tree-node-item-icon').evaluate(icon => icon.style.backgroundImage);

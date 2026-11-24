@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 - Ctrl+Shift+F and the search button of the Symbols view open a search for symbols and strings. `kind:method`, `is:public`, `is:static` and `in:Shapes.dll` filter the results by kind, by accessibility or modifier and by file, engine or assembly, also without a name. `Shape.Area` finds `Area` in `Shape`. A quote searches the strings, like `"hello`.
 - The search also lists a string whose user the engine doesn't know.
+- The Symbols view selects the row of the document in the editor, like after Go to definition into another type.
 
 ### Changed
 

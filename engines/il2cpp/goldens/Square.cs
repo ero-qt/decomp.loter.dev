@@ -40,13 +40,13 @@ public class Square : Shape
 
 	public Square()
 	{
-		// Shares its code with Circle..ctor, Square.Clear.
+		// Shares its code with Circle.Circle, Square.Clear.
 		return;
 	}
 
 	public void Clear()
 	{
-		// Shares its code with Circle..ctor, Square..ctor.
+		// Shares its code with Circle.Circle, Square.Square.
 		return;
 	}
 
@@ -56,5 +56,13 @@ public class Square : Shape
 
 		__this = new Square();
 		return __this;
+	}
+
+	public static Square Build()
+	{
+		Square pSVar1;
+
+		pSVar1 = new Square();
+		return pSVar1;
 	}
 }

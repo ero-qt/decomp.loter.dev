@@ -140,7 +140,17 @@ function writeImageCode(layout: Layout): string[] {
 
     const typeMacros = layout.types.map(({ type, index }) => `#define TYPE_${fullName(type).replace(/[^A-Za-z0-9_]/g, '_')} ${index}`);
 
-    return ['', '#define USAGE(kind, index) (((usize)(kind) << 29) | ((usize)(index) << 1) | 1)', ...typeMacros, '', ...codes];
+    // the first method of each C name, because overloads share it
+    const methodIndexes = new Map<string, number>();
+    for (const { method, owner, index } of layout.methods) {
+        const name = functionName(owner.type, method);
+        if (!methodIndexes.has(name)) {
+            methodIndexes.set(name, index);
+        }
+    }
+    const methodMacros = [...methodIndexes].map(([name, index]) => `#define METHOD_${name} ${index}`);
+
+    return ['', '#define USAGE(kind, index) (((usize)(kind) << 29) | ((usize)(index) << 1) | 1)', ...typeMacros, ...methodMacros, '', ...codes];
 }
 
 function writeFunctions(layout: Layout): string[] {

@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 ### Fixed
 
 - A `<`, `<=` or `<<` in C# code has the color of an operator, not the red of a bracket without its pair.
+- A constructor's call of its base class's constructor reads as `base(name)`, not `base..ctor(name)`. A generic type's constructor that runs through code its instances share reads as `new Dictionary<int, bool>()` with the allocation, and the note of shared code shows a constructor as `Circle.Circle`.
 
 ## [1.4.0] - 2026-11-25
 

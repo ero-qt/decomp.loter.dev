@@ -126,6 +126,7 @@ struct CircleStatics { struct Circle *unit; struct IntArray *sizes; int count; }
 
 struct Class *Circle_TypeInfo = (struct Class *)USAGE(1, TYPE_Shapes_Circle);
 struct Class *Square_TypeInfo = (struct Class *)USAGE(1, TYPE_Shapes_Square);
+const void *Square_ctor_Method = (const void *)USAGE(3, METHOD_Shapes_Square___ctor);
 struct String *Literal_0 = (struct String *)USAGE(5, 0);
 static unsigned char Unit_initialized;
 
@@ -271,6 +272,19 @@ METHOD struct Circle *Shapes_Square__Make(const void *method)
 	return square;
 }
 
+// runs a constructor through code that isn't a method's, like code that the instances of a generic type share
+__attribute__((noinline)) void codegen_construct(struct Circle *object, const void *method)
+{
+	__asm__ volatile("" : : "r"(object), "r"(method));
+}
+
+METHOD struct Circle *Shapes_Square__Build(const void *method)
+{
+	struct Circle *square = codegen_object_new(Square_TypeInfo);
+	codegen_construct(square, Square_ctor_Method);
+	return square;
+}
+
 METHOD void Shapes_Circle__Wipe(struct Circle *this, const void *method)
 {
 	Shapes_Square___ctor(this, 0);
@@ -285,7 +299,8 @@ const square = 'Shapes.Square';
  * The images of a game whose methods have code like IL2CPP's, with the runtime's helpers, metadata globals, a property
  * with a backing field, an operator, a constructor, 2 getters that share their code, `Circle.Radius` and
  * `Square.Side`, a static method that shares the operator's code, 2 static methods with the same parameters that share
- * their code, 2 empty constructors and an empty method that share their code, a local function with the compiler's name and the class of the exception that the runtime's helper
+ * their code, 2 empty constructors and an empty method that share their code, a constructor's call through code that
+ * isn't a method's, a local function with the compiler's name and the class of the exception that the runtime's helper
  * raises.
  */
 export const codeImages: FixtureImage[] = [
@@ -373,6 +388,7 @@ export const codeImages: FixtureImage[] = [
                     method(square, '.ctor', 'System.Void', constructor),
                     method(square, 'Clear', 'System.Void', instance, [], 'Shapes_Square___ctor'),
                     method(square, 'Make', square, instance | methodAttributes.static),
+                    method(square, 'Build', square, instance | methodAttributes.static),
                 ],
                 properties: [{ name: 'Side', getter: 'get_Side', setter: null }],
             }),

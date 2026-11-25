@@ -25,7 +25,7 @@ public class Circle : Shape
 	{
 		int *piVar1;
 
-		base..ctor("shapes fixture");
+		base("shapes fixture");
 		this.<Radius>k__BackingField = radius;
 		piVar1 = &Circle.count;
 		*piVar1 = *piVar1 + 1;
@@ -148,7 +148,7 @@ public class Circle : Shape
 
 	public Circle()
 	{
-		// Shares its code with Square..ctor, Square.Clear.
+		// Shares its code with Square.Square, Square.Clear.
 		return;
 	}
 

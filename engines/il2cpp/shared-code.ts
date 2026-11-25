@@ -4,8 +4,8 @@ import type { Game } from './game';
 import { firstKeys, type MemberStarts, stripArity } from './rows';
 
 /**
- * A method whose code other methods share, with its row's key, its name after its type's, like `Circle.Area`, and its
- * type's index.
+ * A method whose code other methods share, with its row's key, its name after its type's, like `Circle.Area` or
+ * `Circle.Circle` for a constructor, and its type's index.
  */
 export interface Sharer {
     key: number;
@@ -21,6 +21,13 @@ export function nameSharedCode(rva: number): string {
     return `shared_${rva.toString(16)}`;
 }
 
+// names a method after its type's name, and a constructor after its class like C# does, `Circle.Circle`
+function nameSharer(typeName: string, name: string): string {
+    const type = stripArity(typeName);
+
+    return `${type}.${name === '.ctor' || name === '.cctor' ? type : name}`;
+}
+
 /**
  * Indexes the methods that share their code with other methods by the address of the code that `findCode` gives, like
  * the getters that MSVC's identical code folding merges into 1 function.
@@ -31,7 +38,7 @@ export function indexSharers(game: Game, starts: MemberStarts, findCode: (rva: n
         type.methods.forEach(({ name, rva }, index) => {
             if (rva !== null) {
                 const code = findCode(rva);
-                const sharer = { key: firstKeys.method + starts.methods[typeIndex] + index, name: `${stripArity(type.name)}.${name}`, typeIndex };
+                const sharer = { key: firstKeys.method + starts.methods[typeIndex] + index, name: nameSharer(type.name, name), typeIndex };
                 byCode.set(code, [...(byCode.get(code) ?? []), sharer]);
             }
         });

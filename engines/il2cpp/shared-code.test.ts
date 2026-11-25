@@ -18,6 +18,12 @@ test("a getter that shares its code with another class's getter doesn't show the
     expect(side).toContain('// Shares its code with Circle.get_Radius.');
 }, 120000);
 
+test('the note of shared code names a constructor after its class', async () => {
+    const square = (await game.readType('Shapes.Square')).text;
+
+    expect(cutMember(square, 'public Square()')).toContain('// Shares its code with Circle.Circle, Square.Clear.');
+}, 120000);
+
 test("the note of shared code links each method that shares the code to the method's row", async () => {
     const square = await game.readType('Shapes.Square');
     const start = square.text.indexOf('Circle.get_Radius');

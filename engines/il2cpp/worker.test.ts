@@ -95,12 +95,12 @@ test("il2cpp engine's worker opens the metadata in the page and writes Circle's 
     expect(listOtherHostRequests(page, requests)).toEqual([]);
 }, testTimeoutMs * 2);
 
-test("il2cpp engine's folder holds a small worker, but not a runtime of its own", async () => {
+test("il2cpp engine's folder holds a small worker and the native engine's code for later, but not a runtime of its own", async () => {
     const paths = readdirSync(siteFolder, { recursive: true, encoding: 'utf8' });
     const sizes = await Promise.all(paths.map(path => measureBrotli(path)));
 
     expect(paths).toEqual(expect.arrayContaining(['manifest.json', 'worker.js']));
     expect(paths.filter(path => path.startsWith('_framework') || path === 'THIRD-PARTY-NOTICES.TXT')).toEqual([]);
-    expect(await measureBrotli('worker.js')).toBeLessThanOrEqual(10_000);
+    expect(await measureBrotli('worker.js')).toBeLessThanOrEqual(14_500);
     expect(sizes.reduce((total, size) => total + size, 0)).toBeLessThanOrEqual(30_000);
 });

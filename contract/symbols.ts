@@ -26,6 +26,7 @@ export const kinds = [
     'resource',
     'function',
     'variable',
+    'keyword',
 ] as const;
 
 /**

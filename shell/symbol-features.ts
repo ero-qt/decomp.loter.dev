@@ -20,7 +20,7 @@ import { vscode } from './api';
 import { toSignal } from './cancellation';
 import type { RowDocuments } from './documents';
 import type { SiteEngine } from './engines';
-import { type OpenFiles, type ReadDocument, readErrorText } from './files';
+import { type OpenFile, type OpenFiles, type ReadDocument, readErrorText } from './files';
 import { createPositionFinder } from './lines';
 import { appendLoadLink } from './missing-files';
 import { symbolKinds } from './rows';
@@ -117,7 +117,8 @@ export class SymbolFeatures implements HoverProvider, DefinitionProvider, Refere
             return undefined;
         }
 
-        const { language } = found.siteEngine.manifest.views.find(view => view.id === found.viewId)!;
+        const { views, unlistedView } = found.siteEngine.manifest;
+        const { language } = views.find(view => view.id === found.viewId) ?? unlistedView!;
         const markdown = new vscode.MarkdownString();
         if ('local' in found.parsed) {
             return new vscode.Hover(appendCode(markdown, found.read.locals[found.parsed.local], language), found.range);
@@ -161,10 +162,19 @@ export class SymbolFeatures implements HoverProvider, DefinitionProvider, Refere
 
         try {
             const { engine } = found.siteEngine;
-            const target = 'outside' in found.parsed ? await engine.resolve(found.target, toSignal(cancellation)) : found.target;
+            const signal = toSignal(cancellation);
+            const target = 'outside' in found.parsed ? await engine.resolve(found.target, signal) : found.target;
             const located = target === null ? undefined : await this.documents.locate(found.siteEngine, target, found.viewId);
+            if (located || target === null) {
+                return located && new vscode.Location(located.uri, located.range);
+            }
 
-            return located && new vscode.Location(located.uri, located.range);
+            // goes to a symbol without a row that the engine resolves, like a function of a game's binary that only a
+            // call names, in a document named like the symbol's token
+            const isResolved = (await engine.resolve(target, signal)) !== null;
+            const uri = isResolved ? await this.documents.findUnlistedUri(found.siteEngine, target, document.getText(found.range)) : undefined;
+
+            return uri && new vscode.Location(uri, new vscode.Position(0, 0));
         } catch (error) {
             logCrash(error);
 

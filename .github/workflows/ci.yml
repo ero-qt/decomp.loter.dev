@@ -179,9 +179,17 @@ jobs:
         with:
           path: artifacts/il2cpp-real
           key: il2cpp-real-${{ hashFiles('engines/il2cpp/real-builds.ts') }}
+      # takes the module that the native job built, because the IL2CPP engine's method bodies come from the native engine
+      - name: download the native module
+        if: matrix.folder == 'engines/il2cpp'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: native
+          path: artifacts/native/out
       - name: run the tests
         env:
           FOLDER: ${{ matrix.folder }}
+          NATIVE_MODULE: ${{ matrix.folder == 'engines/il2cpp' && 'artifacts/native/out' || '' }}
         run: |
           shopt -s globstar
           for file in "$FOLDER"/**/*.test.ts; do

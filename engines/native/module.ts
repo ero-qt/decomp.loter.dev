@@ -23,9 +23,12 @@ interface RizinModule {
     _session_struct(session: number, name: number): number;
     _session_load_pdb(session: number, path: number): number;
     _session_load_names(session: number, path: number, headerPath: number): number;
+    _session_load_types(session: number, headerPath: number, globalsPath: number): void;
+    _session_targets(session: number, address: number): number;
     _session_describe(session: number, address: number): number;
     _session_cmd(session: number, command: number): number;
     _session_decompile(session: number, address: number): number;
+    _session_decompile_csharp(session: number, address: number): number;
     _session_disassemble(session: number, address: number, size: number, maxBytes: number): number;
     _session_references(session: number, address: number): number;
     _session_strings(session: number, maxStrings: number, maxBytes: number): number;
@@ -90,6 +93,18 @@ export interface NativeModule {
      */
     loadNames(session: number, path: string, headerPath?: string): PdbLoad;
     /**
+     * Analyzes the function at an address and returns the addresses of the code that it calls or jumps to outside of
+     * itself and of the data that it refers to, or `undefined` where Rizin doesn't find a function. Leaves the
+     * function unprepared, so the signatures of a names file that the types of a later `loadTypes` call complete still
+     * apply.
+     */
+    listTargets(session: number, address: bigint): bigint[] | undefined;
+    /**
+     * Adds the C types of a header file to a session's types, which keeps the types that parse when others don't, and
+     * the globals of a file of the lines that `writeNamesLines` writes for globals, or an empty path without globals.
+     */
+    loadTypes(session: number, headerPath: string, globalsPath?: string): void;
+    /**
      * Returns the signature of the function at an address from its debug information or its demangled name, or
      * `undefined` where neither has the parameters.
      */
@@ -100,6 +115,11 @@ export interface NativeModule {
     fetchFile(path: string): Promise<Uint8Array>;
     /** Decompiles the function at an address with Ghidra and returns its C with rz-ghidra's annotations. */
     decompile(session: number, address: bigint): Decompiled;
+    /**
+     * Decompiles the function at an address like `decompile` and returns it as C#, which rz-ghidra's C# printer writes
+     * with the names of the session's names file, with the links of the types and fields that the code names.
+     */
+    decompileCSharp(session: number, address: bigint): Decompiled;
     /**
      * Disassembles the instructions of `size` bytes from an address until their bytes reach `maxBytes`, or returns an
      * empty list where the module can't read the bytes.
@@ -184,6 +204,14 @@ export async function loadModule(moduleUrl: string, wasmBinary?: ArrayBuffer): P
 
             return pdbLoads[load];
         },
+        listTargets(session, address) {
+            const text = withText(module, `0x${address.toString(16)}`, pointer => takeText(module, module._session_targets(session, pointer)));
+
+            return text === '' ? undefined : JSON.parse(text).map((target: string) => BigInt(target));
+        },
+        loadTypes(session, headerPath, globalsPath = '') {
+            withText(module, headerPath, header => withText(module, globalsPath, globals => module._session_load_types(session, header, globals)));
+        },
         describeFunction(session, address) {
             const text = withText(module, `0x${address.toString(16)}`, pointer => takeText(module, module._session_describe(session, pointer)));
 
@@ -195,6 +223,11 @@ export async function loadModule(moduleUrl: string, wasmBinary?: ArrayBuffer): P
         decompile(session, address) {
             return withText(module, `0x${address.toString(16)}`, pointer => {
                 return takeJson(module, 'the C of the function', () => module._session_decompile(session, pointer));
+            });
+        },
+        decompileCSharp(session, address) {
+            return withText(module, `0x${address.toString(16)}`, pointer => {
+                return takeJson(module, 'the C# of the function', () => module._session_decompile_csharp(session, pointer));
             });
         },
         disassemble(session, address, size, maxBytes) {

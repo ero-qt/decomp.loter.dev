@@ -27,6 +27,8 @@ EMSCRIPTEN_KEEPALIVE Session *session_new(void) {
 	session->parsed_signatures = ht_up_new(NULL, NULL);
 	rz_vector_init(&session->starts, sizeof(ut64), NULL, NULL);
 	rz_pvector_init(&session->signature_types, (RzPVectorFree)rz_type_free);
+	helpers_clear(session);
+	csharp_clear(session);
 	if (!session->core || !session->prepared || !session->signatures) {
 		rz_core_free(session->core);
 		rz_set_u_free(session->prepared);
@@ -63,6 +65,11 @@ EMSCRIPTEN_KEEPALIVE void session_free(Session *session) {
 	ht_up_free(session->signatures);
 	rz_pvector_fini(&session->signature_types);
 	ht_up_free(session->parsed_signatures);
+	helpers_clear(session);
+	ht_up_free(session->csharp_functions);
+	ht_up_free(session->csharp_globals);
+	ht_sp_free(session->csharp_types);
+	free(session->names_text);
 	rz_vector_fini(&session->starts);
 	ht_up_free(session->symbols);
 	rz_bin_pdb_free(session->pdb);

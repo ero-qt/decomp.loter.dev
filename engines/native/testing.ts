@@ -5,7 +5,7 @@ import { readRows } from '#contract/rows';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { useEngine } from '../shared/testing';
-import { buildModule, moduleFolder } from './build/link';
+import { findBuiltFolder } from './build';
 import { mountInMemory } from './files';
 import { buildFixture } from './fixture/build';
 import { createNativeHandlers } from './handlers';
@@ -40,14 +40,17 @@ let moduleLoad: Promise<NativeModule> | undefined;
 let testModule: NativeModule | undefined;
 
 async function buildAndLoad(): Promise<NativeModule> {
-    await buildModule();
-    const wasmBinary = await Bun.file(join(moduleFolder, 'rizin.wasm')).arrayBuffer();
-    testModule = await loadModule(pathToFileURL(join(moduleFolder, 'rizin.mjs')).href, wasmBinary);
+    const folder = await findBuiltFolder();
+    const wasmBinary = await Bun.file(join(folder, 'rizin.wasm')).arrayBuffer();
+    testModule = await loadModule(pathToFileURL(join(folder, 'rizin.mjs')).href, wasmBinary);
 
     return testModule;
 }
 
-/** Builds the module when its stamp is stale and loads it with its wasm from disk, once in a process. */
+/**
+ * Loads the module in NATIVE_MODULE's folder, or builds the module when its stamp is stale, and loads it with its wasm
+ * from disk, once in a process.
+ */
 export function loadTestModule(): Promise<NativeModule> {
     moduleLoad ??= buildAndLoad();
 

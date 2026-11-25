@@ -23,3 +23,10 @@ test('names keep the symbols and words of operators', () => {
     expect(splitName('operator new[](unsigned long)')).toEqual(['operator new[]']);
     expect(splitName('a::B::operator std::string() const')).toEqual(['a', 'B', 'operator std::string']);
 });
+
+test('names keep the scopes of a name that only starts with the word operator', () => {
+    expect(splitName('operators::add(int)')).toEqual(['operators', 'add']);
+    expect(splitName('boost::operators_impl::less(int)')).toEqual(['boost', 'operators_impl', 'less']);
+    expect(splitName('operator_table::find(int)')).toEqual(['operator_table', 'find']);
+    expect(splitName('a::operator""_km(long double)')).toEqual(['a', 'operator""_km']);
+});

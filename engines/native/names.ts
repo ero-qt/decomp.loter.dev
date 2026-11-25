@@ -1,6 +1,8 @@
 // the symbols of an operator's name, like `()` in `operator()(int)` or `<<` in `operator<<(int)`, which would else
 // count as parameters or template arguments
 const operatorSymbols = /^(\(\)|\[\]|[-+*/%^&|~!=<>,]+)/;
+// the word `operator` as a whole, so a name like `operators` or `operator_table` isn't an operator
+const operatorWord = /operator(?![A-Za-z0-9_])/y;
 const opening = '<([{`';
 const closing = ">)]}'";
 
@@ -18,7 +20,8 @@ export function splitName(name: string): string[] {
     let index = 0;
     for (; index < name.length; index++) {
         const character = name[index];
-        if (depth === 0 && index === start && name.startsWith('operator', index)) {
+        operatorWord.lastIndex = index;
+        if (depth === 0 && index === start && operatorWord.test(name)) {
             isOperator = true;
             index += 'operator'.length + (operatorSymbols.exec(name.slice(index + 'operator'.length))?.[0].length ?? 0) - 1;
         } else if (character === '(' && depth === 0 && index > start) {

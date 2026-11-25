@@ -1,9 +1,10 @@
 import { sampleFiles } from '#contract/fake';
 import { expect, test } from 'bun:test';
 import type { Page } from 'playwright';
-import { aboutTab, readTabs, readUntil, readWarnings } from './editor-testing';
-import { findOpenFilesButton, listOtherHostRequests, startWorkbench, testTimeoutMs, waitForEngineReplies } from './page-testing';
+import { aboutTab, findTab, findWord, openCircle, readActiveTab, readTabs, readUntil, readWarnings, waitForTabs } from './editor-testing';
+import { collectErrors, findOpenFilesButton, listOtherHostRequests, startWorkbench, testTimeoutMs, waitForEngineReplies } from './page-testing';
 import {
+    dropAndWait,
     dropFiles,
     expandRows,
     findPaneHeader,
@@ -12,6 +13,7 @@ import {
     readRowIcon,
     readRowTexts,
     readRowTooltip,
+    readSelectedRows,
     serveTestEngine,
     startWithEngines,
     writeFiles,
@@ -151,6 +153,46 @@ test('Symbols view leaves out a row that the first view hides', async () => {
     await expandRows(page, 'box.fake', 'Box');
 
     expect(await readRowTexts(page)).toEqual(['box.fake', 'Box', 'Get']);
+}, testTimeoutMs);
+
+test("F12 into a document of a collapsed file selects the document's row in the Symbols view, with the focus in the editor", async () => {
+    const { page } = await openWorkbench();
+    const errors = collectErrors(page);
+    await dropAndWait(page, { 'shapes.fake': shapes });
+    await openCircle(page, drawing, 'Draw');
+
+    await findWord(page, 'uses Shapes.Shape.Area', 'Shapes.Shape.Area').click();
+    await page.keyboard.press('F12');
+
+    expect(await readUntil(() => readActiveTab(page), 'Shape.code')).toBe('Shape.code');
+    expect(await readUntil(() => readSelectedRows(page), ['Shape'])).toEqual(['Shape']);
+    expect(await page.evaluate(() => Boolean(document.activeElement?.closest('.monaco-editor')))).toBe(true);
+    expect(errors).toEqual([]);
+}, testTimeoutMs);
+
+test("a click on a member's row keeps the member's row selected while its class's document opens", async () => {
+    const { page } = await openWorkbench();
+
+    await openCircle(page, drawing, 'Draw');
+    // waits for a reveal of the class's row, which would come after the document's tab
+    await Bun.sleep(1000);
+
+    expect(await readSelectedRows(page)).toEqual(['Draw']);
+}, testTimeoutMs);
+
+test("a switch to another document's tab selects that document's row in the Symbols view", async () => {
+    const { page } = await openWorkbench();
+    await dropAndWait(page, { 'shapes.fake': shapes });
+    await expandRows(page, 'shapes.fake', 'Shapes');
+    await findRow(page, 'Shape').dblclick();
+    await dropFiles(page, { 'drawing.fake': drawing });
+    await expandRows(page, 'drawing.fake', 'Drawing', 'Circle');
+    await findRow(page, 'Draw').click();
+    await waitForTabs(page, 'About', 'Shape.code', 'Circle.code');
+
+    await findTab(page, 'Shape.code').click();
+
+    expect(await readUntil(() => readSelectedRows(page), ['Shape'])).toEqual(['Shape']);
 }, testTimeoutMs);
 
 test("file's row shows the listing's note, with each missing file below the row until the missing file opens", async () => {

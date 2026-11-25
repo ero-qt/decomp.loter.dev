@@ -93,7 +93,8 @@ export class RowDocuments implements TextDocumentContentProvider, DocumentSemant
         window.addEventListener('pointerdown', () => this.isDoubleClick = false, { capture: true });
     }
 
-    private findDocument(uri: Uri): { file: OpenFile; viewId: string; key: number } | undefined {
+    /** Finds the open file, the view's id and the document row's key of a document, or `undefined` without an open file. */
+    findDocument(uri: Uri): { file: OpenFile; viewId: string; key: number } | undefined {
         const path = parseDocumentPath(uri.path);
         const file = this.openFiles.files.find(file => {
             return file.siteEngine?.manifest.id === path?.engineId && file.fileId === path?.fileId;

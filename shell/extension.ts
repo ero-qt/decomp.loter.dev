@@ -20,7 +20,8 @@ const { engines, errorTexts } = await loadEngines(document.baseURI);
 const openFiles = new OpenFiles(engines);
 const documents = new RowDocuments(openFiles);
 const features = new SymbolFeatures(openFiles, documents);
-const view = vscode.window.createTreeView(symbolsViewId, { treeDataProvider: new SymbolsTree(openFiles), showCollapseAll: true });
+const tree = new SymbolsTree(openFiles);
+const view = vscode.window.createTreeView(symbolsViewId, { treeDataProvider: tree, showCollapseAll: true });
 
 // reads the row target from a row, from a document's URI or from the active editor's document because the command gets
 // a row from the Symbols view's menu, a URI from a tab's menus and neither from the command palette
@@ -41,6 +42,16 @@ async function open(pickedFiles: PickedFile[]) {
         void vscode.window.showWarningMessage(warning);
     }
 }
+
+// selects the row of the active editor's document while the Symbols view shows, like the Explorer selects the active
+// file, with the focus still in the editor, and skips a listing that fails because the file's row then shows why
+vscode.window.onDidChangeActiveTextEditor(async editor => {
+    const found = editor && view.visible ? documents.findDocument(editor.document.uri) : undefined;
+    const viewRow = found && (await tree.findDocumentViewRow(found.file, found.key, view.selection[0]).catch(() => undefined));
+    if (viewRow && vscode.window.activeTextEditor === editor) {
+        await view.reveal(viewRow, { select: true, focus: false });
+    }
+});
 
 vscode.commands.registerCommand('decomp.openFiles', async () => open(await pickFiles(listExtensions(engines))));
 vscode.commands.registerCommand('decomp.openFolder', async () => open(await pickFiles([], 'folder')));

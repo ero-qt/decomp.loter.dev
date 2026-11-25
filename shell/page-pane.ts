@@ -28,7 +28,8 @@ export function createPagePane(typeId: string, template: HTMLTemplateElement, fi
     class PagePane extends EditorPane {
         static readonly typeId = typeId;
         private readonly content = document.createElement('div');
-        private readonly scrollable = this._register(new DomScrollableElement(this.content, {}));
+        // leaves out the shadow at the top of a scrolled page because the page's pinned footer has none
+        private readonly scrollable = this._register(new DomScrollableElement(this.content, { useShadows: false }));
 
         constructor(group: IEditorGroup, telemetryService: ITelemetryService, themeService: IThemeService, storageService: IStorageService) {
             super(typeId, group, telemetryService, themeService, storageService);

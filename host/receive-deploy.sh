@@ -66,18 +66,18 @@ check_release() {
         refuse "$tag" "The release $tag isn't uploaded."
     fi
 
-    found=$(find "$release" -type l -printf '%P\n' | head -n 1)
+    found=$(find "$release" -type l -printf '%P\n' -quit)
     if [[ -n $found ]]; then
         refuse "$tag" "The release $tag has a link: $found."
     fi
 
-    found=$(find "$release" ! -type f ! -type d -printf '%P\n' | head -n 1)
+    found=$(find "$release" ! -type f ! -type d -printf '%P\n' -quit)
     if [[ -n $found ]]; then
         refuse "$tag" "The release $tag has a file that isn't a plain file: $found."
     fi
 
     found=$(find "$release" -mindepth 1 \( -path "$release/*/.htaccess" -o -name .user.ini \
-        -o -iregex '.*\.\(php[3-8]?\|phtml\|phar\|pht\|cgi\|pl\|py\|sh\|shtml\|inc\)' \) -printf '%P\n' | head -n 1)
+        -o -iregex '.*\.\(php[3-8]?\|phtml\|phar\|pht\|cgi\|pl\|py\|sh\|shtml\|inc\)' \) -printf '%P\n' -quit)
     if [[ -n $found ]]; then
         refuse "$tag" "The release $tag has a file that the host could run: $found."
     fi

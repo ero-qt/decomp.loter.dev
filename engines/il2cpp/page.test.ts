@@ -87,6 +87,28 @@ test("a method with a compiler's name has its keywords in the theme's colors", a
     }
 }, testTimeoutMs * 2);
 
+test("a `<` in a body has the theme's color of an operator, not the color of a bracket without its pair", async () => {
+    const { page } = await openWorkbench();
+    await dropFiles(page, { 'global-metadata.dat': await (await readCodeGame('global-metadata.dat')).bytes() });
+    await dropFiles(page, { 'GameAssembly.dll': await (await readCodeGame('GameAssembly.dll')).bytes() });
+    await expandRows(page, 'global-metadata.dat', 'Assembly-CSharp.dll', 'Shapes');
+    await findRow(page, 'Circle').click();
+    await waitForTabs(page, 'About', 'Circle.cs');
+    await readUntil(async () => (await readLines(page)).some(line => line.trim().startsWith('return ')), true);
+    await waitForWholeStub(page);
+
+    // finds the line, which scrolls the stub to it
+    const lengthLine = 'if (0 < (long)piVar1.Length) {';
+    await page.locator('.monaco-editor .view-lines').first().click();
+    await page.keyboard.press('Control+F');
+    await page.keyboard.insertText(lengthLine);
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Escape');
+
+    expect(await readUntil(async () => (await readLines(page)).some(line => line.includes(lengthLine)), true)).toBe(true);
+    expect(await readUntil(() => readWordColor(page, lengthLine, '<'), '#cccccc')).toBe('#cccccc');
+}, testTimeoutMs * 2);
+
 test("a click on an accessor's row opens the stub with the cursor on the accessor's property", async () => {
     const { page } = await openWorkbench();
     await dropFiles(page, { 'global-metadata.dat': metadata });

@@ -118,7 +118,7 @@ static void remove_shadowed_variables(RzAnalysis *analysis, RzAnalysisFunction *
  * Marks them as parameters, because Rizin counts a variable of unknown kind in a function with debug information as a
  * local.
  */
-static void mark_parameters(RzAnalysisFunction *fcn, RzCallable *callable) {
+void debug_info_set_parameters(RzAnalysisFunction *fcn, RzCallable *callable) {
 	rz_analysis_function_set_type(fcn->analysis, fcn, callable);
 	void **it;
 	rz_pvector_foreach (callable->args, it) {
@@ -149,7 +149,7 @@ void debug_info_apply_dwarf(RzCore *core, RzAnalysisFunction *fcn) {
 		? rz_type_func_get(rz_analysis_get_type_db(core->analysis), dwarf_fcn->prefer_name)
 		: NULL;
 	if (callable) {
-		mark_parameters(fcn, callable);
+		debug_info_set_parameters(fcn, callable);
 	}
 	place_dwarf_locals(core, fcn, dwarf_fcn);
 	remove_shadowed_variables(core->analysis, fcn);

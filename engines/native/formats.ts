@@ -1,5 +1,6 @@
 import { toHex } from '../shared/magic';
 import { hasCliHeader, isPeFile } from '../shared/pe';
+import type { NativeModule } from './module';
 
 const elfClasses = [1, 2];
 const elfByteOrders = [1, 2];
@@ -51,4 +52,23 @@ export async function claimsNativeFile(file: Blob): Promise<boolean> {
     }
 
     return magic === fatMachoMagic && claimsFatMacho(file);
+}
+
+// checks whether a binary only imports from mscoree.dll, like a .NET assembly without its CLI header
+function isManagedStub(module: NativeModule, session: number): boolean {
+    const imports: { libname?: string }[] = JSON.parse(module.runCommand(session, 'iij') || '[]');
+
+    return imports.length > 0 && imports.every(({ libname }) => /^mscoree\.dll$/i.test(libname ?? ''));
+}
+
+/** Returns why the engine can't read the binary of a session's open file, or `undefined` for a binary that it reads. */
+export function findRefusal(module: NativeModule, session: number, path: string, name: string): string | undefined {
+    if (!module.openSession(session, path)) {
+        return `${name} isn't a readable ELF, PE or Mach-O file.`;
+    }
+    if (isManagedStub(module, session)) {
+        return `${name} only imports mscoree.dll, so its code is .NET IL and not machine code.`;
+    }
+
+    return undefined;
 }

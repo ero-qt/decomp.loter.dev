@@ -14,6 +14,8 @@ const zlibSources = ['adler32', 'crc32', 'deflate', 'inflate', 'inftrees', 'inff
 const specifications: Record<string, string[]> = {
     x86: ['x86', 'x86-64'],
     AARCH64: ['AARCH64'],
+    // rz-ghidra reads 32-bit ARM code, Thumb too, as ARMv7, whose language is ARM7_le
+    ARM: ['ARM7_le'],
 };
 
 // builds Ghidra's Sleigh compiler for the host, with the host's compilers, because the language files are the same on
@@ -40,8 +42,8 @@ function buildCompiler(): string {
 }
 
 /**
- * Compiles the language files of x86 and AArch64 into `sleigh/<processor>` of the output, with the processors' other
- * specifications beside them, and lists every file in `sleigh/files.txt`.
+ * Compiles the language files of x86, AArch64 and 32-bit ARM into `sleigh/<processor>` of the output, with the
+ * processors' other specifications beside them, and lists every file in `sleigh/files.txt`.
  */
 export function buildSleigh(output: string): void {
     const sleighc = buildCompiler();

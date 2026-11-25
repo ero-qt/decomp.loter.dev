@@ -68,6 +68,8 @@ test('the note counts the strings above 50,000', () => {
         classes: [],
         pdb: '',
         hasPdb: false,
+        isIl2Cpp: false,
+        hasNames: false,
         omitted: 0,
         omittedImports: 0,
     };

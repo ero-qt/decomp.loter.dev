@@ -7,8 +7,8 @@ export const keyTags = {
     class: 4,
 } as const;
 
-// the size of an image whose offsets fit into 31 bits, which leaves bit 31 to the keys with a tag
-const maxImageSpan = 2n ** 31n;
+/** The size of an image whose offsets fit into 31 bits, which leaves bit 31 to the keys with a tag. */
+export const maxImageSpan = 2n ** 31n;
 
 /** Returns the key of a row without an address, with bit 31 set, the tag in bits 24 to 30 and the index below. */
 export function tagKey(tag: number, index: number): number {

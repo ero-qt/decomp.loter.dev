@@ -14,6 +14,10 @@ typedef struct {
 	HtUP /*<ut64, RzBinSymbol *>*/ *symbols; ///< the binary's symbols by their addresses, filled on the first lookup
 	RzPdb *pdb; ///< the loaded PDB file, whose procedures the session adds to each function that it prepares
 	bool is_rtti_recovered; ///< whether the analysis has the classes of the binary's RTTI
+	bool has_names; ///< whether the session loaded a names file
+	HtUP /*<ut64, char *>*/ *signatures; ///< C signatures of the names file's functions by their addresses
+	RzPVector /*<RzType *>*/ signature_types; ///< parsed signatures, which the functions' variables borrow from
+	HtUP /*<ut64, RzType *>*/ *parsed_signatures; ///< parsed signatures by their functions' addresses
 } Session;
 
 void session_put_address(PJ *j, const char *key, ut64 addr);
@@ -31,8 +35,13 @@ void listing_add_symbol(PJ *j, ut64 addr, ut64 size, const char *raw_name, bool 
 void classes_add_rtti(PJ *j, Session *session, RzBinObject *object);
 
 void debug_info_apply_dwarf(RzCore *core, RzAnalysisFunction *fcn);
+void debug_info_set_parameters(RzAnalysisFunction *fcn, RzCallable *callable);
 void debug_info_apply_pdb(Session *session, RzAnalysisFunction *fcn);
 
 void pdb_add_symbols(PJ *j, Session *session, RzSetU *listed, bool is_code);
+
+void names_file_add_functions(PJ *j, Session *session, RzSetU *listed);
+bool names_file_is_il2cpp(RzBinObject *object);
+void names_file_apply_signature(Session *session, RzAnalysisFunction *fcn);
 
 #endif

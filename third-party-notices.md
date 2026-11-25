@@ -108,7 +108,7 @@ The native engine decompiles functions with [rz-ghidra](https://github.com/rizin
 
 ## Ghidra
 
-rz-ghidra runs the decompiler of [Ghidra](https://github.com/NationalSecurityAgency/ghidra) from the fork [rizinorg/ghidra](https://github.com/rizinorg/ghidra/tree/3e5d774389b3c4ff1c089ddf822f071c10f548a8) at commit `3e5d774389b3c4ff1c089ddf822f071c10f548a8`. The site also serves the Sleigh files that the build compiles from Ghidra's x86 and AArch64 processor files, in `engines/native/sleigh`. Ghidra is under the Apache License 2.0, whose text is at the end of this file. Its `NOTICE` file has this text:
+rz-ghidra runs the decompiler of [Ghidra](https://github.com/NationalSecurityAgency/ghidra) from the fork [rizinorg/ghidra](https://github.com/rizinorg/ghidra/tree/3e5d774389b3c4ff1c089ddf822f071c10f548a8) at commit `3e5d774389b3c4ff1c089ddf822f071c10f548a8`. The site also serves the Sleigh files that the build compiles from Ghidra's x86, AArch64 and ARM processor files, in `engines/native/sleigh`. Ghidra is under the Apache License 2.0, whose text is at the end of this file. Its `NOTICE` file has this text:
 
 ```
 Ghidra

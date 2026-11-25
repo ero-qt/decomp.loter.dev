@@ -108,15 +108,16 @@ test("a call of an imported function points at the import's row", async () => {
 }, 120000);
 
 test("read refuses the code of a processor that the engine can't decompile", async () => {
-    for (const [name, processor] of [
-        ['extras-arm.so', '32-bit ARM'],
-        ['extras-mips.so', 'MIPS'],
-    ]) {
-        const file = await openFile(name);
-        const refusal = `The native engine can't decompile ${processor} code.`;
+    const file = await openFile('extras-mips.so');
 
-        await expect(file.engine.read(file.fileId, findKey(file, 'extras_name'), 'c')).rejects.toThrow(refusal);
-    }
+    await expect(file.engine.read(file.fileId, findKey(file, 'extras_name'), 'c')).rejects.toThrow("The native engine can't decompile MIPS code.");
+}, 120000);
+
+test('32-bit ARM code decompiles to C', async () => {
+    const { text } = await readFunction(await openFile('extras-arm.so'), 'extras_name');
+
+    expect(text).toContain('extras_name(');
+    expect(text).toContain('return ');
 }, 120000);
 
 test('read refuses an unknown key and an unknown view', async () => {

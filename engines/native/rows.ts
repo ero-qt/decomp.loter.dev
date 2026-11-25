@@ -4,6 +4,7 @@ import { type Accessibility, flagsOf, type Kind, type Modifier } from '#contract
 import { maxStrings } from '../shared/limits';
 import { type AddressKeys, keyTags, readAddressKeys, tagKey } from './keys';
 import { splitName } from './names';
+import { namesFileName } from './names-file';
 
 /** A function or global of a file as the glue lists it, with its address in hex. */
 export interface GlueSymbol {
@@ -44,6 +45,9 @@ export interface GlueListing {
     /** The name of the PDB file in a PE file's debug directory, or the empty text. */
     pdb: string;
     hasPdb: boolean;
+    /** Whether IL2CPP built the file, which then takes a names file. */
+    isIl2Cpp: boolean;
+    hasNames: boolean;
     /** The count of the functions and globals above the glue's cap, which the glue leaves out. */
     omitted: number;
     omittedImports: number;
@@ -289,6 +293,11 @@ export function groupRows(listing: GlueListing, maxMembers = defaultMaxMembers):
     const sizes = new Map(listed.map(({ address, symbol }) => [keys.keys.get(address)!, symbol.size]));
 
     const missingFiles = listing.pdb !== '' && !listing.hasPdb ? [{ name: listing.pdb, reason: 'not loaded', isCompanion: true }] : [];
+    // lists the game's metadata for the IL2CPP engine, which then gives the binary its script.json
+    if (listing.isIl2Cpp && !listing.hasNames) {
+        missingFiles.push({ name: 'global-metadata.dat', reason: 'IL2CPP metadata, not loaded', isCompanion: false });
+        missingFiles.push({ name: namesFileName, reason: 'IL2CPP names, not loaded', isCompanion: true });
+    }
 
     return { rows, keys, importKeys, sizes, note, missingFiles };
 }

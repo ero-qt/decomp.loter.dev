@@ -22,16 +22,17 @@ export function readArchitecture(module: NativeModule, session: number): Archite
 }
 
 /**
- * Returns the Ghidra processor of a session's file, like `x86` or `AARCH64`, whose languages the decompiler reads, or
- * a refusal for an architecture whose languages the module doesn't have, like 32-bit ARM.
+ * Returns the Ghidra processor of a session's file, like `x86`, `AARCH64` or `ARM` for 32-bit ARM and Thumb code,
+ * whose languages the decompiler reads, or a refusal for an architecture whose languages the module doesn't have,
+ * like MIPS.
  */
 export function findProcessor(module: NativeModule, session: number): Reply<string> {
     const { arch, bits, name } = readArchitecture(module, session);
     if (arch === 'x86') {
         return ok('x86');
     }
-    if (arch === 'arm' && bits === 64) {
-        return ok('AARCH64');
+    if (arch === 'arm') {
+        return ok(bits === 64 ? 'AARCH64' : 'ARM');
     }
 
     return failed(`The native engine can't decompile ${name} code.`);
@@ -95,4 +96,15 @@ export function createLanguageWriter(module: NativeModule): (processor?: string)
             await useWrite(processor, files);
         }
     };
+}
+
+/**
+ * Starts writing the languages of a session's processor without waiting for them, because the first decompile then
+ * doesn't wait for their fetch. A failed write gets ignored here because that decompile writes the languages again.
+ */
+export function writeLanguageEarly(writeLanguage: (processor?: string) => Promise<void>, module: NativeModule, session: number) {
+    const processor = findProcessor(module, session);
+    if (processor.value !== undefined) {
+        writeLanguage(processor.value).catch(() => undefined);
+    }
 }

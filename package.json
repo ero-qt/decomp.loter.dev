@@ -6,7 +6,7 @@
   },
   "scripts": {
     "build": "vite build --config shell/vite.config.ts && bun engines/build.ts",
-    "check": "tsc",
+    "check": "tsc && bun shell/check-imports.ts",
     "test": "bun shell/run-tests.ts",
     "perf": "bun shell/run-tests.ts perf"
   },

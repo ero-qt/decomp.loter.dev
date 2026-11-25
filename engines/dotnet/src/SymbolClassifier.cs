@@ -31,6 +31,7 @@ internal enum SymbolKind
     Section = 21,
     Reference = 22,
     Resource = 23,
+    Keyword = 26,
 }
 
 /// <summary>

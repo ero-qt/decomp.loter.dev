@@ -29,6 +29,7 @@ const tokenTypes: Record<Kind, string> = {
     resource: 'string',
     function: 'function',
     variable: 'variable',
+    keyword: 'keyword',
 };
 
 /**

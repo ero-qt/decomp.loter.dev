@@ -35,6 +35,7 @@ test('kinds, accessibilities and modifiers keep the numbers that the engines wri
         'resource',
         'function',
         'variable',
+        'keyword',
     ]);
     expect(accessibilities).toEqual([
         '',

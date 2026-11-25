@@ -214,7 +214,8 @@ internal sealed class CSharpOutput : ITextOutput, IDisposable
     }
 
     /// <summary>
-    ///     Marks the names that it writes for the output, and the keywords that declare an operator or an indexer.
+    ///     Marks the names that it writes for the output, the keywords that declare an operator or an indexer and the
+    ///     keywords in the header of a declaration with a name that C# doesn't allow.
     /// </summary>
     private sealed class NameTokenWriter(
         TokenWriter decoratedWriter,
@@ -222,9 +223,18 @@ internal sealed class CSharpOutput : ITextOutput, IDisposable
     {
         private readonly Stack<AstNode> _nodes = [];
 
+        // the declaration with a name that C# doesn't allow, like a compiler's `<Main>g__Local|0_0`, while the output
+        // writes its header. The C# grammar doesn't read such a header, which leaves its keywords without their colors.
+        private EntityDeclaration? _unreadableHeader;
+
         public override void StartNode(AstNode node)
         {
             _nodes.Push(node);
+            if (node is EntityDeclaration declaration)
+            {
+                _unreadableHeader = declaration.Name.All(character => char.IsLetterOrDigit(character) || character == '_') ? null : declaration;
+            }
+
             base.StartNode(node);
         }
 
@@ -232,6 +242,23 @@ internal sealed class CSharpOutput : ITextOutput, IDisposable
         {
             base.EndNode(node);
             _nodes.Pop();
+            if (node == _unreadableHeader)
+            {
+                _unreadableHeader = null;
+            }
+        }
+
+        public override void WritePrimitiveType(string type)
+        {
+            if (_unreadableHeader is null)
+            {
+                base.WritePrimitiveType(type);
+
+                return;
+            }
+
+            base.WritePrimitiveType(type);
+            AddKeyword(type);
         }
 
         public override void WriteIdentifier(Identifier identifier)
@@ -264,7 +291,15 @@ internal sealed class CSharpOutput : ITextOutput, IDisposable
             bool isDeclaringKeyword = node is OperatorDeclaration && keyword == "operator" || node is IndexerDeclaration && keyword == "this";
             if (!isDeclaringKeyword || node!.GetSymbol() is not IMember member)
             {
+                if (_unreadableHeader is null)
+                {
+                    base.WriteKeyword(keyword);
+
+                    return;
+                }
+
                 base.WriteKeyword(keyword);
+                AddKeyword(keyword);
 
                 return;
             }
@@ -283,6 +318,12 @@ internal sealed class CSharpOutput : ITextOutput, IDisposable
         // the line's indentation
         public override void WriteToken(string token)
         {
+            // a header ends with the `{` of its body or with its `;`
+            if (token is "{" or ";")
+            {
+                _unreadableHeader = null;
+            }
+
             if (output._emptyBodies is not null
                 && token == "}"
                 && _nodes.TryPeek(out AstNode? node)
@@ -318,6 +359,14 @@ internal sealed class CSharpOutput : ITextOutput, IDisposable
             string typeParameters = declaration.TypeParameters.Count == 0 ? "" : $"<{string.Join(", ", declaration.TypeParameters)}>";
 
             return $"{declaration.ReturnType} {declaration.Name}{typeParameters}({string.Join(", ", declaration.Parameters)})";
+        }
+
+        // adds the token of the keyword that the output wrote last
+        private void AddKeyword(string keyword)
+        {
+            int start = output._writer.GetStringBuilder().Length - keyword.Length;
+
+            output._tokens.Add(start, keyword.Length, SymbolKind.Keyword, flags: 0, isDeclaration: false, target: null);
         }
 
         private void WriteName(Action write)

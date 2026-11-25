@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 - The host shows the first link or bad file of a release with thousands of them and removes the release. Before, the check stopped without a message and the release stayed on the host.
 - The native engine lists a namespace whose name starts with `operator`, like `operators::add`, as a namespace with its functions. Before, the whole name showed up as 1 operator.
 - The native engine keeps the whole name of a function whose parentheses aren't its parameters, like Go's `main.(*T).Method`. Before, the tree and the C cut such a name at its parenthesis.
+- Find All References and the string search stop at once when you cancel them in a large native file. Before, the first search of a file's code ran in 1 step. A cancel that took longer than 2 seconds restarted the engine with every open native file.
 - The C of an object file (`.o`) shows each global under its own name. Before, a global in `.bss` could show up as a string that sat at the same place. A few 32-bit x86 functions in object files decompile now too.
 - The C of an object file calls each function by its own symbol. Before, the first function of a section could show up as `.text` or as an ARM marker like `$x`.
 

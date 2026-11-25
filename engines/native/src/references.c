@@ -66,3 +66,34 @@ EMSCRIPTEN_KEEPALIVE char *session_strings(Session *session, size_t max, size_t 
 	pj_end(j);
 	return pj_drain(j);
 }
+
+/**
+ * \brief Returns the ranges of the code that Rizin searches for references, as a JSON array of pairs of hex strings.
+ *
+ * The caller frees the result with free().
+ */
+EMSCRIPTEN_KEEPALIVE char *session_code_ranges(Session *session) {
+	RzList *maps = rz_core_get_boundaries_select(session->core, "analysis.from", "analysis.to", "analysis.in");
+
+	PJ *j = pj_new();
+	pj_a(j);
+	RzListIter *it;
+	RzIOMap *map;
+	rz_list_foreach (maps, it, map) {
+		char text[32];
+		pj_a(j);
+		pj_s(j, rz_strf(text, "0x%" PFMT64x, map->itv.addr));
+		pj_s(j, rz_strf(text, "0x%" PFMT64x, rz_itv_end(map->itv)));
+		pj_end(j);
+	}
+	pj_end(j);
+	rz_list_free(maps);
+	return pj_drain(j);
+}
+
+/**
+ * \brief Searches the code of a range for references and adds them to the analysis.
+ */
+EMSCRIPTEN_KEEPALIVE void session_search_code(Session *session, const char *from, const char *to) {
+	rz_core_analysis_search_xrefs(session->core, strtoull(from, NULL, 16), strtoull(to, NULL, 16));
+}

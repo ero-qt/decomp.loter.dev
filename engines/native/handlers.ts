@@ -16,7 +16,7 @@ import type { NativeModule } from './module';
 import { defaultMaxMembers, groupRows, type NativeRows } from './rows';
 import { createLanguageWriter, findProcessor } from './sleigh';
 import { listStrings } from './strings';
-import { createFunctionFinder, type FindFunction, findUsers } from './users';
+import { createFunctionFinder, type FindFunction, findUsers, searchCode, splitCode } from './users';
 
 /** The rows of an open file with each row's index by its key and the function that finds a function by an address. */
 interface FileListing extends NativeRows {
@@ -31,8 +31,8 @@ interface NativeFile {
     mounted: MountedFile;
     pdb?: MountedFile;
     listing?: FileListing;
-    /** Whether Rizin searched the file's code for references, which it does once. */
-    isSearched?: boolean;
+    /** The parts of the file's code that Rizin didn't search for references yet, once a call needs the references. */
+    unsearched?: [from: bigint, to: bigint][];
 }
 
 /** The loaded module with the function that writes a processor's languages before its first decompile. */
@@ -159,11 +159,10 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
     }
 
     // searches a file's code for references once, because Rizin only finds a reference in searched code
-    function searchCode(module: NativeModule, file: NativeFile) {
-        if (!file.isSearched) {
-            module.runCommand(file.session, 'aar');
-            file.isSearched = true;
-        }
+    function searchFile(module: NativeModule, file: NativeFile, signal: AbortSignal): Promise<void> {
+        file.unsearched ??= splitCode(module.listCodeRanges(file.session));
+
+        return searchCode(module, file.session, file.unsearched, signal);
     }
 
     function findFile(fileId: number): Reply<NativeFile> {
@@ -340,7 +339,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
 
             const module = await useModule();
             signal.throwIfAborted();
-            searchCode(module, found.file);
+            await searchFile(module, found.file, signal);
             const users = findUsers(module, found.file.session, found.listing.findFunction, address);
 
             return ok(users.map(key => ({ user: formatTarget({ fileId: found.fileId, key }), ranges: null })));
@@ -354,7 +353,7 @@ export function createNativeHandlers(loadModule: () => Promise<NativeModule>, mo
             const module = await useModule();
             signal.throwIfAborted();
             const file = found.value;
-            searchCode(module, file);
+            await searchFile(module, file, signal);
 
             return ok(await listStrings(module, file.session, fileId, readListing(module, file).findFunction, signal));
         },

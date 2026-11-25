@@ -1,3 +1,4 @@
+import { createYielder } from '../shared/yielding';
 import type { NativeModule } from './module';
 import type { NativeRows } from './rows';
 
@@ -50,4 +51,35 @@ export function findUsers(module: NativeModule, session: number, findFunction: F
     const users = module.listReferences(session, address).map(findFunction).filter(key => key !== undefined);
 
     return [...new Set(users)];
+}
+
+// the bytes that Rizin searches in 1 call: 8 of the blocks that its search reads, so a part ends where a block ends
+// and the parts find what 1 search of the whole range finds
+const searchedBytes = 8n * 8096n;
+
+/** Splits the ranges of a file's code into the parts that `searchCode` searches, each in 1 call. */
+export function splitCode(ranges: [from: bigint, to: bigint][]): [from: bigint, to: bigint][] {
+    const parts: [bigint, bigint][] = [];
+    for (const [from, to] of ranges) {
+        for (let start = from; start < to; start += searchedBytes) {
+            parts.push([start, start + searchedBytes < to ? start + searchedBytes : to]);
+        }
+    }
+
+    return parts;
+}
+
+/**
+ * Searches the parts of a file's code for references and takes each searched part off the list, so a search after a
+ * cancel does the rest. Yields to other tasks between the parts, and throws once the signal aborts.
+ */
+export async function searchCode(module: NativeModule, session: number, parts: [from: bigint, to: bigint][], signal: AbortSignal): Promise<void> {
+    const yieldTurn = createYielder(signal);
+
+    while (parts.length > 0) {
+        await yieldTurn();
+        const [from, to] = parts[0];
+        module.searchCode(session, from, to);
+        parts.shift();
+    }
 }

@@ -28,6 +28,8 @@ interface RizinModule {
     _session_disassemble(session: number, address: number, size: number, maxBytes: number): number;
     _session_references(session: number, address: number): number;
     _session_strings(session: number, maxStrings: number, maxBytes: number): number;
+    _session_code_ranges(session: number): number;
+    _session_search_code(session: number, from: number, to: number): void;
     _free(pointer: number): void;
     stringToNewUTF8(text: string): number;
     UTF8ToString(pointer: number): string;
@@ -96,6 +98,10 @@ export interface NativeModule {
      * empty list where the module can't read the bytes.
      */
     disassemble(session: number, address: bigint, size: number, maxBytes: number): GlueInstruction[];
+    /** Returns the ranges of the code that Rizin searches for references, each from its start to its end. */
+    listCodeRanges(session: number): [from: bigint, to: bigint][];
+    /** Searches the code of a range for references, which `listReferences` then finds. */
+    searchCode(session: number, from: bigint, to: bigint): void;
     /** Returns the addresses of the code and data that refer to an address, in address order. */
     listReferences(session: number, address: bigint): bigint[];
     /** Returns the first `maxStrings` strings of a session's file, each cut after `maxBytes` bytes of UTF-8. */
@@ -190,6 +196,16 @@ export async function loadModule(moduleUrl: string, wasmBinary?: ArrayBuffer): P
             });
 
             return references.map(reference => BigInt(reference));
+        },
+        listCodeRanges(session) {
+            const ranges = takeJson<[string, string][]>(module, 'the ranges of the code', () => module._session_code_ranges(session));
+
+            return ranges.map(([from, to]) => [BigInt(from), BigInt(to)]);
+        },
+        searchCode(session, from, to) {
+            withText(module, `0x${from.toString(16)}`, start => {
+                withText(module, `0x${to.toString(16)}`, end => module._session_search_code(session, start, end));
+            });
         },
         listStrings(session, maxStrings, maxBytes) {
             return takeJson(module, 'the strings of the file', () => module._session_strings(session, maxStrings, maxBytes));

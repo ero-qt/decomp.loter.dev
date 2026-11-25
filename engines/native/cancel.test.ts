@@ -1,3 +1,4 @@
+import { formatTarget } from '#contract/document';
 import { readRows } from '#contract/rows';
 import { expect, test } from 'bun:test';
 import { mountInMemory } from './files';
@@ -49,4 +50,32 @@ test('a second read after a canceled read returns the same text', async () => {
 
     expect(second.value?.text).toBe((await fresh.handlers.read(1, fresh.key, 'c', new AbortController().signal)).value?.text);
     expect(counts.decompiles).toBe(2);
+}, 120000);
+
+test('a search for references stops between two parts of the code after a cancel, and the next search does the rest', async () => {
+    const controller = new AbortController();
+    const searched: bigint[] = [];
+    const watched: NativeModule = {
+        ...module,
+        searchCode(session, from, to) {
+            searched.push(from);
+            controller.abort();
+            module.searchCode(session, from, to);
+        },
+    };
+    const handlers = createNativeHandlers(async () => watched, mountInMemory);
+    const file = await readFixture('big-x64.so');
+    const signal = new AbortController().signal;
+    await handlers.open(1, file.name, file, signal);
+    const rows = readRows((await handlers.list(1, signal)).value!);
+    const target = formatTarget({ fileId: 1, key: rows.find(row => row.name === 'big_sum')!.key });
+
+    await expect(handlers.findReferences(target, 'c', controller.signal)).rejects.toThrow();
+    expect(searched).toHaveLength(1);
+
+    const users = await handlers.findReferences(target, 'c', signal);
+
+    expect(users.error).toBeUndefined();
+    expect(searched.length).toBeGreaterThan(1);
+    expect(new Set(searched).size).toBe(searched.length);
 }, 120000);

@@ -31,7 +31,7 @@ const depfileLines = ['  depfile = $out.d', '  deps = gcc'];
 // the sources of rz-ghidra's core plugin, without the plugins for the assembler and the analysis
 const rzGhidraSources = [
     'core_ghidra', 'RizinArchitecture', 'RizinLoadImage', 'RizinScope', 'RizinTypeFactory', 'RizinCommentDatabase',
-    'CodeXMLParse', 'ArchMap', 'RizinPrintC', 'RzCoreMutex', 'PcodeFixupPreprocessor',
+    'CodeXMLParse', 'ArchMap', 'RizinPrintC', 'RizinPrintCSharp', 'RzCoreMutex', 'PcodeFixupPreprocessor',
 ];
 
 /** The objects of the decompiler's build that the module links. */
@@ -86,7 +86,7 @@ export function writeCompileRules(includeFlags: string, rizinFlags: string): str
         `  command = $cxx -DCORELIB -I${join(rzGhidraFolder, 'src')} ${rizinFlags} -MD -MF $out.d -c $in -o $out`,
         ...depfileLines,
         'rule cc',
-        `  command = emcc -Oz ${prefixMap} ${rizinFlags} -MD -MF $out.d -c $in -o $out`,
+        `  command = emcc -Oz ${prefixMap} -I${join(rzGhidraFolder, 'src')} ${rizinFlags} -MD -MF $out.d -c $in -o $out`,
         ...depfileLines,
     ];
 }

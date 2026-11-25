@@ -127,8 +127,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # lists each engine's folder with a manifest and the folders of the host, the release scripts and the shell, but
-      # not the shared helpers', whose tests run in their own job
+      # leaves out engines/shared, whose tests run in the test-shared job
       - name: list the test folders
         id: folders
         run: |
@@ -137,10 +136,9 @@ jobs:
             printf '%s\n' host release shell
           } | sort | jq -Rcs '"folders=" + (split("\n")[:-1] | tojson)' -r >> "$GITHUB_OUTPUT"
 
-  # sets up the JDK for a folder with Java fixture sources, the .NET SDK for a folder with a C# project and for the IL2CPP
-  # engine, which runs in the .NET engine's project, and runs the folder's own ci-setup.sh, so an engine only adds files to
-  # its own folder. The native engine's tests also get the submodules and Emscripten, because they check the module's
-  # stamp against them.
+  # sets up each folder's tools from marker files and its own ci-setup.sh, so an engine only adds files to its own
+  # folder. The IL2CPP engine gets .NET because it runs in the .NET engine's project. The native engine's tests get the
+  # submodules and Emscripten because they check the module's stamp against them.
   test:
     name: test ${{ matrix.folder }}
     needs: [list, build]
@@ -177,7 +175,6 @@ jobs:
         run: '"$FOLDER/ci-setup.sh"'
       - name: set up the page tests
         uses: ./.github/actions/page-tests
-      # keeps the real Unity builds that the IL2CPP tests download, keyed on the hashes in real-builds.ts
       - name: cache the real Unity builds
         if: matrix.folder == 'engines/il2cpp'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0

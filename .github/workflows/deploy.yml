@@ -103,8 +103,7 @@ jobs:
         run: bun release/check-live.ts https://decomp.loter.dev
       - name: check the live files against the checksums
         run: bun release/verify-live.ts https://decomp.loter.dev artifacts/site/checksums.txt
-      # lists the merged pull requests with their authors and links the changes since the last release, unless an
-      # earlier run already published it
+      # lists the merged pull requests with their authors and links the changes since the last release
       - name: publish the release
         env:
           GH_TOKEN: ${{ github.token }}

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# installs clang, lld and LLVM's tools for the native fixture, which the shared claims test reads, and points
-# NATIVE_LLVM at the newest LLVM folder that has them, like the test-native job
+# installs clang, lld and LLVM's tools for the native fixture, which the native tests and the shared claims test read,
+# because Emscripten's LLVM only builds WebAssembly, and points NATIVE_LLVM at the newest LLVM folder that has them,
+# because the runner has more than one
 set -euo pipefail
 
 sudo apt-get update

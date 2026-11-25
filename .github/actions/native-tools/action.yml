@@ -1,11 +1,6 @@
 name: native tools
 description: Sets up Emscripten, Meson and Ninja for the native engine.
 
-inputs:
-  packages:
-    description: More apt packages to install next to Meson and Ninja.
-    default: ''
-
 runs:
   using: composite
   steps:
@@ -15,8 +10,6 @@ runs:
         version: 6.0.9
     - name: install apt packages
       shell: bash
-      env:
-        PACKAGES: ${{ inputs.packages }}
       run: |
         sudo apt-get update
-        sudo apt-get install -y meson ninja-build $PACKAGES
+        sudo apt-get install -y meson ninja-build

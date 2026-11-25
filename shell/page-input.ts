@@ -1,11 +1,4 @@
-import {
-    EditorInputCapabilities,
-    EditorsOrder,
-    type IUntypedEditorInput,
-    Verbosity,
-} from '@codingame/monaco-vscode-api/vscode/vs/workbench/common/editor';
-import { EditorInput } from '@codingame/monaco-vscode-api/vscode/vs/workbench/common/editor/editorInput';
-import type { IEditorService } from '@codingame/monaco-vscode-api/vscode/vs/workbench/services/editor/common/editorService.service';
+import { EditorInput, EditorInputCapabilities, EditorsOrder, type IEditorService, type IUntypedEditorInput, Verbosity } from './workbench';
 
 /**
  * Creates the input class of a tab that shows a page of the site. Every input of the class matches the others, so a

@@ -1,14 +1,20 @@
-import { addDisposableListener, type Dimension, EventType } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/dom';
-import { StandardKeyboardEvent } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/keyboardEvent';
-import { Gesture, type GestureEvent, EventType as TouchEventType } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/touch';
-import { DomScrollableElement } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/ui/scrollbar/scrollableElement';
-import { KeyCode } from '@codingame/monaco-vscode-api/vscode/vs/base/common/keyCodes';
-import { toDisposable } from '@codingame/monaco-vscode-api/vscode/vs/base/common/lifecycle';
-import { IStorageService } from '@codingame/monaco-vscode-api/vscode/vs/platform/storage/common/storage.service';
-import { ITelemetryService } from '@codingame/monaco-vscode-api/vscode/vs/platform/telemetry/common/telemetry.service';
-import { IThemeService } from '@codingame/monaco-vscode-api/vscode/vs/platform/theme/common/themeService.service';
-import { EditorPane } from '@codingame/monaco-vscode-api/vscode/vs/workbench/browser/parts/editor/editorPane';
-import type { IEditorGroup } from '@codingame/monaco-vscode-api/vscode/vs/workbench/services/editor/common/editorGroupsService';
+import {
+    addDisposableListener,
+    type Dimension,
+    DomScrollableElement,
+    EditorPane,
+    EventType,
+    Gesture,
+    type GestureEvent,
+    type IEditorGroup,
+    IStorageService,
+    ITelemetryService,
+    IThemeService,
+    KeyCode,
+    StandardKeyboardEvent,
+    toDisposable,
+    TouchEventType,
+} from './workbench';
 
 // scrolls by about 2 lines per arrow key like the extension details of upstream's chat customizations
 const arrowScrollPixels = 40;

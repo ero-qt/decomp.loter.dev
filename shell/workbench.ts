@@ -1,0 +1,34 @@
+// the parts of the workbench that the vscode API doesn't have. Every import from inside the workbench goes through this
+// file or `workbench-common.ts`, so a new version of the workbench that moves a part only changes these 2 files
+export type { IMonacoEnvironment } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/browser';
+export { addDisposableListener, type Dimension, EventType } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/dom';
+export { StandardKeyboardEvent } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/keyboardEvent';
+export { Gesture, type GestureEvent, EventType as TouchEventType } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/touch';
+export type { IHoverDelegateOptions, IScopedHoverDelegate } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/ui/hover/hoverDelegate';
+export { setHoverDelegateFactory } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/ui/hover/hoverDelegateFactory';
+export { DomScrollableElement } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/ui/scrollbar/scrollableElement';
+export { Codicon } from '@codingame/monaco-vscode-api/vscode/vs/base/common/codicons';
+export { KeyCode } from '@codingame/monaco-vscode-api/vscode/vs/base/common/keyCodes';
+export { Lazy } from '@codingame/monaco-vscode-api/vscode/vs/base/common/lazy';
+export { toDisposable } from '@codingame/monaco-vscode-api/vscode/vs/base/common/lifecycle';
+export { Categories } from '@codingame/monaco-vscode-api/vscode/vs/platform/action/common/actionCommonCategories';
+export { Action2, MenuId, registerAction2 } from '@codingame/monaco-vscode-api/vscode/vs/platform/actions/common/actions';
+export { CommandsRegistry } from '@codingame/monaco-vscode-api/vscode/vs/platform/commands/common/commands';
+export { WorkbenchHoverDelegate } from '@codingame/monaco-vscode-api/vscode/vs/platform/hover/browser/hover';
+export { SyncDescriptor } from '@codingame/monaco-vscode-api/vscode/vs/platform/instantiation/common/descriptors';
+export { IInstantiationService, type ServicesAccessor } from '@codingame/monaco-vscode-api/vscode/vs/platform/instantiation/common/instantiation';
+export { Registry } from '@codingame/monaco-vscode-api/vscode/vs/platform/registry/common/platform';
+export { IStorageService } from '@codingame/monaco-vscode-api/vscode/vs/platform/storage/common/storage.service';
+export { ITelemetryService } from '@codingame/monaco-vscode-api/vscode/vs/platform/telemetry/common/telemetry.service';
+export { getColorRegistry } from '@codingame/monaco-vscode-api/vscode/vs/platform/theme/common/colorUtils';
+export { IThemeService } from '@codingame/monaco-vscode-api/vscode/vs/platform/theme/common/themeService.service';
+export { EditorPaneDescriptor, type IEditorPaneRegistry } from '@codingame/monaco-vscode-api/vscode/vs/workbench/browser/editor';
+export { EditorPane } from '@codingame/monaco-vscode-api/vscode/vs/workbench/browser/parts/editor/editorPane';
+export { EditorExtensions, EditorInputCapabilities, EditorsOrder, Verbosity } from '@codingame/monaco-vscode-api/vscode/vs/workbench/common/editor';
+export type { IUntypedEditorInput } from '@codingame/monaco-vscode-api/vscode/vs/workbench/common/editor';
+export { EditorInput } from '@codingame/monaco-vscode-api/vscode/vs/workbench/common/editor/editorInput';
+export { type IViewsRegistry, Extensions as ViewExtensions } from '@codingame/monaco-vscode-api/vscode/vs/workbench/common/views';
+export { ISplashStorageService } from '@codingame/monaco-vscode-api/vscode/vs/workbench/contrib/splash/browser/splash.service';
+export type { IEditorGroup } from '@codingame/monaco-vscode-api/vscode/vs/workbench/services/editor/common/editorGroupsService';
+export { IEditorService } from '@codingame/monaco-vscode-api/vscode/vs/workbench/services/editor/common/editorService.service';
+export * from './workbench-common';

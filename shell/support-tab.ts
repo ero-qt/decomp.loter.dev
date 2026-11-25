@@ -1,17 +1,22 @@
-import { Codicon } from '@codingame/monaco-vscode-api/vscode/vs/base/common/codicons';
-import { Categories } from '@codingame/monaco-vscode-api/vscode/vs/platform/action/common/actionCommonCategories';
-import { Action2, MenuId, registerAction2 } from '@codingame/monaco-vscode-api/vscode/vs/platform/actions/common/actions';
-import { SyncDescriptor } from '@codingame/monaco-vscode-api/vscode/vs/platform/instantiation/common/descriptors';
-import type { ServicesAccessor } from '@codingame/monaco-vscode-api/vscode/vs/platform/instantiation/common/instantiation';
-import { Registry } from '@codingame/monaco-vscode-api/vscode/vs/platform/registry/common/platform';
-import { EditorPaneDescriptor, type IEditorPaneRegistry } from '@codingame/monaco-vscode-api/vscode/vs/workbench/browser/editor';
-import { EditorExtensions } from '@codingame/monaco-vscode-api/vscode/vs/workbench/common/editor';
-import { IEditorService } from '@codingame/monaco-vscode-api/vscode/vs/workbench/services/editor/common/editorService.service';
 import { productConfiguration } from './config';
 import { createPageInput, openPage } from './page-input';
 import { createPagePane } from './page-pane';
 import { fillSupportNote } from './support';
 import supportCodeUrl from './support-code.svg?url';
+import {
+    Action2,
+    Categories,
+    Codicon,
+    EditorExtensions,
+    EditorPaneDescriptor,
+    type IEditorPaneRegistry,
+    IEditorService,
+    MenuId,
+    registerAction2,
+    Registry,
+    type ServicesAccessor,
+    SyncDescriptor,
+} from './workbench';
 
 const supportTitle = `Support ${productConfiguration!.nameLong}`;
 const SupportInput = createPageInput('decomp.supportInput', 'Support', supportTitle);

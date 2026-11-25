@@ -1,9 +1,12 @@
 import { StandaloneServices } from '@codingame/monaco-vscode-api/services';
-import type { IHoverDelegateOptions, IScopedHoverDelegate } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/ui/hover/hoverDelegate';
-import { setHoverDelegateFactory } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/ui/hover/hoverDelegateFactory';
-import { Lazy } from '@codingame/monaco-vscode-api/vscode/vs/base/common/lazy';
-import { WorkbenchHoverDelegate } from '@codingame/monaco-vscode-api/vscode/vs/platform/hover/browser/hover';
-import { IInstantiationService } from '@codingame/monaco-vscode-api/vscode/vs/platform/instantiation/common/instantiation';
+import {
+    type IHoverDelegateOptions,
+    IInstantiationService,
+    type IScopedHoverDelegate,
+    Lazy,
+    setHoverDelegateFactory,
+    WorkbenchHoverDelegate,
+} from './workbench';
 
 /**
  * Sets hover delegates that create the workbench's hover delegate on their first hover, because the title bar's service

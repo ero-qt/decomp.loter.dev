@@ -1,7 +1,5 @@
 import 'vscode/localExtensionHost';
 import { initialize } from '@codingame/monaco-vscode-api';
-import type { IMonacoEnvironment } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/browser';
-import { ISplashStorageService } from '@codingame/monaco-vscode-api/vscode/vs/workbench/contrib/splash/browser/splash.service';
 import editorWorkerUrl from '@codingame/monaco-vscode-api/workers/editor.worker?worker&url';
 import configurationOverride from '@codingame/monaco-vscode-configuration-service-override';
 import { createIndexedDBProviders } from '@codingame/monaco-vscode-files-service-override';
@@ -20,6 +18,7 @@ import { deferHoverDelegates } from './hovers';
 import './registration';
 import './privacy-tab';
 import './support-tab';
+import { type IMonacoEnvironment, ISplashStorageService } from './workbench';
 // registers Go to File and Go to Symbol in Workspace without the search service because its override makes the start
 // much bigger
 import '@codingame/monaco-vscode-api/vscode/vs/workbench/contrib/search/browser/searchQuickAccess.contribution';

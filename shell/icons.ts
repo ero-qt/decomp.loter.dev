@@ -1,12 +1,11 @@
 /// <reference types="vite/client" />
 import { type Accessibility, accessibilityOf, type Kind, modifiersOf } from '#contract/symbols';
-import { Color } from '@codingame/monaco-vscode-api/vscode/vs/base/common/color';
-import { getColorRegistry } from '@codingame/monaco-vscode-api/vscode/vs/platform/theme/common/colorUtils';
 import type { Uri } from 'vscode';
 import { vscode } from './api';
 import { registration } from './registration';
 import darkThemeUrl from './themes/dark.json?url';
 import lightThemeUrl from './themes/light.json?url';
+import { Color, getColorRegistry } from './workbench';
 
 type ThemeType = 'light' | 'dark';
 

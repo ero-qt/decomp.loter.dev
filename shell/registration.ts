@@ -1,14 +1,13 @@
 /// <reference types="vite/client" />
 import type { Manifest } from '#contract/manifest';
 import { ExtensionHostKind, type IExtensionManifest, registerExtension } from '@codingame/monaco-vscode-api/extensions';
-import { Registry } from '@codingame/monaco-vscode-api/vscode/vs/platform/registry/common/platform';
-import { Extensions, type IViewsRegistry } from '@codingame/monaco-vscode-api/vscode/vs/workbench/common/views';
 import { darkThemeName, lightThemeName, symbolsViewId } from './config';
 import { grammars } from './grammars';
 import darkThemeUrl from './themes/dark.json?url';
 import lightThemeUrl from './themes/light.json?url';
 import { ownTokenTypes } from './tokens';
 import { writeViewContributions } from './view-menus';
+import { type IViewsRegistry, Registry, ViewExtensions } from './workbench';
 
 const manifest: IExtensionManifest = {
     name: 'decomp-loter-dev',
@@ -51,7 +50,7 @@ export const registration = registerExtension(manifest, ExtensionHostKind.LocalP
 registration.registerFileUrl('/themes/dark.json', darkThemeUrl);
 registration.registerFileUrl('/themes/light.json', lightThemeUrl);
 
-const viewsRegistry = Registry.as<IViewsRegistry>(Extensions.ViewsRegistry);
+const viewsRegistry = Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry);
 
 // gives the Symbols view the order 1 because the workbench puts a view without an order below the Outline view, whose
 // order is 2

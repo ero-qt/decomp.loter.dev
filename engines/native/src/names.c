@@ -154,19 +154,25 @@ void names_add_msvc_words(PJ *j, const char *name) {
  * \brief Cuts the parameter list from a demangled name, so `geometry::Rect::area(int) const` becomes
  * `geometry::Rect::area`.
  *
- * The list is the last group of parentheses, which keeps the parentheses in a name like `operator()`.
+ * The list is the last group of parentheses when only words like `const` follow it, which keeps the parentheses of a
+ * name like `operator()`, `(anonymous namespace)::x` or Go's `main.(*T).Method`.
  */
 static void cut_parameters(char *name) {
-	char *close = strrchr(name, ')');
+	const char *close = strrchr(name, ')');
+	if (!close || close[1 + strspn(close + 1, " &abcdefghijklmnopqrstuvwxyz")]) {
+		return;
+	}
+
 	int depth = 0;
-	for (char *at = close; at && at >= name; at--) {
-		if (*at == ')') {
+	for (size_t length = close - name + 1; length > 0; length--) {
+		char character = name[length - 1];
+		if (character == ')') {
 			depth++;
-		} else if (*at == '(') {
+		} else if (character == '(') {
 			depth--;
 		}
 		if (!depth) {
-			*at = '\0';
+			name[length - 1] = '\0';
 			return;
 		}
 	}

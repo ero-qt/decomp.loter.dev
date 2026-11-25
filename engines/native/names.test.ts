@@ -30,3 +30,10 @@ test('names keep the scopes of a name that only starts with the word operator', 
     expect(splitName('operator_table::find(int)')).toEqual(['operator_table', 'find']);
     expect(splitName('a::operator""_km(long double)')).toEqual(['a', 'operator""_km']);
 });
+
+test("names keep parentheses that aren't the parameters, like those of a Go method", () => {
+    expect(splitName('main.(*T).Method')).toEqual(['main.(*T).Method']);
+    expect(splitName('(anonymous namespace)::x')).toEqual(['(anonymous namespace)', 'x']);
+    expect(splitName('geometry::Rect::area(int) const')).toEqual(['geometry', 'Rect', 'area']);
+    expect(splitName('a::f(int)const &')).toEqual(['a', 'f']);
+});

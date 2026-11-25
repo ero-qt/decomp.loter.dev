@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { delimiter, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -84,7 +84,28 @@ const commands: Command[] = [
     // writes the PDB's name in capitals into the DLL's debug directory, like the builds of many Windows programs do
     ['clang++', '--target=x86_64-pc-windows-msvc', ...compileFlags, '-o', 'extras.obj', extrasSource],
     ['lld-link', ...peLinkFlags, '/pdbaltpath:EXTRAS.PDB', '/pdb:extras.pdb', '/out:extras.dll', 'extras.obj'],
+    ['clang', '--target=x86_64-linux-gnu', '-c', '-o', 'symbols.o', 'symbols.s'],
+    ['ld.lld', '-shared', '-o', 'symbols.so', 'symbols.o'],
 ];
+
+/** The counts of `symbols.so`: its functions `f_0`, `f_1` and so on, and the first of them that `caller` calls. */
+export const symbolCounts = { functions: 100000, calls: 5000 };
+
+function writeFunction(name: string, ...code: string[]): string[] {
+    return [`.globl ${name}`, `.type ${name},@function`, `${name}:`, ...code, '  ret', `.size ${name}, .-${name}`];
+}
+
+// writes the assembly of `symbols.so`: `caller`, which calls many functions, a function with a Go method's name, one
+// in an anonymous namespace without parameters, and so many functions that a slow search of the symbols shows
+function writeSymbolsSource(folder: string) {
+    const lines = ['.text', ...writeFunction('caller', ...Array.from({ length: symbolCounts.calls }, (_, index) => `  call f_${index}`))];
+    lines.push(...writeFunction('"main.(*T).Method"'), ...writeFunction('_ZN12_GLOBAL__N_11xE'));
+    for (let index = 0; index < symbolCounts.functions; index++) {
+        lines.push(...writeFunction(`f_${index}`));
+    }
+
+    writeFileSync(join(folder, 'symbols.s'), `${lines.join('\n')}\n`);
+}
 
 /** The folders that the fixture's build looks in for LLVM's tools, besides the PATH. */
 export interface LlvmFolders {
@@ -168,6 +189,7 @@ export async function buildFixture(): Promise<string> {
     rmSync(building, { recursive: true, force: true });
     mkdirSync(building, { recursive: true });
 
+    writeSymbolsSource(building);
     for (const command of commands) {
         run(llvm, building, command);
     }

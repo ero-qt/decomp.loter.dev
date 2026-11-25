@@ -3,8 +3,29 @@
 const operatorSymbols = /^(\(\)|\[\]|[-+*/%^&|~!=<>,]+)/;
 // the word `operator` as a whole, so a name like `operators` or `operator_table` isn't an operator
 const operatorWord = /operator(?![A-Za-z0-9_])/y;
+// the words that follow a function's parameters, like ` const` or `&`
+const qualifiers = /^[ &a-z]*$/;
 const opening = '<([{`';
 const closing = ">)]}'";
+
+// returns where a name's parameters start: at its last group of parentheses when only qualifiers follow the group, or
+// -1 for a name whose parentheses belong to the name, like Go's `main.(*T).Method`
+function findParameters(name: string): number {
+    const close = name.lastIndexOf(')');
+    if (close < 0 || !qualifiers.test(name.slice(close + 1))) {
+        return -1;
+    }
+
+    let depth = 0;
+    for (let index = close; index >= 0; index--) {
+        depth += name[index] === ')' ? 1 : name[index] === '(' ? -1 : 0;
+        if (depth === 0) {
+            return index;
+        }
+    }
+
+    return -1;
+}
 
 /**
  * Splits a demangled name into its scopes and drops its parameters and return type, like `int a::B<c::D>::f(int)` into
@@ -13,6 +34,7 @@ const closing = ">)]}'";
  */
 export function splitName(name: string): string[] {
     const scopes: string[] = [];
+    const parameters = findParameters(name);
     let start = 0;
     let depth = 0;
     let isOperator = false;
@@ -24,7 +46,7 @@ export function splitName(name: string): string[] {
         if (depth === 0 && index === start && operatorWord.test(name)) {
             isOperator = true;
             index += 'operator'.length + (operatorSymbols.exec(name.slice(index + 'operator'.length))?.[0].length ?? 0) - 1;
-        } else if (character === '(' && depth === 0 && index > start) {
+        } else if (index === parameters && depth === 0 && index > start) {
             break;
         } else if (opening.includes(character)) {
             depth++;

@@ -59,8 +59,8 @@ internal sealed class Users(
         return search._users;
     }
 
-    // finds the definition of the type or the member that an instruction's token operand points at, with the generic
-    // definition of a generic instance, or null for an operand that the type system can't resolve
+    // finds the type or the member that an instruction's token operand points at, with the type arguments of a generic
+    // instance, or null for an operand that the type system can't resolve
     private static object? ResolveOperand(MetadataModule module, int token)
     {
         try
@@ -71,7 +71,7 @@ internal sealed class Users(
             {
                 HandleKind.TypeDefinition or HandleKind.TypeReference or HandleKind.TypeSpecification => module.ResolveType(handle, default),
                 HandleKind.MethodDefinition or HandleKind.MethodSpecification or HandleKind.MemberReference or HandleKind.FieldDefinition
-                    => (module.ResolveEntity(handle, default) as IMember)?.MemberDefinition,
+                    => module.ResolveEntity(handle, default) as IMember,
                 _ => null,
             };
         }
@@ -84,13 +84,16 @@ internal sealed class Users(
     private async Task SearchFileAsync(SearchedFile file, Cancellation cancellation)
     {
         UserRows userRows = new(file);
+        ScannedBodies bodies = MethodBodyScanner.ListBodies(file.File);
+        // token -> whether it points at the symbol, because many bodies use the same few tokens
+        Dictionary<int, bool> usedTokens = [];
 
-        foreach (TokenInstruction instruction in await MethodBodyScanner.ReadTokenInstructionsAsync(file.File, cancellation))
+        foreach ((MethodDefinitionHandle method, MethodBodyBlock body) in bodies.Bodies)
         {
             await cancellation.CheckAsync();
-            if (instruction.OpCode != ILOpCode.Ldstr && Uses(file.Targets, ResolveOperand(file.Module, instruction.Token)))
+            if (UsesInBody(file, method, body, usedTokens))
             {
-                Add(userRows.FindMethodUser(instruction.Method));
+                Add(userRows.FindMethodUser(method));
             }
         }
 
@@ -114,16 +117,58 @@ internal sealed class Users(
         }
     }
 
+    // checks the operands of a body's instructions and, for a type, the types of its locals and of the exceptions
+    // that it catches, which no instruction names
+    private bool UsesInBody(SearchedFile file, MethodDefinitionHandle method, MethodBodyBlock body, Dictionary<int, bool> usedTokens)
+    {
+        List<TokenInstruction> instructions = [];
+        MethodBodyScanner.ReadMethodBody(method, body, instructions);
+
+        foreach (TokenInstruction instruction in instructions.Where(instruction => instruction.OpCode != ILOpCode.Ldstr))
+        {
+            if (!usedTokens.TryGetValue(instruction.Token, out bool isUsed))
+            {
+                isUsed = Uses(file.Targets, ResolveOperand(file.Module, instruction.Token));
+                usedTokens.Add(instruction.Token, isUsed);
+            }
+
+            if (isUsed)
+            {
+                return true;
+            }
+        }
+
+        return isType && (CatchesType(file, body) || BodyTypes.HasLocal(file.File.Metadata, body, handle => NamesHandle(file, handle)));
+    }
+
+    private bool CatchesType(SearchedFile file, MethodBodyBlock body)
+    {
+        return body.ExceptionRegions.Any(region => region.Kind == ExceptionRegionKind.Catch && NamesHandle(file, region.CatchType));
+    }
+
+    private bool NamesHandle(SearchedFile file, EntityHandle handle)
+    {
+        return !handle.IsNil && ResolveOperand(file.Module, MetadataTokens.GetToken(handle)) is IType type && Names(file.Targets, type);
+    }
+
     private bool Uses(Targets targets, object? used)
     {
         return used switch
         {
-            IType type => targets.FindTypeTarget(type) == target,
-            IMember member => targets.FindTarget(member) == target
-                || member is IMethod { AccessorOwner: { } owner } && targets.FindTarget(owner) == target
-                || isType && targets.FindTypeTarget(member.DeclaringType) == target,
+            IType type => isType && Names(targets, type),
+            IMember member => targets.FindTarget(member.MemberDefinition) == target
+                || member is IMethod { AccessorOwner: { } owner } && targets.FindTarget(owner.MemberDefinition) == target
+                || isType && NamesInUse(targets, member),
             _ => false,
         };
+    }
+
+    // checks the type that a used member is in and the type arguments of a generic method's call, like `Shape` in
+    // `new List<Shape>()` and in `Make<Shape>()`
+    private bool NamesInUse(Targets targets, IMember member)
+    {
+        return Names(targets, member.DeclaringType)
+            || member is IMethod { TypeArguments: var arguments } && arguments.Any(argument => Names(targets, argument));
     }
 
     private bool NamesInSignature(Targets targets, IMember member)

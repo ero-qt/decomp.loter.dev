@@ -107,7 +107,7 @@ internal static class MethodBodyScanner
     }
 
     // leaves out the instructions of a body that isn't readable IL, so the file's other methods stay readable
-    private static void ReadMethodBody(MethodDefinitionHandle method, MethodBodyBlock body, List<TokenInstruction> instructions)
+    public static void ReadMethodBody(MethodDefinitionHandle method, MethodBodyBlock body, List<TokenInstruction> instructions)
     {
         int start = instructions.Count;
 

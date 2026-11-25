@@ -73,6 +73,32 @@ test("users of a type include the members that use its members and the members w
     expect(users).not.toContain(drawing('Drawing.Painter.Count'));
 });
 
+test('users of a type include the members whose code names it as a type argument, an array, a local or a caught type', async () => {
+    const engine = connect();
+    const text = `
+        using System;
+        using System.Collections.Generic;
+        public class Shape { }
+        public class ShapeException : Exception { }
+        public class Uses
+        {
+            public static Shape Find() => null;
+            public static T Make<T>() where T : new() => new T();
+            public object MakeList() => new List<Shape>();
+            public Type ReadArray() => typeof(Shape[]);
+            public object CallGeneric() => Make<Shape>();
+            public int KeepLocal() { var shape = Find(); Console.WriteLine(); return shape is null ? 0 : 1; }
+            public void Catch() { try { Console.WriteLine(); } catch (ShapeException) { } }
+            public int Other() => 1;
+        }`;
+    const uses = await openAssembly(engine, await compileAssembly('TypeUses', text, [], { isDebug: true }));
+    const shapeUsers = await findUsers(engine, uses('Shape'));
+    const members = ['Find()', 'MakeList()', 'ReadArray()', 'CallGeneric()', 'KeepLocal()'];
+
+    expect(shapeUsers.toSorted()).toEqual(members.map(member => uses(`Uses.${member}`)).toSorted());
+    expect(await findUsers(engine, uses('ShapeException'))).toEqual([uses('Uses.Catch()')]);
+});
+
 test("dotnet engine finds no users of a target without a row and refuses a view that it doesn't have", async () => {
     const engine = connect();
     const drawing = await openAssembly(engine, await readFixture('Drawing.dll'));

@@ -101,10 +101,14 @@ test("dotnet engine's worker opens Drawing.dll in the page and writes Painter's 
 test("dotnet engine's worker in the page stops a search for users once the page cancels it", async () => {
     const { page } = await openWorkbench();
     await startWorker(page);
+    // calls a generic method with type arguments that no other method uses, because the search resolves each token only
+    // once per file and then has to resolve each of these calls
+    const calls = (index: number) => Array.from({ length: 16 }, (_, call) => `Target.Use<C${index}, C${call}>();`).join(' ');
     const assembly = await compileAssembly(
         'PageMany',
-        'public static class Target { public static int Value; } '
-            + Array.from({ length: 3000 }, (_, index) => `public class C${index} { public int M() { return Target.Value; } }`).join(' '),
+        'public static class Target { public static int Value; public static void Use<A, B>() { } } '
+            + Array.from({ length: 3000 }, (_, index) => `public class C${index} { public int M() { ${calls(index)} return Target.Value; } }`)
+                .join(' '),
     );
     const value = formatTarget({ fileId: 1, key: findRow(await openInPage(page, assembly), 'Target.Value', assembly.name).key });
 

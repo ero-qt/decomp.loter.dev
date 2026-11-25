@@ -141,3 +141,17 @@ export async function readReferences(page: Page): Promise<string[]> {
         });
     });
 }
+
+/**
+ * Reads each result of the open picker as its icon, label and description, like
+ * `symbol-method Area Shape • shapes.fake`.
+ */
+export function readResults(page: Page): Promise<string[]> {
+    return page.locator('.quick-input-list .monaco-list-row').evaluateAll(rows => rows.map(row => {
+        const icon = /codicon-(symbol-[\w-]+)/.exec(row.querySelector('.quick-input-list-icon')?.className ?? '')?.[1];
+        const label = row.querySelector('.label-name')?.textContent;
+        const description = row.querySelector('.label-description')?.textContent;
+
+        return [icon, label, description].filter(Boolean).join(' ');
+    }));
+}

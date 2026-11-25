@@ -20,6 +20,7 @@ const manifest: IExtensionManifest = {
             { command: 'decomp.openFiles', title: 'Open Files...', category: 'File', icon: '$(go-to-file)' },
             { command: 'decomp.openFolder', title: 'Open Folder...', category: 'File', icon: '$(folder-opened)' },
             { command: 'decomp.close', title: 'Close' },
+            { command: 'decomp.findSymbol', title: 'Search Symbols and Strings...', category: 'Go', icon: '$(search)' },
         ],
         views: {
             explorer: [{ id: symbolsViewId, name: 'Symbols' }],
@@ -28,6 +29,7 @@ const manifest: IExtensionManifest = {
             'view/title': [
                 { command: 'decomp.openFiles', when: `view == ${symbolsViewId}`, group: 'navigation@1' },
                 { command: 'decomp.openFolder', when: `view == ${symbolsViewId}`, group: 'navigation@2' },
+                { command: 'decomp.findSymbol', when: `view == ${symbolsViewId}`, group: 'navigation@3' },
             ],
             'view/item/context': [{ command: 'decomp.close', when: `view == ${symbolsViewId} && viewItem == file` }],
             commandPalette: [{ command: 'decomp.close', when: 'false' }],
@@ -35,9 +37,7 @@ const manifest: IExtensionManifest = {
         keybindings: [
             { command: 'decomp.close', key: 'delete', when: `focusedView == ${symbolsViewId}` },
             { command: 'decomp.close', key: 'cmd+backspace', when: `isMac && focusedView == ${symbolsViewId}` },
-            // casts the query that finds the strings because the command takes a text while the manifest's type takes
-            // an object
-            { command: 'workbench.action.quickOpen', args: '#"' as never, key: 'ctrl+shift+f', mac: 'cmd+shift+f' },
+            { command: 'decomp.findSymbol', key: 'ctrl+shift+f', mac: 'cmd+shift+f' },
         ],
         themes: [
             { id: darkThemeName, label: darkThemeName, uiTheme: 'vs-dark', path: './themes/dark.json' },

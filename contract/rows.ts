@@ -1,4 +1,4 @@
-import { type Kind, kinds, modifiersOf } from './symbols';
+import { hasModifier, type Kind, kinds } from './symbols';
 
 /** A symbol in the tree of a file, like a namespace, a type or a member. */
 export interface Row {
@@ -79,7 +79,7 @@ export function readRows({ values, names, details }: Rows): Row[] {
  */
 export function findDocumentRow(rows: Row[], index: number): number | undefined {
     for (let current = index; current >= 0; current = rows[current].parent) {
-        if (modifiersOf(rows[current].flags).includes('document')) {
+        if (hasModifier(rows[current].flags, 'document')) {
             return current;
         }
     }

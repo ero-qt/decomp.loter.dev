@@ -84,7 +84,8 @@ export async function dropAndWait(page: Page, files: Record<string, string | Uin
  * Serves an engine for tests in a worker. The engine claims each file, lists the class `Listed`, which has its own
  * document, for a file and doesn't list any strings. The engine crashes on `open` of a file whose name starts with
  * `crash`, doesn't reply to `open` of a file whose name starts with `slow`, replies to `open` of a file whose name
- * starts with `delayed` after 1 second and refuses the first `list` of a file whose name starts with `flaky`. The first
+ * starts with `delayed` after 1 second, refuses the first `list` of a file whose name starts with `flaky` and every
+ * `list` of a file whose name starts with `unlisted`. The first
  * line of `Listed`'s document has the file's name and the number of the engine's `read` calls. The engine refuses the
  * first `read` of a file whose name starts with `refusing`, replies to `read` of a file whose name starts with `late`
  * after 1 second and doesn't reply to a `read` after the engine's first `read` of a file whose name starts with
@@ -126,6 +127,8 @@ export function serveTestEngine() {
         names.set(args[0], name);
         if (method === 'open' && name.startsWith('crash')) {
             postMessage({ fatal: 'the test engine crashed' });
+        } else if (method === 'list' && name.startsWith('unlisted')) {
+            postMessage({ reply: { error: `The test engine can't list ${name}.` } });
         } else if (method === 'list' && name.startsWith('flaky') && !hasRefused) {
             hasRefused = true;
             postMessage({ reply: { error: `The test engine can't list ${name}.` } });

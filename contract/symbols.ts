@@ -89,6 +89,11 @@ export function accessibilityOf(flags: number): Accessibility {
     return accessibilities[flags & accessibilityBits] ?? '';
 }
 
+/** Checks 1 modifier of a row's or a token's flags without listing the others. */
+export function hasModifier(flags: number, modifier: Modifier): boolean {
+    return (flags & (1 << (modifiers.indexOf(modifier) + modifierShift))) !== 0;
+}
+
 export function modifiersOf(flags: number): Modifier[] {
     return modifiers.filter((_, bit) => (flags & (1 << (bit + modifierShift))) !== 0);
 }

@@ -4,28 +4,34 @@ import { EngineError } from '#contract/reply';
 import { findDocumentRow, type Row } from '#contract/rows';
 import type { CancellationToken, WorkspaceSymbolProvider } from 'vscode';
 import { vscode } from './api';
+import { findRowIndex, listNames } from './candidates';
 import { documentScheme } from './config';
 import type { RowDocuments } from './documents';
 import type { OpenFile, OpenFiles } from './files';
-import { pickMatches } from './matches';
+import { scoreMatches, sortMatches } from './matches';
 import { symbolKinds } from './rows';
 
 const maxResults = 500;
 
-/** A file's rows and strings for a search, with each string's parsed user. */
+/** A string for a search, with its parsed user and its name in the results. */
+interface ListedString {
+    string: StringUse;
+    user?: Target;
+    text: string;
+}
+
+/** A file's rows and strings for a search. */
 interface ListedFile {
     file: OpenFile;
     rows: Row[];
-    strings: { string: StringUse; user?: Target }[];
-    /** Each row's index by the row's key, made on the first string whose user is in the file. */
-    indexes?: Map<number, number>;
+    strings: ListedString[];
 }
 
 /**
  * A row or a string that a search can find, with the index of the row or of the string's user row and the result's
  * name.
  */
-interface Candidate {
+export interface Candidate {
     file: OpenFile;
     rows: Row[];
     index: number;
@@ -33,13 +39,44 @@ interface Candidate {
     string?: StringUse;
 }
 
+// a file's strings -> the strings for a search, because a search runs on each key that the user types
+const listedStrings = new WeakMap<StringUse[], ListedString[]>();
+
 // escapes `$(` because the workbench shows `$(name)` in a result's name as the icon with the name
-function escapeIcons(text: string): string {
+export function escapeIcons(text: string): string {
     return text.replaceAll('$(', '\\$(');
 }
 
-function isOpenable({ rows, index }: Candidate): boolean {
-    return findDocumentRow(rows, index) !== undefined;
+/** Lists a file's strings for a search once, each with its parsed user and its text in quotes. */
+export function listStrings(strings: StringUse[]): ListedString[] {
+    let listed = listedStrings.get(strings);
+    if (!listed) {
+        listed = strings.map(string => {
+            const user = string.user === null ? undefined : parseTarget(string.user);
+
+            return { string, user, text: escapeIcons(JSON.stringify(string.text)) };
+        });
+        listedStrings.set(strings, listed);
+    }
+
+    return listed;
+}
+
+/**
+ * Finds the place that a search result opens at: the declaration of the result's row, or the string's text after the
+ * declaration of the string's user. Returns `undefined` for a result whose file closed.
+ */
+export async function locateCandidate(documents: RowDocuments, file: OpenFile, target: string, stringText?: string) {
+    const located = await documents.locate(file.siteEngine!, target);
+    if (!located || stringText === undefined) {
+        return located;
+    }
+
+    const document = await vscode.workspace.openTextDocument(located.uri);
+    // puts the cursor on the string's text after the user's declaration because a document's tokens don't mark strings
+    const offset = document.getText().indexOf(stringText, document.offsetAt(located.position));
+
+    return { ...located, position: offset < 0 ? located.position : document.positionAt(offset) };
 }
 
 /**
@@ -85,11 +122,7 @@ export class SymbolSearch implements WorkspaceSymbolProvider<SearchResult> {
         }
 
         try {
-            const strings = (await this.openFiles.listStrings(file)).map(string => {
-                return { string, user: string.user === null ? undefined : parseTarget(string.user) };
-            });
-
-            return [{ file, rows, strings }];
+            return [{ file, rows, strings: listStrings(await this.openFiles.listStrings(file)) }];
         } catch (error) {
             // keeps a file's names in the search after the file's `listStrings` call fails because the rows don't
             // depend on the strings
@@ -103,18 +136,16 @@ export class SymbolSearch implements WorkspaceSymbolProvider<SearchResult> {
 
     // leaves out a string without a user row in an open file of the engine because the string's result doesn't have a
     // document
-    private findStrings({ file, strings }: ListedFile, listedFiles: ListedFile[]): Candidate[] {
-        return strings.flatMap(({ string, user }) => {
-            if (!user || !('fileId' in user)) {
-                return [];
-            }
+    private findString({ file }: ListedFile, { string, user, text }: ListedString, listedFiles: ListedFile[]): Candidate | undefined {
+        if (!user || !('fileId' in user)) {
+            return undefined;
+        }
 
-            const userFile = listedFiles.find(listed => listed.file.siteEngine === file.siteEngine && listed.file.fileId === user.fileId);
-            const index = userFile && (userFile.indexes ??= new Map(userFile.rows.map((row, index) => [row.key, index]))).get(user.key);
-            const text = escapeIcons(JSON.stringify(string.text));
+        const userFile = listedFiles.find(listed => listed.file.siteEngine === file.siteEngine && listed.file.fileId === user.fileId);
+        const index = userFile && findRowIndex(userFile.rows, user.key);
+        const isOpenable = userFile && index !== undefined && findDocumentRow(userFile.rows, index) !== undefined;
 
-            return userFile && index !== undefined ? [{ file: userFile.file, rows: userFile.rows, index, text, string }] : [];
-        });
+        return isOpenable ? { file: userFile.file, rows: userFile.rows, index, text, string } : undefined;
     }
 
     async provideWorkspaceSymbols(query: string, token: CancellationToken): Promise<SearchResult[]> {
@@ -126,42 +157,41 @@ export class SymbolSearch implements WorkspaceSymbolProvider<SearchResult> {
             return [];
         }
 
-        // leaves out the rows that the first view hides because the Symbols view leaves them out too
-        const names = listedFiles.flatMap(({ file, rows }) => {
-            return rows.flatMap((row, index) => (row.hiddenViews & 1 ? [] : [{ file, rows, index, text: escapeIcons(row.name) }]));
+        // only searches the names for a query that doesn't start with a quote because only a string's name starts with
+        // a quote
+        const names = query.trimStart().startsWith('"') ? [] : listedFiles.flatMap(({ file, rows }) => {
+            return scoreMatches(listNames(rows), query).map(({ item, score }) => ({ item: { file, rows, ...item }, score }));
         });
-        const strings = listedFiles.flatMap(listed => this.findStrings(listed, listedFiles));
-        // only searches the strings for a query that starts with a quote because only a string's name starts with a
-        // quote
-        const candidates = [
-            ...(query.trimStart().startsWith('"') ? [] : pickMatches(names.filter(isOpenable), query, maxResults)),
-            ...pickMatches(strings.filter(isOpenable), query, maxResults),
-        ];
+        const strings = listedFiles.flatMap(listed => {
+            return scoreMatches(listed.strings, query).map(({ item, score }) => ({ item: { listed, item }, score }));
+        });
+        // finds the user of the best strings only, because a file has up to 50,000 strings
+        const foundStrings: Candidate[] = [];
+        for (const { item } of sortMatches(strings)) {
+            const found = foundStrings.length < maxResults && this.findString(item.listed, item.item, listedFiles);
+            if (found) {
+                foundStrings.push(found);
+            }
+        }
+
+        const foundNames = sortMatches(names).slice(0, maxResults).map(({ item }) => ({ ...item, text: escapeIcons(item.text) }));
+        const candidates = [...foundNames, ...foundStrings];
 
         return candidates.map(candidate => new SearchResult(candidate));
     }
 
     async resolveWorkspaceSymbol(result: SearchResult): Promise<SearchResult | undefined> {
-        const located = await this.documents.locate(result.file.siteEngine!, result.target);
+        const located = await locateCandidate(this.documents, result.file, result.target, result.stringText);
         // leaves the result of a closed file pending because the workbench opens a result that resolves, also to
         // `undefined`
         if (!located) {
             return new Promise(() => {});
         }
 
-        let position = located.position;
-        if (result.stringText !== undefined) {
-            const document = await vscode.workspace.openTextDocument(located.uri);
-            // puts the cursor on the string's text after the user's declaration because a document's tokens don't mark
-            // strings
-            const offset = document.getText().indexOf(result.stringText, document.offsetAt(position));
-            position = offset < 0 ? position : document.positionAt(offset);
-        }
-
         // sets `external` to the document's URI because the workbench opens the `external` that it kept from the
         // result's first URI
         const uri = Object.assign(located.uri, { external: located.uri.toString() });
-        result.location = new vscode.Location(uri, position);
+        result.location = new vscode.Location(uri, located.position);
 
         return result;
     }

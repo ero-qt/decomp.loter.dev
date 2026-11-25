@@ -2,7 +2,7 @@ import { sampleFiles } from '#contract/fake';
 import type { WorkerRequest } from '#contract/serve';
 import { expect, test } from 'bun:test';
 import type { Page } from 'playwright';
-import { aboutTab, openCircle, readActiveTab, readCursor, readLines, readTabs, readUntil } from './editor-testing';
+import { aboutTab, openCircle, readActiveTab, readCursor, readLines, readResults, readTabs, readUntil } from './editor-testing';
 import { collectErrors, startWorkbench, testTimeoutMs } from './page-testing';
 import { dropAndWait, dropFiles, findRow, readRowTexts, startWithEngines, testEngine } from './tree-testing';
 
@@ -52,17 +52,6 @@ function serveStringsEngine() {
 async function searchSymbols(page: Page, query: string) {
     await page.keyboard.press('Control+P');
     await page.keyboard.insertText(`#${query}`);
-}
-
-/** Reads each result's icon, label and description, like `symbol-method Area Shape • shapes.fake`. */
-function readResults(page: Page): Promise<string[]> {
-    return page.locator('.quick-input-list .monaco-list-row').evaluateAll(rows => rows.map(row => {
-        const icon = /codicon-(symbol-[\w-]+)/.exec(row.querySelector('.quick-input-list-icon')?.className ?? '')?.[1];
-        const label = row.querySelector('.label-name')?.textContent;
-        const description = row.querySelector('.label-description')?.textContent;
-
-        return [icon, label, description].filter(Boolean).join(' ');
-    }));
 }
 
 async function readSortedResults(page: Page): Promise<string[]> {
@@ -139,14 +128,6 @@ test('Ctrl+T `"cir` lists only the string `"circle"`', async () => {
 
     const expected = ['symbol-string "circle" Draw • drawing.fake'];
     expect(await readUntil(() => readResults(page), expected)).toEqual(expected);
-}, testTimeoutMs);
-
-test('Ctrl+Shift+F opens Go to Symbol in Workspace with the quote that searches the strings', async () => {
-    const { page } = await openWorkbench();
-
-    await page.keyboard.press('Control+Shift+F');
-
-    expect(await readUntil(() => page.locator('.quick-input-box input').inputValue(), '#"')).toBe('#"');
 }, testTimeoutMs);
 
 test('Ctrl+P after a click on `Draw` lists `Circle.code` above the About tab', async () => {
@@ -229,7 +210,7 @@ test("Ctrl+T leaves out a file whose listing fails and doesn't log an error", as
     const { page } = await openWorkbench();
     const errors = collectErrors(page);
     await startWithEngines(page, { test: testEngine });
-    await dropAndWait(page, { 'flaky.test': '', 'one.test': '' });
+    await dropAndWait(page, { 'unlisted.test': '', 'one.test': '' });
 
     await searchSymbols(page, 'Listed');
 

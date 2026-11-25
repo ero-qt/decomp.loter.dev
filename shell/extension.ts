@@ -11,6 +11,7 @@ import { formatUnopenedText, listenForDrops, type PickedFile, pickFiles } from '
 import { addSymbolsWelcome, registerViews } from './registration';
 import { SymbolSearch } from './search';
 import { SymbolFeatures } from './symbol-features';
+import { SymbolPicker } from './symbol-picker';
 import { tokenLegend } from './tokens';
 import { SymbolsTree, ViewRow } from './tree';
 import { formatShowBesideCommand } from './view-menus';
@@ -77,6 +78,8 @@ vscode.languages.registerDefinitionProvider({ scheme: documentScheme }, features
 vscode.languages.registerReferenceProvider({ scheme: documentScheme }, features);
 vscode.languages.registerDocumentSymbolProvider({ scheme: documentScheme }, features);
 vscode.languages.registerWorkspaceSymbolProvider(new SymbolSearch(openFiles, documents));
+const symbolPicker = new SymbolPicker(openFiles, documents);
+vscode.commands.registerCommand('decomp.findSymbol', () => symbolPicker.show());
 registerViews(engines.map(({ manifest }) => manifest));
 listenForDrops(pickedFiles => void open(pickedFiles));
 addSymbolsWelcome(errorTexts);

@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
-import { readRows, type Row } from '../../contract/rows';
-import { modifiersOf } from '../../contract/symbols';
+import { readRows, type Row } from '#contract/rows';
+import { modifiersOf } from '#contract/symbols';
 import { loadTestModule, readFixture, useNativeEngine } from './testing';
 
 const connect = useNativeEngine();

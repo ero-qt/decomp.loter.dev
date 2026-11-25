@@ -1,6 +1,6 @@
 import { type MethodType, type Type, tryParseType } from '@katana-project/asm/type';
-import { formatTarget, parseTarget } from '../../contract/document';
-import type { Description } from '../../contract/engine';
+import { formatTarget, parseTarget } from '#contract/document';
+import type { Description } from '#contract/engine';
 import type { OpenFile } from './handlers';
 import { simpleName, writeType } from './types';
 

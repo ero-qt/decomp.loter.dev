@@ -24,7 +24,7 @@ import type {
 import type { ClassEntry, DynamicEntry, Entry, RefEntry, StringEntry, UTF8Entry } from '@katana-project/asm/pool';
 import { ConstantType, ElementTag } from '@katana-project/asm/spec';
 import { type Type, tryParseType } from '@katana-project/asm/type';
-import type { Kind } from '../../contract/symbols';
+import type { Kind } from '#contract/symbols';
 import { access, readClassFlags, writeModifiers } from './flags';
 import { findEndlessSwitch } from './switches';
 import { writeType, writeTypeParameters } from './types';

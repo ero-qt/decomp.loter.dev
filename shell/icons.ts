@@ -2,7 +2,7 @@
 import { Color } from '@codingame/monaco-vscode-api/vscode/vs/base/common/color';
 import { getColorRegistry } from '@codingame/monaco-vscode-api/vscode/vs/platform/theme/common/colorUtils';
 import type { Uri } from 'vscode';
-import { type Accessibility, accessibilityOf, type Kind, modifiersOf } from '../contract/symbols';
+import { type Accessibility, accessibilityOf, type Kind, modifiersOf } from '#contract/symbols';
 import { vscode } from './api';
 import { registration } from './registration';
 import darkThemeUrl from './themes/dark.json?url';

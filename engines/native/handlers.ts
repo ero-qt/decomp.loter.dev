@@ -1,8 +1,8 @@
-import { type Document, formatTarget, parseTarget } from '../../contract/document';
-import { failed, ok, type Reply } from '../../contract/reply';
-import { writeRows } from '../../contract/rows';
-import type { EngineHandlers } from '../../contract/serve';
-import { modifiersOf } from '../../contract/symbols';
+import { type Document, formatTarget, parseTarget } from '#contract/document';
+import { failed, ok, type Reply } from '#contract/reply';
+import { writeRows } from '#contract/rows';
+import type { EngineHandlers } from '#contract/serve';
+import { modifiersOf } from '#contract/symbols';
 import { loadOnce, refuseLoadErrors } from '../shared/loading';
 import { createRefusals } from '../shared/refusals';
 import { assemblyHeader, cHeader, listClassParts, writeClassDocument } from './class-document';

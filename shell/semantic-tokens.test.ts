@@ -1,6 +1,6 @@
 import { expect, mock, test } from 'bun:test';
 import type { CancellationToken, TextDocument, Uri } from 'vscode';
-import { CanceledError } from '../contract/reply';
+import { CanceledError } from '#contract/reply';
 import { formatDocumentPath } from './document-paths';
 import type { OpenFile, OpenFiles, ReadDocument } from './files';
 

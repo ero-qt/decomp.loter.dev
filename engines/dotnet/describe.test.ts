@@ -1,9 +1,9 @@
 import { expect, test } from 'bun:test';
-import { findRow } from '../../contract/checking';
-import { formatTarget } from '../../contract/document';
-import type { Engine } from '../../contract/engine';
-import { EngineError } from '../../contract/reply';
-import { readRows, type Row } from '../../contract/rows';
+import { findRow } from '#contract/checking';
+import { formatTarget } from '#contract/document';
+import type { Engine } from '#contract/engine';
+import { EngineError } from '#contract/reply';
+import { readRows, type Row } from '#contract/rows';
 import { loadTestRuntime, readFixture, useDotnetEngine } from './testing';
 
 const connect = useDotnetEngine();

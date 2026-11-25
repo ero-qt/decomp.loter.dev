@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
-import { readRows, type Row } from '../../contract/rows';
+import { readRows, type Row } from '#contract/rows';
 import { Opcode } from '@katana-project/asm/spec';
-import { accessibilityOf, modifiersOf } from '../../contract/symbols';
+import { accessibilityOf, modifiersOf } from '#contract/symbols';
 import { fixture } from './fixture';
 import { classFile, useJavaEngine, zipFile } from './testing';
 

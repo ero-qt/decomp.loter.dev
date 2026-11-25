@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import type { Locator, Page } from 'playwright';
-import { fakeManifest, sampleFiles } from '../contract/fake';
+import { fakeManifest, sampleFiles } from '#contract/fake';
 import { aboutTab, closeTab, openCircle, readCursor, readLines, readTabs, readUntil, readWordColor, waitForTabs } from './editor-testing';
 import {
     countEngineCancels,

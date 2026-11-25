@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
-import { failed } from '../../contract/reply';
-import type { Row } from '../../contract/rows';
-import { flagsOf } from '../../contract/symbols';
+import { failed } from '#contract/reply';
+import type { Row } from '#contract/rows';
+import { flagsOf } from '#contract/symbols';
 import { createRefusals, findDocumentRowReply } from './refusals';
 
 const refusals = createRefusals('Java');

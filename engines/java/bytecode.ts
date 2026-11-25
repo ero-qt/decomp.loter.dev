@@ -1,8 +1,8 @@
 import type { Node } from '@katana-project/asm';
 import { disassemble, escapeLiteral } from '@katana-project/asm/analysis/disasm';
-import { type Document, formatTarget, type Token, writeTokens } from '../../contract/document';
-import { failed, ok, type Reply } from '../../contract/reply';
-import { flagsOf } from '../../contract/symbols';
+import { type Document, formatTarget, type Token, writeTokens } from '#contract/document';
+import { failed, ok, type Reply } from '#contract/reply';
+import { flagsOf } from '#contract/symbols';
 import { createYielder } from '../shared/yielding';
 import { readClass } from './classfile';
 import { findKeyRow, findMember, type FoundRow, type OpenFiles } from './describe';

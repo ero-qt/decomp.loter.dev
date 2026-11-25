@@ -1,5 +1,5 @@
 import { crc32, deflateRawSync } from 'node:zlib';
-import type { Engine } from '../../contract/engine';
+import type { Engine } from '#contract/engine';
 import { useEngine } from '../shared/testing';
 import { createJavaHandlers } from './handlers';
 

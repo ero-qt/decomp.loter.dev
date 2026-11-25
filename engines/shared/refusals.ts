@@ -1,6 +1,6 @@
-import { failed, ok, type Reply } from '../../contract/reply';
-import type { Row } from '../../contract/rows';
-import { modifiersOf } from '../../contract/symbols';
+import { failed, ok, type Reply } from '#contract/reply';
+import type { Row } from '#contract/rows';
+import { modifiersOf } from '#contract/symbols';
 
 /** Returns the refusals that every engine gives, as failed replies whose texts have the engine's name, like `Java`. */
 export function createRefusals(engineName: string) {

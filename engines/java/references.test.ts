@@ -1,9 +1,9 @@
 import { expect, setDefaultTimeout, test } from 'bun:test';
-import { findRow, missingView } from '../../contract/checking';
-import { formatTarget } from '../../contract/document';
-import type { Engine } from '../../contract/engine';
-import { EngineError } from '../../contract/reply';
-import { readRows } from '../../contract/rows';
+import { findRow, missingView } from '#contract/checking';
+import { formatTarget } from '#contract/document';
+import type { Engine } from '#contract/engine';
+import { EngineError } from '#contract/reply';
+import { readRows } from '#contract/rows';
 import { fixture } from './fixture';
 import { useJavaEngine } from './testing';
 

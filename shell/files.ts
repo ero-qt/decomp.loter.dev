@@ -1,7 +1,7 @@
-import { type Document, readTokens, type Token } from '../contract/document';
-import type { Listing, StringUse } from '../contract/engine';
-import { EngineError } from '../contract/reply';
-import { readRows, type Row, type Rows } from '../contract/rows';
+import { type Document, readTokens, type Token } from '#contract/document';
+import type { Listing, StringUse } from '#contract/engine';
+import { EngineError } from '#contract/reply';
+import { readRows, type Row, type Rows } from '#contract/rows';
 import { vscode } from './api';
 import { findEngine, type SiteEngine } from './engines';
 import type { PickedFile } from './picking';

@@ -1,5 +1,5 @@
-import { formatTarget, parseTarget } from '../../contract/document';
-import type { Reference } from '../../contract/engine';
+import { formatTarget, parseTarget } from '#contract/document';
+import type { Reference } from '#contract/engine';
 import { createYielder } from '../shared/yielding';
 import { type OpenFiles, splitMemberKey } from './describe';
 import { findTop, type JavaClass } from './files';

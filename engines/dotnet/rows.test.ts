@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
-import { readRows, type Row } from '../../contract/rows';
-import { accessibilityOf, modifiersOf } from '../../contract/symbols';
+import { readRows, type Row } from '#contract/rows';
+import { accessibilityOf, modifiersOf } from '#contract/symbols';
 import { compileAssembly, loadTestRuntime, readFixture, useDotnetEngine } from './testing';
 
 const connect = useDotnetEngine();

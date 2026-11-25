@@ -1,4 +1,4 @@
-import { serveEngine } from '../../contract/serve';
+import { serveEngine } from '#contract/serve';
 import { mountInWorker } from './files';
 import { createNativeHandlers } from './handlers';
 import { loadModule, type NativeModule } from './module';

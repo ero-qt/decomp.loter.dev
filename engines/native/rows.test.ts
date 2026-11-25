@@ -1,9 +1,9 @@
 import { expect, test } from 'bun:test';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { readRows, type Row } from '../../contract/rows';
-import { serveEngine, type WorkerMessage, type WorkerPort } from '../../contract/serve';
-import { accessibilityOf, modifiersOf } from '../../contract/symbols';
+import { readRows, type Row } from '#contract/rows';
+import { serveEngine, type WorkerMessage, type WorkerPort } from '#contract/serve';
+import { accessibilityOf, modifiersOf } from '#contract/symbols';
 import { LoadError } from '../shared/loading';
 import { moduleFolder } from './build/link';
 import { mountInMemory } from './files';

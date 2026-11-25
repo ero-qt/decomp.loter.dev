@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
-import { testLoadFailure } from '../../contract/conformance-testing';
-import { useInThreadWorker } from '../../contract/in-thread-worker';
-import { failed, ok } from '../../contract/reply';
+import { testLoadFailure } from '#contract/conformance-testing';
+import { useInThreadWorker } from '#contract/in-thread-worker';
+import { failed, ok } from '#contract/reply';
 import { LoadError } from '../shared/loading';
 import { mountInMemory } from './files';
 import { createNativeHandlers } from './handlers';

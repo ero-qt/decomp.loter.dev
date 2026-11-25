@@ -1,8 +1,8 @@
 import type { CancellationToken, WorkspaceSymbolProvider } from 'vscode';
-import { formatTarget, parseTarget, type Target } from '../contract/document';
-import type { StringUse } from '../contract/engine';
-import { EngineError } from '../contract/reply';
-import { findDocumentRow, type Row } from '../contract/rows';
+import { formatTarget, parseTarget, type Target } from '#contract/document';
+import type { StringUse } from '#contract/engine';
+import { EngineError } from '#contract/reply';
+import { findDocumentRow, type Row } from '#contract/rows';
 import { vscode } from './api';
 import { documentScheme } from './config';
 import type { RowDocuments } from './documents';

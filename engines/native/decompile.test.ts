@@ -1,8 +1,8 @@
 import { expect, test } from 'bun:test';
-import { readTokens, type Token } from '../../contract/document';
-import type { Engine } from '../../contract/engine';
-import { readRows, type Row } from '../../contract/rows';
-import { modifiersOf } from '../../contract/symbols';
+import { readTokens, type Token } from '#contract/document';
+import type { Engine } from '#contract/engine';
+import { readRows, type Row } from '#contract/rows';
+import { modifiersOf } from '#contract/symbols';
 import { LoadError } from '../shared/loading';
 import { mountInMemory } from './files';
 import { createNativeHandlers } from './handlers';

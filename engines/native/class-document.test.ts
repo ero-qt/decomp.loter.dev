@@ -1,9 +1,9 @@
 import { expect, test } from 'bun:test';
-import { readTokens, type Token, writeTokens } from '../../contract/document';
-import type { Engine } from '../../contract/engine';
-import { failed, ok } from '../../contract/reply';
-import { readRows, type Row } from '../../contract/rows';
-import { flagsOf, modifiersOf } from '../../contract/symbols';
+import { readTokens, type Token, writeTokens } from '#contract/document';
+import type { Engine } from '#contract/engine';
+import { failed, ok } from '#contract/reply';
+import { readRows, type Row } from '#contract/rows';
+import { flagsOf, modifiersOf } from '#contract/symbols';
 import { type ClassParts, writeClassDocument } from './class-document';
 import { loadTestModule, readFixture, useNativeEngine } from './testing';
 

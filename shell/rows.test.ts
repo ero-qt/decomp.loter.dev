@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
-import type { Row } from '../contract/rows';
-import { type Accessibility, flagsOf, type Kind, type Modifier } from '../contract/symbols';
+import type { Row } from '#contract/rows';
+import { type Accessibility, flagsOf, type Kind, type Modifier } from '#contract/symbols';
 import { compareRows, findRowIndex, writeTooltip } from './rows';
 
 function createRow(kind: Kind, name: string, detail = '', accessibility: Accessibility = 'public', ...modifiers: Modifier[]): Row {

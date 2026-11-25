@@ -1,7 +1,7 @@
 import { afterEach, expect, mock, spyOn, test } from 'bun:test';
-import type { Engine } from '../contract/engine';
-import { fakeManifest } from '../contract/fake';
-import * as queue from '../contract/queue';
+import type { Engine } from '#contract/engine';
+import { fakeManifest } from '#contract/fake';
+import * as queue from '#contract/queue';
 import { findEngine, formatWorkerUrl, listExtensions, loadEngines, type SiteEngine } from './engines';
 
 const siteUrl = 'https://decomp.example/site/';

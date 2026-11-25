@@ -12,10 +12,10 @@ import type {
     TextDocument,
     Uri,
 } from 'vscode';
-import { formatTarget, parseTarget } from '../contract/document';
-import type { Reference } from '../contract/engine';
-import { CanceledError, EngineError } from '../contract/reply';
-import { findDocumentRow, type Row } from '../contract/rows';
+import { formatTarget, parseTarget } from '#contract/document';
+import type { Reference } from '#contract/engine';
+import { CanceledError, EngineError } from '#contract/reply';
+import { findDocumentRow, type Row } from '#contract/rows';
 import { vscode } from './api';
 import { toSignal } from './cancellation';
 import type { RowDocuments } from './documents';

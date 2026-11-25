@@ -1,6 +1,6 @@
-import { failed, ok, type Reply } from '../../contract/reply';
-import type { EngineHandlers } from '../../contract/serve';
-import { writeRows } from '../../contract/rows';
+import { failed, ok, type Reply } from '#contract/reply';
+import type { EngineHandlers } from '#contract/serve';
+import { writeRows } from '#contract/rows';
 import { loadOnce } from '../shared/loading';
 import { toHex } from '../shared/magic';
 import { createRefusals, findDocumentRowReply } from '../shared/refusals';

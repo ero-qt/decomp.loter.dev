@@ -1,5 +1,5 @@
-import { failed, type Reply } from '../../contract/reply';
-import type { EngineHandlers } from '../../contract/serve';
+import { failed, type Reply } from '#contract/reply';
+import type { EngineHandlers } from '#contract/serve';
 
 /** An error of a part that an engine loads, like a chunk that didn't load, which a handler refuses its call with. */
 export class LoadError extends Error {}

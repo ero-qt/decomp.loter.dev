@@ -1,6 +1,6 @@
 import type { Node } from '@katana-project/asm';
-import { formatTarget, type Token } from '../../contract/document';
-import { flagsOf, type Kind } from '../../contract/symbols';
+import { formatTarget, type Token } from '#contract/document';
+import { flagsOf, type Kind } from '#contract/symbols';
 import { findLocalType, readClass } from './classfile';
 import { findKeyRow, findMember, type FoundRow, type OpenFiles } from './describe';
 import type { OpenFile } from './handlers';

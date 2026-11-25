@@ -1,4 +1,4 @@
-import type { Manifest } from '../contract/manifest';
+import type { Manifest } from '#contract/manifest';
 
 function escapeHtml(text: string): string {
     return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');

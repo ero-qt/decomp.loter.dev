@@ -2,7 +2,7 @@
 import { ExtensionHostKind, type IExtensionManifest, registerExtension } from '@codingame/monaco-vscode-api/extensions';
 import { Registry } from '@codingame/monaco-vscode-api/vscode/vs/platform/registry/common/platform';
 import { Extensions, type IViewsRegistry } from '@codingame/monaco-vscode-api/vscode/vs/workbench/common/views';
-import type { Manifest } from '../contract/manifest';
+import type { Manifest } from '#contract/manifest';
 import { darkThemeName, lightThemeName, symbolsViewId } from './config';
 import { grammars } from './grammars';
 import darkThemeUrl from './themes/dark.json?url';

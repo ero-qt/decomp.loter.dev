@@ -1,5 +1,5 @@
-import type { Token } from '../contract/document';
-import { type Kind, kinds, modifierShift, modifiers, modifiersOf } from '../contract/symbols';
+import type { Token } from '#contract/document';
+import { type Kind, kinds, modifierShift, modifiers, modifiersOf } from '#contract/symbols';
 
 // kind -> the kind's semantic token type
 const tokenTypes: Record<Kind, string> = {

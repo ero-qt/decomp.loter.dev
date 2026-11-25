@@ -1,6 +1,9 @@
 {
   "private": true,
   "type": "module",
+  "imports": {
+    "#contract/*": "./contract/*.ts"
+  },
   "scripts": {
     "build": "vite build --config shell/vite.config.ts && bun engines/build.ts",
     "check": "tsc",

@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { readManifest } from '../../contract/manifest';
+import { readManifest } from '#contract/manifest';
 import manifest from './manifest.json' with { type: 'json' };
 
 test("native engine's JSON manifest names the C and assembly views, ELF, PE and Mach-O files and limits for a long decompile", () => {

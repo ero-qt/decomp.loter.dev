@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
-import { formatTarget } from '../../contract/document';
-import type { StringUse } from '../../contract/engine';
-import { readRows } from '../../contract/rows';
+import { formatTarget } from '#contract/document';
+import type { StringUse } from '#contract/engine';
+import { readRows } from '#contract/rows';
 import type { NativeModule } from './module';
 import { groupRows } from './rows';
 import { listStrings } from './strings';

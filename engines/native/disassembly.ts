@@ -1,6 +1,6 @@
-import { type Document, formatTarget, type Token, writeTokens } from '../../contract/document';
-import { failed, ok, type Reply } from '../../contract/reply';
-import { flagsOf, type Kind } from '../../contract/symbols';
+import { type Document, formatTarget, type Token, writeTokens } from '#contract/document';
+import { failed, ok, type Reply } from '#contract/reply';
+import { flagsOf, type Kind } from '#contract/symbols';
 import { createYielder } from '../shared/yielding';
 import type { CodeRows } from './code';
 import type { NativeModule } from './module';

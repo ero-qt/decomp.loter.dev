@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
-import type { Engine } from '../../contract/engine';
-import { findDocumentRow, readRows, type Row } from '../../contract/rows';
+import type { Engine } from '#contract/engine';
+import { findDocumentRow, readRows, type Row } from '#contract/rows';
 import { loadTestModule, readFixture, useNativeEngine } from './testing';
 
 const connect = useNativeEngine();

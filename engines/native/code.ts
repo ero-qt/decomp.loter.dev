@@ -1,6 +1,6 @@
-import { type Document, formatTarget, type Token, writeTokens } from '../../contract/document';
-import { failed, ok, type Reply } from '../../contract/reply';
-import { flagsOf, type Kind } from '../../contract/symbols';
+import { type Document, formatTarget, type Token, writeTokens } from '#contract/document';
+import { failed, ok, type Reply } from '#contract/reply';
+import { flagsOf, type Kind } from '#contract/symbols';
 import type { NativeModule } from './module';
 
 /** A part of Ghidra's C as rz-ghidra annotates it, with UTF-8 offsets and its address in hex. */

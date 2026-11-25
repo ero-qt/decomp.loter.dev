@@ -1,4 +1,4 @@
-import type { Manifest } from '../contract/manifest';
+import type { Manifest } from '#contract/manifest';
 import { documentScheme, symbolsViewId } from './config';
 
 type MenuItem = { command: string; when: string; group: string };

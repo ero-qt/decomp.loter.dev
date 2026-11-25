@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import type { Locator, Page } from 'playwright';
-import { fakeManifest, sampleFiles } from '../contract/fake';
+import { fakeManifest, sampleFiles } from '#contract/fake';
 import { aboutTab, closeTab, openCircle, readActiveTab, readCursor, readHover, readTabs, readUntil, waitForTabs } from './editor-testing';
 import { startWorkbench, testTimeoutMs, waitForEngineReplies } from './page-testing';
 import { dropAndWait, dropFiles, expandRows, findProgressStrip, findRow, startWithEngines, testEngine } from './tree-testing';

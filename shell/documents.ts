@@ -347,7 +347,8 @@ export class RowDocuments implements TextDocumentContentProvider, DocumentSemant
     /**
      * Finds the document that shows a row target's row like `findDocumentUri`, the position of the row's declaration
      * and the declaration's range. The document is in the engine's first view that doesn't hide the row when the view
-     * with the id hides the row.
+     * with the id hides the row. A row that the document doesn't declare, like an accessor that C# writes as a keyword,
+     * has the declaration of the nearest row above it.
      */
     async locate(siteEngine: SiteEngine, target: string, viewId?: string): Promise<{ uri: Uri; position: Position; range: Range } | undefined> {
         const found = await this.findTargetRow(siteEngine, target);
@@ -359,7 +360,11 @@ export class RowDocuments implements TextDocumentContentProvider, DocumentSemant
 
         await this.refreshDocument(uri);
         const document = await this.wait(uri).catch(() => undefined);
-        const declaration = document && findDeclarations(document.tokens).get(target);
+        const declarations = findDeclarations(document?.tokens ?? []);
+        let declaration = declarations.get(target);
+        for (let above = row.parent; !declaration && above >= 0; above = found.rows[above].parent) {
+            declaration = declarations.get(formatTarget({ fileId: found.fileId, key: found.rows[above].key }));
+        }
 
         const { line, character } = createPositionFinder(document?.text ?? '')(declaration?.start ?? 0);
         const position = new vscode.Position(line, character);

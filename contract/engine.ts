@@ -80,8 +80,9 @@ export interface Engine {
     /**
      * Writes the document of a row with the `document` modifier in a view of the manifest, like the document of a type.
      * The document has a token with the `declaration` modifier and a row's target for the row and for each row whose
-     * document row, see `findDocumentRow`, is the row, except a row that is hidden in the view. The token that declares
-     * a local has the `declaration` modifier. The engine refuses a key that no row has, a row that doesn't have the
+     * document row, see `findDocumentRow`, is the row, except a row that is hidden in the view and a method's row below
+     * a property, an indexer or an event that the document declares, like a getter. The token that declares a local has
+     * the `declaration` modifier. The engine refuses a key that no row has, a row that doesn't have the
      * `document` modifier, a row that is hidden in the view and a view that the manifest doesn't have.
      */
     read(fileId: number, key: number, view: string, signal?: AbortSignal): Promise<Document>;

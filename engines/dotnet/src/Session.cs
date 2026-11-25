@@ -41,6 +41,10 @@ internal sealed partial class Session
     // systems, because a hover over each symbol outside the open files looks them up
     private readonly Dictionary<int, FoundMissingFiles> _missingFiles = [];
 
+    // file id -> whether the scans of the file's method bodies and strings stop at their limits, which only the file's
+    // own bytes decide
+    private readonly Dictionary<int, (bool IsScanCut, bool AreStringsCut)> _cuts = [];
+
     private readonly Cancellation _cancellation = new();
 
     /// <summary>
@@ -55,10 +59,11 @@ internal sealed partial class Session
             throw new ArgumentException($"The .NET engine already has an open file with the id {fileId}.");
         }
 
-        _files.Add(fileId, ReadFile(name, bytes));
+        PEFile file = ReadFile(name, bytes);
+        _files.Add(fileId, file);
 
-        // drops every type system because a file that references the new one then reads its types from it
-        ClearTypeSystems();
+        // drops the type systems of the files that reference the new one because they then read its types from it
+        DropUsersState(file);
     }
 
     /// <exception cref="ArgumentException">The session doesn't have a file with the id.</exception>
@@ -66,11 +71,11 @@ internal sealed partial class Session
     {
         PEFile file = FindFile(fileId);
 
+        // drops the type systems of the files that reference the closed one because they keep it
+        DropUsersState(file);
+        _cuts.Remove(fileId);
         _files.Remove(fileId);
         file.Dispose();
-
-        // drops every type system because the type systems of the files that reference the closed one keep it
-        ClearTypeSystems();
     }
 
     /// <summary>
@@ -92,7 +97,10 @@ internal sealed partial class Session
         }
 
         _files.Clear();
-        ClearTypeSystems();
+        _typeSystems.Clear();
+        _rows.Clear();
+        _missingFiles.Clear();
+        _cuts.Clear();
     }
 
     /// <summary>
@@ -108,9 +116,13 @@ internal sealed partial class Session
         Rows fileRows = await GetRowsAsync(fileId, file, _cancellation);
         FoundMissingFiles missingFiles = GetMissingFiles(fileId, file);
 
-        bool isScanCut = MethodBodyScanner.ListBodies(file).IsCut;
-        bool areStringsCut = await Strings.IsCutAsync(file, _cancellation);
-        FileNote note = new(fileRows.SkippedCount, missingFiles.SkippedCount, isScanCut, areStringsCut);
+        if (!_cuts.TryGetValue(fileId, out (bool IsScanCut, bool AreStringsCut) cuts))
+        {
+            cuts = (MethodBodyScanner.ListBodies(file).IsCut, await Strings.IsCutAsync(file, _cancellation));
+            _cuts[fileId] = cuts;
+        }
+
+        FileNote note = new(fileRows.SkippedCount, missingFiles.SkippedCount, cuts.IsScanCut, cuts.AreStringsCut);
 
         return ListingReply.From(fileRows, missingFiles, note.ToString());
     }
@@ -224,11 +236,19 @@ internal sealed partial class Session
         return file;
     }
 
-    private void ClearTypeSystems()
+    // drops the type system, the rows and the missing files of a file and of each open file that reaches its assembly
+    // through the references of the open files, because only those files read its types
+    private void DropUsersState(PEFile changed)
     {
-        _typeSystems.Clear();
-        _rows.Clear();
-        _missingFiles.Clear();
+        foreach ((int fileId, PEFile file) in _files)
+        {
+            if (file == changed || OpenFileGraph.Reaches(file, changed.Name, _files.Values))
+            {
+                _typeSystems.Remove(fileId);
+                _rows.Remove(fileId);
+                _missingFiles.Remove(fileId);
+            }
+        }
     }
 
     private FoundMissingFiles GetMissingFiles(int fileId, PEFile file)

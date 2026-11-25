@@ -6,7 +6,7 @@ import type { EngineHandlers } from '#contract/serve';
 import { expect, setDefaultTimeout, test } from 'bun:test';
 import { createDotnetHandlers } from './handlers';
 import type { DotnetExports, DotnetRuntime } from './runtime';
-import { compileAssembly, loadTestRuntime, readFixture } from './testing';
+import { compileAssembly, loadTestRuntime } from './testing';
 
 await loadTestRuntime();
 setDefaultTimeout(120000);
@@ -109,14 +109,18 @@ test('dotnet engine stops a search for users and a listing of strings once its s
 test('a read that the engine cancels while it lists the rows leaves the next read the same as a fresh one', async () => {
     const { handlers, cancel } = createCancelingHandlers();
     const assembly = await compileAssembly('Many', writeManyMethods());
-    const drawing = await readFixture('Drawing.dll');
     unwrap(await handlers.open(1, assembly.name, assembly, running()));
     const target = findRow(readRows(unwrap(await handlers.list(1, running()))), 'Target', assembly.name).key;
 
-    // opens or closes a file before each read because that drops the rows, which the read then lists again
-    unwrap(await handlers.open(2, drawing.name, drawing, running()));
+    // opens the file again before each read because a file that just opened doesn't have rows, which the read then lists
+    async function reopen() {
+        unwrap(await handlers.close(1, running()));
+        unwrap(await handlers.open(1, assembly.name, assembly, running()));
+    }
+
+    await reopen();
     const fresh = unwrap(await timeCall(() => handlers.read(1, target, 'csharp', running())));
-    unwrap(await handlers.close(2, running()));
+    await reopen();
 
     await expect(cancel(signal => handlers.read(1, target, 'csharp', signal))).rejects.toThrow('aborted');
     expect(unwrap(await handlers.read(1, target, 'csharp', running()))).toEqual(fresh);

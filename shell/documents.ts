@@ -22,6 +22,10 @@ import { createPositionFinder } from './lines';
 import { findRowIndex } from './rows';
 import { findDeclarations, readTokenModifiers } from './tokens';
 
+// waits before it reads a document that the engine wrote in part again, because the workbench drops a change of a
+// document that it still opens
+const readAgainDelayMs = 100;
+
 // falls back to the first view for a row that every view hides
 function pickView(views: View[], { hiddenViews }: Row, viewId?: string): View {
     const shows = (index: number) => (hiddenViews & (1 << index)) === 0;
@@ -111,28 +115,51 @@ export class RowDocuments implements TextDocumentContentProvider, DocumentSemant
             const read = found
                 ? this.openFiles.read(found.file, found.key, found.viewId, controller.signal)
                 : Promise.reject(new Error(`the page doesn't have an open file for '${uri.path}'`));
-            document = { read, controller, waiters: 0, isClosed: false };
-            this.documents.set(uri.toString(), document);
-            this.showProgress(read);
+            const started: DocumentRead = { read, controller, waiters: 0, isClosed: false };
+            this.documents.set(uri.toString(), started);
+            this.followRead(read, uri, started);
+            document = started;
         }
 
         return document;
     }
 
+    // reads a document that the engine wrote in part again, because the engine writes the rest meanwhile, unless the
+    // document closed or changed, with the read started before the workbench asks for the document, so the progress
+    // strip runs on from read to read
+    private readAgain(uri: Uri, document: DocumentRead) {
+        if (this.documents.get(uri.toString()) === document && !document.isClosed) {
+            this.forget(uri.toString());
+            this.start(uri);
+            this.changedDocument.fire(uri);
+        }
+    }
+
     // runs the Symbols view's progress strip while any read is pending, because the page doesn't open a document's tab
-    // before the document's read ends
-    private showProgress(read: Promise<ReadDocument>) {
+    // before the document's read ends, and until the next read of a document that the engine wrote in part starts
+    private followRead(read: Promise<ReadDocument>, uri: Uri, document: DocumentRead) {
         if (this.pendingReads++ === 0) {
             const { promise, resolve } = Promise.withResolvers<void>();
             this.endProgress = resolve;
             void vscode.window.withProgress({ location: { viewId: symbolsViewId } }, () => promise);
         }
 
-        void read.catch(() => undefined).finally(() => {
+        const end = () => {
             if (--this.pendingReads === 0) {
                 this.endProgress();
             }
-        });
+        };
+        void read.then(({ isPartial }) => {
+            if (!isPartial) {
+                end();
+                return;
+            }
+
+            setTimeout(() => {
+                this.readAgain(uri, document);
+                end();
+            }, readAgainDelayMs);
+        }, end);
     }
 
     // drops a document's read, so the next caller reads the document again
@@ -248,16 +275,22 @@ export class RowDocuments implements TextDocumentContentProvider, DocumentSemant
     // fires a change of the tokens after a drop cancels the read of a document that's still open, because the workbench
     // keeps the empty tokens until the next change
     // doesn't return tokens for a failed document because the document's text already shows the error
+    // cancels the request while the workbench still has the text of the read before, like a partial document's earlier
+    // part, because the read's tokens only fit its own text and the workbench requests the tokens again with that text
     async provideDocumentSemanticTokens(document: TextDocument) {
         const builder = new vscode.SemanticTokensBuilder();
         const documentRead = this.start(document.uri);
-        const { tokens } = await documentRead.read.catch((error: unknown) => {
+        const { text, tokens } = await documentRead.read.catch((error: unknown) => {
             if (error instanceof CanceledError && !documentRead.isClosed) {
                 this.changedTokens.fire();
             }
 
-            return { tokens: [] };
+            return { text: undefined, tokens: [] };
         });
+        if (text !== undefined && text !== document.getText()) {
+            throw new vscode.CancellationError();
+        }
+
         for (const { start, length, kind, flags } of tokens) {
             const { line, character } = document.positionAt(start);
             builder.push(line, character, length, kinds.indexOf(kind), readTokenModifiers(flags));
@@ -327,6 +360,7 @@ export class RowDocuments implements TextDocumentContentProvider, DocumentSemant
         await this.refreshDocument(uri);
         const document = await this.wait(uri).catch(() => undefined);
         const declaration = document && findDeclarations(document.tokens).get(target);
+
         const { line, character } = createPositionFinder(document?.text ?? '')(declaration?.start ?? 0);
         const position = new vscode.Position(line, character);
 

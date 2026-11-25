@@ -71,6 +71,39 @@ test("double-click on `Draw` opens `Circle.code` in a kept tab that a later clic
     expect(await readTabs(page)).toEqual([...kept, { label: 'Shape.code', isPreview: true }]);
 }, testTimeoutMs);
 
+test('a document that the engine wrote in part shows its rest once the engine wrote it', async () => {
+    const { page } = await openWorkbench();
+
+    await openCircle(page, drawing.replace('\nneeds', '\npartial 2\nneeds'), 'Draw');
+
+    expect(await readUntil(async () => (await readLines(page)).includes('more to come'), false)).toBe(false);
+}, testTimeoutMs);
+
+test("Symbols view's progress strip runs without a break while the engine writes a document in parts", async () => {
+    const { page } = await openWorkbench();
+    await dropFiles(page, { 'drawing.fake': drawing.replace('\nneeds', '\npartial 5\nneeds') });
+    await expandRows(page, 'drawing.fake', 'Drawing', 'Circle');
+    await readUntil(() => findProgressStrip(page).isVisible(), false);
+    // counts each stop of the strip after the page sent the document's first read, which leaves out the workbench's own
+    // stops when a row's click runs its command
+    await page.evaluate(() => {
+        const state = { stops: 0, wasRunning: false };
+        Object.assign(window, { stripState: state });
+        new MutationObserver(() => {
+            const isRunning = document.querySelector('.pane .monaco-progress-container.active') !== null;
+            const { methods } = (window as unknown as { engineCalls: { methods: string[] } }).engineCalls;
+            state.stops += state.wasRunning && !isRunning && methods.includes('read') ? 1 : 0;
+            state.wasRunning = isRunning;
+        }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+    });
+
+    await findRow(page, 'Draw').click();
+    await readUntil(async () => (await readLines(page)).includes('more to come'), false);
+    await readUntil(() => findProgressStrip(page).isVisible(), false);
+
+    expect(await page.evaluate(() => (window as unknown as { stripState: { stops: number } }).stripState.stops)).toBe(1);
+}, testTimeoutMs);
+
 test("click on a nested type opens the outer type's document with the cursor on the nested type", async () => {
     const { page } = await openWorkbench();
 

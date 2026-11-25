@@ -34,7 +34,13 @@ function isFactPair(value: unknown): boolean {
 }
 
 function isMissingFile(value: unknown): boolean {
-    return isObject(value) && isString(value.name) && isString(value.reason) && typeof value.isCompanion === 'boolean';
+    if (!isObject(value)) {
+        return false;
+    }
+
+    const hasOtherNames = value.otherNames === undefined || isListOf(value.otherNames, isString);
+
+    return isString(value.name) && hasOtherNames && isString(value.reason) && typeof value.isCompanion === 'boolean';
 }
 
 function isRanges(value: unknown): boolean {
@@ -65,6 +71,7 @@ const documentRules: FieldRules = {
     tokens: [value => value instanceof Int32Array, "tokens that aren't an Int32Array"],
     targets: [value => isListOf(value, isString), "targets that aren't a list of strings"],
     locals: [value => isListOf(value, isString), "locals that aren't a list of strings"],
+    isPartial: [value => value === undefined || typeof value === 'boolean', "an isPartial that isn't a boolean"],
 };
 
 const descriptionRules: FieldRules = {

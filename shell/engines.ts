@@ -52,9 +52,10 @@ async function loadEngine(id: string, engineIds: string[], siteUrl: string, poli
         throw new Error(`the manifest has the id '${manifest.id}'`);
     }
 
-    const { memoryLimitBytes, hasLinkedFiles, cancelLimitMs = defaultCancelLimitMs } = manifest;
+    const { memoryLimitBytes, hasLinkedFiles, repliesDuringReads, cancelLimitMs = defaultCancelLimitMs } = manifest;
+    const options = { timeLimitMs, cancelLimitMs, memoryLimitBytes, hasLinkedFiles, repliesDuringReads };
 
-    return { manifest, engine: connectEngine(workerUrl, { timeLimitMs, cancelLimitMs, memoryLimitBytes, hasLinkedFiles }) };
+    return { manifest, engine: connectEngine(workerUrl, options) };
 }
 
 /**

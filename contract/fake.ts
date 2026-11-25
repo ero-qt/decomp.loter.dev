@@ -72,6 +72,8 @@ interface FakeFile {
     neededNames: Set<string>;
     /** The names of the file's companions that `provide` got. */
     providedNames: string[];
+    /** The count of the next reads that write their document in part. */
+    partialReads: number;
 }
 
 function isOneOf<Item extends string>(items: readonly Item[], word: string): word is Item {
@@ -104,7 +106,16 @@ function parseFile(name: string, fileText: string): Reply<FakeFile> {
         return failed(`${name} isn't a fake file.`);
     }
 
-    const file: FakeFile = { name, note: '', rows: [], paths: [], lines: [], neededNames: new Set(), providedNames: [] };
+    const file: FakeFile = {
+        name,
+        note: '',
+        rows: [],
+        paths: [],
+        lines: [],
+        neededNames: new Set(),
+        providedNames: [],
+        partialReads: 0,
+    };
     // depth -> the index of the last row at the depth
     const rowAtDepth: number[] = [];
     for (const line of written.filter(line => line.trim() !== '')) {
@@ -118,6 +129,8 @@ function parseFile(name: string, fileText: string): Reply<FakeFile> {
             file.note = text;
         } else if (word === 'needs' && depth === 0) {
             file.neededNames.add(text);
+        } else if (word === 'partial' && depth === 0) {
+            file.partialReads = Number(text);
         } else if (parent !== undefined && isOneOf(codeWords, word) && (word !== 'uses' || text.includes('|'))) {
             file.lines.push({ depth, row: parent, word, text });
         } else if (row) {
@@ -176,10 +189,12 @@ function writeDeclaration({ kind, flags, name, detail }: Row, view: string): [be
  * `fake`. A symbol's line is `[hidden] [accessibility] [modifiers] <kind> <name> [detail]` and has 1 more space before
  * it than the line of the symbol that contains it. The view `code` leaves out a `hidden` symbol's lines and the lines
  * below them. At the top, `note <text>` is the text on the file's row and `needs <name>` is a missing companion file
- * that `provide` takes, after which each document of the file ends with the line `notes <name>`. Inside a symbol,
- * `var <name>` is a local, `string <text>` is a string and `uses <file>|<path>` is a used symbol like
- * `shapes.fake|Shapes.Shape.Area`. A used symbol has the target `|<file>|<path>` and lists the file as a missing file
- * while the file isn't open.
+ * that `provide` takes. Each document of the file ends with the line `notes <name>` once `provide` got the companion.
+ * The next `<count>` reads after `partial <count>` write their document in part, with the line `more to come` at its
+ * end. A symbol's
+ * `var <name>` line is a local, its `string <text>` line is a string and its `uses <file>|<path>` line is a used symbol
+ * like `shapes.fake|Shapes.Shape.Area`. A used symbol has the target `|<file>|<path>` and lists the file as a missing
+ * file while the file isn't open.
  */
 export function createFakeHandlers(): EngineHandlers {
     const files = new Map<number, FakeFile>();
@@ -341,7 +356,14 @@ export function createFakeHandlers(): EngineHandlers {
                     return failed(`${row.name} isn't in the view ${view}.`);
                 }
 
-                return ok(writeDocument(fileId, file, key - 1, view));
+                const document = writeDocument(fileId, file, key - 1, view);
+                if (file.partialReads === 0) {
+                    return ok(document);
+                }
+
+                file.partialReads--;
+
+                return ok({ ...document, text: `${document.text}more to come\n`, isPartial: true });
             });
         },
         describe(target, view) {

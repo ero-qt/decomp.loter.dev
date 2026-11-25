@@ -24,6 +24,8 @@ export interface ConnectOptions {
      * worker then opens every open file again before the worker's first call.
      */
     hasLinkedFiles?: boolean;
+    /** Whether the worker replies to `describe` and `resolve` while a `read` waits. */
+    repliesDuringReads?: boolean;
 }
 
 interface QueuedCall {
@@ -47,6 +49,8 @@ interface OpenFile {
 }
 
 const toleratedMemoryGrowth = 2;
+// the calls that go to the worker beside a waiting `read` when the worker replies during reads
+const sideMethods: (keyof Engine)[] = ['describe', 'resolve'];
 
 function findFileId(method: keyof Engine, [first]: unknown[]): QueuedCall['fileId'] {
     if (typeof first === 'number') {
@@ -79,6 +83,9 @@ export function connectEngine(workerUrl: string | URL | TrustedScriptURL, option
     let worker: Worker | undefined;
     let isReady = false;
     let runningCall: QueuedCall | undefined;
+    // the call that runs beside a waiting `read`, with the id in its request and its reply
+    let sideCall: { call: QueuedCall; id: number } | undefined;
+    let nextCallId = 1;
     let timeLimitTimer: ReturnType<typeof setTimeout> | undefined;
     let claimTimer: ReturnType<typeof setTimeout> | undefined;
     let cancelLimitTimer: ReturnType<typeof setTimeout> | undefined;
@@ -125,6 +132,12 @@ export function connectEngine(workerUrl: string | URL | TrustedScriptURL, option
     }
 
     function stop() {
+        // queues a call that ran beside a read again, so the next worker runs it
+        if (sideCall) {
+            queue.unshift(sideCall.call);
+            sideCall = undefined;
+        }
+
         worker?.terminate();
         worker = undefined;
         isReady = false;
@@ -147,6 +160,12 @@ export function connectEngine(workerUrl: string | URL | TrustedScriptURL, option
         } else if ('fatal' in message) {
             fail(new Error(message.fatal));
             return;
+        } else if (message.id !== undefined) {
+            if (sideCall?.id === message.id) {
+                const finished = sideCall.call;
+                sideCall = undefined;
+                finished.resolve(message.reply);
+            }
         } else {
             const { reply, wasmMemoryBytes = 0 } = message;
             const finished = finishRunning();
@@ -197,6 +216,31 @@ export function connectEngine(workerUrl: string | URL | TrustedScriptURL, option
         if (!runningCall && openFiles.size === 0 && !hasClaimedFile) {
             stop();
         }
+
+        sendSideCall();
+    }
+
+    // sends a queued `describe` or `resolve` beside a waiting `read` when the worker replies during reads and already
+    // opened the call's files
+    function sendSideCall() {
+        if (!options.repliesDuringReads || sideCall || runningCall?.method !== 'read' || !worker || !isReady) {
+            return;
+        }
+
+        const index = queue.findIndex(queued => sideMethods.includes(queued.method) && hasOpenedFiles(queued));
+        if (index >= 0) {
+            const [call] = queue.splice(index, 1);
+            sideCall = { call, id: nextCallId++ };
+            worker.postMessage({ method: call.method, args: call.args, id: sideCall.id } satisfies WorkerRequest);
+        }
+    }
+
+    function hasOpenedFiles({ fileId }: QueuedCall): boolean {
+        if (typeof fileId === 'number' && !options.hasLinkedFiles) {
+            return openedFileIds.has(fileId);
+        }
+
+        return [...openFiles.keys()].every(id => openedFileIds.has(id));
     }
 
     function settleWithoutWorker({ method, fileId, resolve, reject }: QueuedCall): boolean {
@@ -327,6 +371,8 @@ export function connectEngine(workerUrl: string | URL | TrustedScriptURL, option
         } else if (runningCall === canceled) {
             worker?.postMessage({ cancel: true } satisfies WorkerRequest);
             startCancelLimit();
+        } else if (sideCall?.call === canceled) {
+            worker?.postMessage({ cancel: true, id: sideCall.id } satisfies WorkerRequest);
         }
     }
 

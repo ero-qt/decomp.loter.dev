@@ -25,6 +25,12 @@ export interface Manifest {
     views: View[];
     /** Whether a file's results depend on the other open files, like an assembly that references another assembly. */
     hasLinkedFiles?: boolean;
+    /**
+     * Whether a file of the engine keeps a companion that it gets to itself, like a game's binary, whose code the
+     * IL2CPP engine opens for the game. The companion then doesn't open as its own file in the engine that claims it,
+     * and the page opens the engine's files first, so a companion among the picked files goes to them.
+     */
+    keepsCompanions?: boolean;
     /** The size in bytes of the worker's wasm memory above which the page stops the worker after a call. */
     memoryLimitBytes?: number;
     /**
@@ -32,6 +38,11 @@ export interface Manifest {
      * whose call can't stop in the middle, like a decompile. The page's own limit applies without it.
      */
     cancelLimitMs?: number;
+    /**
+     * Whether the engine replies to `describe` and `resolve` while a `read` waits, like an engine whose read waits for
+     * decompiles in the background, so a hover doesn't wait for the read.
+     */
+    repliesDuringReads?: boolean;
     /** The rank of the engine in the page's search for an engine that claims a file, higher first, 0 by default. */
     priority?: number;
     /** The text of the engine's row in the About tab's table of supported files, like `Java classes and archives`. */
@@ -143,8 +154,10 @@ const manifestKeys = [
     'magics',
     'views',
     'hasLinkedFiles',
+    'keepsCompanions',
     'memoryLimitBytes',
     'cancelLimitMs',
+    'repliesDuringReads',
     'priority',
     'formats',
     'fileNote',
@@ -195,8 +208,10 @@ export function readManifest(value: unknown): Manifest {
         magics: manifest.magics === undefined ? undefined : readList(manifest.magics, 'the magics').map(readMagic),
         views,
         hasLinkedFiles: readOptionalBoolean(manifest.hasLinkedFiles, 'hasLinkedFiles'),
+        keepsCompanions: readOptionalBoolean(manifest.keepsCompanions, 'keepsCompanions'),
         memoryLimitBytes: readOptionalPositiveInteger(manifest.memoryLimitBytes, 'memoryLimitBytes'),
         cancelLimitMs: readOptionalPositiveInteger(manifest.cancelLimitMs, 'cancelLimitMs'),
+        repliesDuringReads: readOptionalBoolean(manifest.repliesDuringReads, 'repliesDuringReads'),
         priority: readOptionalInteger(manifest.priority, 'priority'),
         formats: readOptionalString(manifest.formats, 'formats'),
         fileNote: readOptionalString(manifest.fileNote, 'fileNote'),

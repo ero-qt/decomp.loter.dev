@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 import { InThreadWorker } from './in-thread-worker';
 import { connect, file, handleCalls, hangOn, reportMemory, useQueueWorkers, useWorker } from './queue-testing';
-import { EngineError, ok } from './reply';
+import { CanceledError, EngineError, ok } from './reply';
 
 useQueueWorkers();
 
@@ -174,4 +174,78 @@ test('engine rejects the queued calls and stops a worker that takes longer than 
     expect(errors).toEqual(Array(2).fill(new EngineError("The engine didn't start within 0.02 seconds.")));
     expect(errors?.every(error => error instanceof EngineError)).toBe(true);
     expect(isStopped).toBe(true);
+});
+
+const emptyDocument = { text: '', tokens: new Int32Array(), targets: [], locals: [] };
+
+// keeps each read waiting until the test lets it go and lists the calls in the order of their replies
+function holdReads() {
+    const released = Promise.withResolvers<void>();
+    const replied: string[] = [];
+    handleCalls(method => {
+        if (method === 'read') {
+            return released.promise.then(() => {
+                replied.push(method);
+
+                return ok(emptyDocument);
+            });
+        }
+
+        replied.push(method);
+
+        return undefined;
+    });
+
+    return { release: released.resolve, replied };
+}
+
+test('engine that replies during reads sends a describe and a resolve while a read waits, and each gets its own reply', async () => {
+    const { release, replied } = holdReads();
+    const engine = connect({ repliesDuringReads: true });
+    const fileId = await engine.open('a.dll', file);
+
+    const read = engine.read(fileId, 1, 'csharp');
+    expect(await engine.describe(`${fileId}:1`, 'csharp')).toBeNull();
+    expect(await engine.resolve(`${fileId}:1`)).toBeNull();
+    release();
+
+    expect((await read).text).toBe('');
+    expect(replied).toEqual(['open', 'describe', 'resolve', 'read']);
+});
+
+test("engine keeps a describe behind a running read when the engine doesn't reply during reads", async () => {
+    const { release, replied } = holdReads();
+    const engine = connect();
+    const fileId = await engine.open('a.dll', file);
+
+    const read = engine.read(fileId, 1, 'csharp');
+    const described = engine.describe(`${fileId}:1`, 'csharp');
+    await Bun.sleep(20);
+    release();
+    await Promise.all([read, described]);
+
+    expect(replied).toEqual(['open', 'read', 'describe']);
+});
+
+test('a canceled describe during a read sends a cancel for the describe alone, and the read still gets its reply', async () => {
+    handleCalls(method => {
+        if (method === 'read' || method === 'describe') {
+            return Bun.sleep(50).then(() => ok(method === 'read' ? emptyDocument : null));
+        }
+
+        return undefined;
+    });
+    const engine = connect({ repliesDuringReads: true });
+    const fileId = await engine.open('a.dll', file);
+    const controller = new AbortController();
+
+    const read = engine.read(fileId, 1, 'csharp');
+    const described = engine.describe(`${fileId}:1`, 'csharp', controller.signal);
+    await Bun.sleep(10);
+    controller.abort();
+
+    await expect(described).rejects.toBeInstanceOf(CanceledError);
+    expect((await read).text).toBe('');
+    const cancels = InThreadWorker.created[0].received.filter(request => 'cancel' in request);
+    expect(cancels).toEqual([{ cancel: true, id: expect.any(Number) }]);
 });

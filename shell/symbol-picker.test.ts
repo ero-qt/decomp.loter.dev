@@ -1,13 +1,51 @@
 import { sampleFiles } from '#contract/fake';
+import type { WorkerRequest } from '#contract/serve';
 import { expect, test } from 'bun:test';
 import type { Page } from 'playwright';
 import { readActiveTab, readCursor, readResults, readUntil } from './editor-testing';
-import { startWorkbench, testTimeoutMs } from './page-testing';
-import { dropAndWait, findPaneHeader } from './tree-testing';
+import { collectErrors, startWorkbench, testTimeoutMs } from './page-testing';
+import { dropAndWait, findPaneHeader, startWithEngines } from './tree-testing';
 
 const openWorkbench = startWorkbench();
 const drawing = await sampleFiles.drawing.text();
 const shapes = await sampleFiles.shapes.text();
+
+/**
+ * Serves an engine whose files each list the class `Listed`, which has its own document, and the string `elsewhere`,
+ * which `Listed` of the file with the id 1 uses. The engine lists the strings of a file whose name starts with `slow`
+ * after 2 seconds.
+ */
+function serveSlowStringsEngine() {
+    // file's id -> the file's name
+    const names = new Map<unknown, string>();
+
+    onmessage = function ({ data }: MessageEvent<WorkerRequest>) {
+        // ignores a cancel message because the engine finishes each call
+        if ('cancel' in data) {
+            return;
+        }
+
+        const { method, args } = data;
+        if (method === 'open') {
+            names.set(args[0], String(args[1]));
+        }
+
+        const text = 'class Listed\n';
+        // method -> the method's value
+        const values: Record<string, unknown> = {
+            claims: true,
+            // the class `Listed` with the modifier `document`
+            list: { values: new Int32Array([1, 32, -1, 1, 0]), names: ['Listed'], details: [''], note: '', missingFiles: [] },
+            // the token `Listed` with the kind `class` and the modifier `declaration`
+            read: { text, tokens: new Int32Array([text.indexOf('Listed'), 6, 1, 16, 0]), targets: [`${args[0]}:1`], locals: [] },
+            listStrings: [{ text: `elsewhere ${names.get(args[0])}`, user: '1:1' }],
+        };
+        const isSlow = method === 'listStrings' && names.get(args[0])?.startsWith('slow');
+        setTimeout(() => postMessage({ reply: { value: values[method] } }), isSlow ? 2000 : 0);
+    };
+
+    postMessage({ ready: true });
+}
 
 // opens the picker anew for each query because a query then starts from an empty box
 async function search(page: Page, query: string) {
@@ -20,6 +58,10 @@ async function find(page: Page, query: string, expected: string[]): Promise<stri
     await search(page, query);
 
     return readUntil(async () => (await readResults(page)).sort(), expected.toSorted());
+}
+
+function findProgress(page: Page) {
+    return page.locator('.quick-input-widget .monaco-progress-container.active');
 }
 
 test('Ctrl+Shift+F `Area` lists the method of shapes.fake, and Enter opens `Shape.code` at `Area`', async () => {
@@ -105,4 +147,21 @@ test('a string without a known user shows up, and Enter says that it has none', 
 
     const message = "drawing.fake has this string, but its engine doesn't know the code that uses it.";
     await page.locator('.notification-list-item-message').getByText(message).waitFor();
+}, testTimeoutMs);
+
+test("the picker shows a fast file's strings while it waits for a slow file's and then shows both", async () => {
+    const { page } = await openWorkbench();
+    const errors = collectErrors(page);
+    await startWithEngines(page, { strings: { extensions: ['.strings'], serve: serveSlowStringsEngine } });
+    await dropAndWait(page, { 'fast.strings': '', 'slow.strings': '' });
+    const fast = 'symbol-string "elsewhere fast.strings" Listed • fast.strings';
+    const slow = 'symbol-string "elsewhere slow.strings" Listed • fast.strings';
+
+    await search(page, '"else');
+
+    expect(await readUntil(() => readResults(page), [fast])).toEqual([fast]);
+    await findProgress(page).waitFor();
+    expect(await readUntil(async () => (await readResults(page)).sort(), [fast, slow])).toEqual([fast, slow]);
+    await findProgress(page).waitFor({ state: 'detached' });
+    expect(errors).toEqual([]);
 }, testTimeoutMs);

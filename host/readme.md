@@ -8,6 +8,7 @@ The site runs on Uberspace 8. Apache serves it from `/var/www/virtual/decomp/htm
 - Each version gets its own folder in `releases`. `html` links to the live one.
 - `receive-deploy.sh` checks a new version, then switches the link. The last 3 versions stay on the host.
 - The deploy key can only upload and switch. It can't run commands or read files.
+- The host's checks keep a release from running code on the host or reading its files. They don't check what the release's scripts do in a visitor's browser, so whoever has the deploy key decides what the site serves.
 
 ## Files
 

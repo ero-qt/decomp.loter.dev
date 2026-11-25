@@ -84,3 +84,19 @@ test('each overload takes its own parameters from the pdb', async () => {
 
     expect(signatures.map(signature => signature.slice(signature.indexOf('(')))).toEqual(['(int32_t value)', '(int32_t value, int32_t factor)']);
 }, 120000);
+
+test('a program that exports nothing lists each function once after the pdb', async () => {
+    const { engine, fileId } = await openDll('shapes-hidden.exe');
+    const before = readRows(await engine.list(fileId));
+
+    await engine.provide(fileId, 'shapes-hidden.pdb', await readFixture('shapes-hidden.pdb'));
+    const after = readRows(await engine.list(fileId));
+    const rows = await describeRows(engine, fileId);
+
+    expect(before.map(row => row.name)).toEqual(['entry']);
+    expect(new Set(after.map(row => row.key)).size).toBe(after.length);
+    expect(rows.filter(row => row.startsWith('geometry::Shape::'))).toEqual([
+        'geometry::Shape::sides method public virtual',
+        'geometry::Shape::scaled method public virtual',
+    ]);
+}, 120000);

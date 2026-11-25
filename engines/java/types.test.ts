@@ -1,5 +1,5 @@
-import { expect, test } from 'bun:test';
 import { tryParseType } from '@katana-project/asm/type';
+import { expect, test } from 'bun:test';
 import { writeType } from './types';
 
 // parses a list of lists nested the count of levels deep, like `List<List<String>>` for 2

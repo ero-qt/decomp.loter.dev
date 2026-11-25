@@ -1,5 +1,5 @@
-import type { Row } from '../../contract/rows';
-import { flagsOf } from '../../contract/symbols';
+import type { Row } from '#contract/rows';
+import { flagsOf } from '#contract/symbols';
 import { findTop, isShown, type JavaFile } from './files';
 
 /** The rows of an open file with the keys of its classes and members. */

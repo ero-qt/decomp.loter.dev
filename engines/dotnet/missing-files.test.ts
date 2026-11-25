@@ -1,5 +1,5 @@
+import type { Engine } from '#contract/engine';
 import { expect, test } from 'bun:test';
-import type { Engine } from '../../contract/engine';
 import { compileAssembly, loadTestRuntime, readFixture, useDotnetEngine } from './testing';
 
 const connect = useDotnetEngine();

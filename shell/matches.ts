@@ -1,4 +1,4 @@
-import { prepareQuery, scoreFuzzy2 } from '@codingame/monaco-vscode-api/vscode/vs/base/common/fuzzyScorer';
+import { prepareQuery, scoreFuzzy2 } from './workbench-common';
 
 /**
  * Picks at most `count` items whose text matches the query like a name in Go to Symbol in Workspace, where `GtAr`

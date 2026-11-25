@@ -1,4 +1,4 @@
-import type { Description } from '../../contract/engine';
+import type { Description } from '#contract/engine';
 import { describeType } from './class-document';
 import type { NativeRows } from './rows';
 

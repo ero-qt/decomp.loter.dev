@@ -1,4 +1,4 @@
-import { testEngine } from '../../contract/conformance';
+import { testEngine } from '#contract/conformance';
 import { elfFixture, peFixture } from './fixture';
 import { useNativeEngine } from './testing';
 

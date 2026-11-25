@@ -1,5 +1,5 @@
-import { expect, test } from 'bun:test';
 import { Glob } from 'bun';
+import { expect, test } from 'bun:test';
 
 // matches an import or export from the parent folder, an import of a file there for its effects and a dynamic import of
 // one

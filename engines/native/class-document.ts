@@ -1,7 +1,7 @@
-import { type Document, formatTarget, readTokens, type Token, writeTokens } from '../../contract/document';
-import { ok, type Reply } from '../../contract/reply';
-import type { Row } from '../../contract/rows';
-import { flagsOf, type Kind } from '../../contract/symbols';
+import { type Document, formatTarget, readTokens, type Token, writeTokens } from '#contract/document';
+import { ok, type Reply } from '#contract/reply';
+import type { Row } from '#contract/rows';
+import { flagsOf, type Kind } from '#contract/symbols';
 import type { NativeRows } from './rows';
 
 /** A static data member of a class, which the class's document declares. */

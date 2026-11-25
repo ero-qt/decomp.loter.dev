@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, test } from 'bun:test';
 import type { Engine } from './engine';
 import { InThreadWorker, restoreWorker, useInThreadWorker } from './in-thread-worker';
-import { type ConnectOptions, connectEngine } from './queue';
+import { connectEngine, type ConnectOptions } from './queue';
 import { CanceledError, ok } from './reply';
 import type { EngineHandlers } from './serve';
 

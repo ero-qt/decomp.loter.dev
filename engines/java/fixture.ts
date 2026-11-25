@@ -1,4 +1,4 @@
-import type { Fixture } from '../../contract/conformance';
+import type { Fixture } from '#contract/conformance';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildFixture } from './fixture/build';

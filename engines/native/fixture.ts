@@ -1,4 +1,4 @@
-import type { Fixture } from '../../contract/conformance';
+import type { Fixture } from '#contract/conformance';
 import { peFile } from '../dotnet/testing';
 import manifest from './manifest.json' with { type: 'json' };
 import { readFixture } from './testing';

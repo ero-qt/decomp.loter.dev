@@ -1,4 +1,4 @@
-import { failed, ok, type Reply } from '../../contract/reply';
+import { failed, ok, type Reply } from '#contract/reply';
 import { type ClassSymbols, type ClassUses, readClass, readSymbols, readUses } from './classfile';
 import { type MemberSymbols, readMembers } from './members';
 import { openZip, type Zip, ZipError } from './zip';

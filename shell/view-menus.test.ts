@@ -1,8 +1,8 @@
+import { fakeManifest } from '#contract/fake';
+import type { Manifest } from '#contract/manifest';
 import { expect, test } from 'bun:test';
-import { ContextKeyExpr } from '@codingame/monaco-vscode-api/vscode/vs/platform/contextkey/common/contextkey';
-import { fakeManifest } from '../contract/fake';
-import type { Manifest } from '../contract/manifest';
 import { formatShowBesideCommand, writeViewContributions } from './view-menus';
+import { ContextKeyExpr } from './workbench-common';
 
 const [codeView] = fakeManifest.views;
 const oneView: Manifest = { ...fakeManifest, id: 'single', views: [codeView] };

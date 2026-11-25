@@ -1,6 +1,6 @@
+import type { Token } from '#contract/document';
+import { flagsOf, kinds, modifiers } from '#contract/symbols';
 import { expect, test } from 'bun:test';
-import type { Token } from '../contract/document';
-import { flagsOf, kinds, modifiers } from '../contract/symbols';
 import { findToken, ownTokenTypes, readTokenModifiers, tokenLegend } from './tokens';
 
 const standardTokenTypes = [

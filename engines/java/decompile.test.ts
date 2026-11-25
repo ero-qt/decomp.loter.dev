@@ -1,10 +1,10 @@
+import { findRow, missingView } from '#contract/checking';
+import { type Document, formatTarget, readTokens, type Token } from '#contract/document';
+import type { Engine } from '#contract/engine';
+import { EngineError } from '#contract/reply';
+import { findDocumentRow, readRows, type Row } from '#contract/rows';
+import { modifiersOf } from '#contract/symbols';
 import { expect, mock, setDefaultTimeout, spyOn, test } from 'bun:test';
-import { findRow, missingView } from '../../contract/checking';
-import { type Document, formatTarget, readTokens, type Token } from '../../contract/document';
-import type { Engine } from '../../contract/engine';
-import { EngineError } from '../../contract/reply';
-import { findDocumentRow, readRows, type Row } from '../../contract/rows';
-import { modifiersOf } from '../../contract/symbols';
 import { fixture } from './fixture';
 import { useJavaEngine } from './testing';
 import * as tokens from './tokens';

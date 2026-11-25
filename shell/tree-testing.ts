@@ -1,10 +1,10 @@
+import { fakeManifest } from '#contract/fake';
+import type { View } from '#contract/manifest';
+import type { WorkerRequest } from '#contract/serve';
+import { afterEach } from 'bun:test';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { afterEach } from 'bun:test';
 import type { Locator, Page } from 'playwright';
-import { fakeManifest } from '../contract/fake';
-import type { View } from '../contract/manifest';
-import type { WorkerRequest } from '../contract/serve';
 import { findOpenFilesButton } from './page-testing';
 
 const testFolder = new URL('../artifacts/test/', import.meta.url).pathname;

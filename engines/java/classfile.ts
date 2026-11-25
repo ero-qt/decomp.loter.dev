@@ -1,4 +1,5 @@
-import { read, type Node } from '@katana-project/asm';
+import type { Kind } from '#contract/symbols';
+import { type Node, read } from '@katana-project/asm';
 import type {
     Annotation,
     AnnotationDefaultAttribute,
@@ -23,8 +24,7 @@ import type {
 } from '@katana-project/asm/attr';
 import type { ClassEntry, DynamicEntry, Entry, RefEntry, StringEntry, UTF8Entry } from '@katana-project/asm/pool';
 import { ConstantType, ElementTag } from '@katana-project/asm/spec';
-import { type Type, tryParseType } from '@katana-project/asm/type';
-import type { Kind } from '../../contract/symbols';
+import { tryParseType, type Type } from '@katana-project/asm/type';
 import { access, readClassFlags, writeModifiers } from './flags';
 import { findEndlessSwitch } from './switches';
 import { writeType, writeTypeParameters } from './types';

@@ -1,9 +1,9 @@
-import { brotliCompressSync, constants } from 'node:zlib';
 import { expect, test } from 'bun:test';
-import { Color } from '@codingame/monaco-vscode-api/vscode/vs/base/common/color';
+import { brotliCompressSync, constants } from 'node:zlib';
 import type { Page } from 'playwright';
 import { closeTab } from './editor-testing';
 import { findSiteFile, listOtherHostRequests, startWorkbench, testTimeoutMs } from './page-testing';
+import { Color } from './workbench-common';
 
 const openWorkbench = startWorkbench();
 

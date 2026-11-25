@@ -1,9 +1,9 @@
+import { findRow } from '#contract/checking';
+import { formatTarget } from '#contract/document';
+import { maxStringLength, maxStrings } from '#contract/limits';
+import { EngineError } from '#contract/reply';
+import { readRows } from '#contract/rows';
 import { expect, test } from 'bun:test';
-import { findRow } from '../../contract/checking';
-import { formatTarget } from '../../contract/document';
-import { maxStringLength, maxStrings } from '../../contract/limits';
-import { EngineError } from '../../contract/reply';
-import { readRows } from '../../contract/rows';
 import { compileAssembly, loadTestRuntime, readFixture, useDotnetEngine } from './testing';
 
 const connect = useDotnetEngine();

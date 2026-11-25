@@ -1,4 +1,4 @@
-import { formatTarget, parseTarget } from '../contract/document';
+import { formatTarget, parseTarget } from '#contract/document';
 
 /** The parts of a document's path: the engine's id, the view's id, the open file's id and the document row's key. */
 export interface DocumentPath {

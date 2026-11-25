@@ -1,4 +1,4 @@
-import { type Accessibility, accessibilityOf, flagsOf, type Modifier, modifiersOf } from '../../contract/symbols';
+import { type Accessibility, accessibilityOf, flagsOf, type Modifier, modifiersOf } from '#contract/symbols';
 
 /**
  * The access flags of the class file format, where a method's `bridge` and `varargs` share bits with a field's

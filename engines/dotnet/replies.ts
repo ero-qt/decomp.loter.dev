@@ -1,4 +1,4 @@
-import { failed, ok, type Reply } from '../../contract/reply';
+import { failed, ok, type Reply } from '#contract/reply';
 
 /** A reply as the C# exports write it, with `null` for the missing field. */
 interface ExportReply<Value> {

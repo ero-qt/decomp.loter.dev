@@ -1,10 +1,10 @@
+import { findRow } from '#contract/checking';
+import { type Document, formatTarget, readTokens, type Token } from '#contract/document';
+import type { Engine } from '#contract/engine';
+import { EngineError } from '#contract/reply';
+import { findDocumentRow, readRows, type Row } from '#contract/rows';
+import { modifiersOf } from '#contract/symbols';
 import { expect, test } from 'bun:test';
-import { findRow } from '../../contract/checking';
-import { type Document, formatTarget, readTokens, type Token } from '../../contract/document';
-import type { Engine } from '../../contract/engine';
-import { EngineError } from '../../contract/reply';
-import { findDocumentRow, readRows, type Row } from '../../contract/rows';
-import { modifiersOf } from '../../contract/symbols';
 import { compileAssembly, loadTestRuntime, readFixture, useDotnetEngine } from './testing';
 
 const connect = useDotnetEngine();

@@ -1,5 +1,5 @@
+import { readManifest } from '#contract/manifest';
 import { expect, test } from 'bun:test';
-import { readManifest } from '../contract/manifest';
 import { writeSupportedFiles } from './supported-files';
 
 const views = [{ id: 'c', title: 'C', extension: '.c', language: 'c' }];

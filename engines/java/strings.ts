@@ -1,5 +1,5 @@
-import { formatTarget } from '../../contract/document';
-import type { StringUse } from '../../contract/engine';
+import { formatTarget } from '#contract/document';
+import type { StringUse } from '#contract/engine';
 import { cutString, maxStrings } from '../shared/limits';
 import { createYielder } from '../shared/yielding';
 import { readClass, readStrings } from './classfile';

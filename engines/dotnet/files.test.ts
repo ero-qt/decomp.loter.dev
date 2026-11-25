@@ -1,5 +1,5 @@
+import { EngineError, failed, ok } from '#contract/reply';
 import { expect, test } from 'bun:test';
-import { EngineError, failed, ok } from '../../contract/reply';
 import { createDotnetHandlers } from './handlers';
 import { compileAssembly, loadTestRuntime, peFile, readFixture, useDotnetEngine } from './testing';
 

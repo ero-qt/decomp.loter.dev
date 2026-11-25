@@ -1,7 +1,7 @@
-import type { Document } from '../../contract/document';
-import type { Description, Listing, StringUse } from '../../contract/engine';
-import { failed, ok, type Reply } from '../../contract/reply';
-import type { EngineHandlers } from '../../contract/serve';
+import type { Document } from '#contract/document';
+import type { Description, Listing, StringUse } from '#contract/engine';
+import { failed, ok, type Reply } from '#contract/reply';
+import type { EngineHandlers } from '#contract/serve';
 import { LoadError, loadOnce, refuseLoadErrors } from '../shared/loading';
 import { hasCliHeader } from '../shared/pe';
 import { createRefusals } from '../shared/refusals';

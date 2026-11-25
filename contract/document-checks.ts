@@ -1,9 +1,9 @@
 import {
     checkedRowLimit,
     checkWithFiles,
-    type Fixture,
     findRow,
     findUnusedKey,
+    type Fixture,
     missingView,
     type OpenRows,
     requireEngineError,
@@ -12,7 +12,7 @@ import {
 import { formatTarget, parseTarget, readTokens, type Token } from './document';
 import type { Engine } from './engine';
 import { readManifest } from './manifest';
-import { findDocumentRow, type Row, readRows } from './rows';
+import { findDocumentRow, readRows, type Row } from './rows';
 import { modifiersOf } from './symbols';
 
 function hasDeclaration(tokens: Token[], target: string): boolean {

@@ -1,7 +1,7 @@
-import type { StringUse } from '../../contract/engine';
-import { cutMark, maxStringLength, maxStrings } from '../../contract/limits';
+import type { StringUse } from '#contract/engine';
+import { cutMark, maxStringLength, maxStrings } from '#contract/limits';
 
-export { cutMark, maxStringLength, maxStrings } from '../../contract/limits';
+export { cutMark, maxStringLength, maxStrings } from '#contract/limits';
 
 /**
  * Cuts a string longer than `maxStringLength` to that length with the cut mark as its last character, before a

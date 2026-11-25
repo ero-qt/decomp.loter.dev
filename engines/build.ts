@@ -1,6 +1,6 @@
+import { readManifest } from '#contract/manifest';
 import { cpSync, existsSync, readdirSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { readManifest } from '../contract/manifest';
 
 const site = new URL('../artifacts/site/engines/', import.meta.url);
 const ids: string[] = [];

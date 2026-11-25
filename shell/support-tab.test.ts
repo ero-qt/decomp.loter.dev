@@ -1,10 +1,10 @@
 import { expect, test } from 'bun:test';
-import { Color } from '@codingame/monaco-vscode-api/vscode/vs/base/common/color';
 import type { Locator, Page } from 'playwright';
 import { aboutTab, findTab, readActiveTab, readTabs, readUntil, waitForTabs } from './editor-testing';
 import { collectErrors, findOpenFilesButton, findSiteFile, runCommand, startWorkbench, testTimeoutMs } from './page-testing';
 import { minimumContrast } from './themes/light';
 import { drawTransferCode, transfer } from './transfer-code';
+import { Color } from './workbench-common';
 
 const openWorkbench = startWorkbench();
 const balanceFile = { balance: '12.50', price: '9.00', asOf: '2026-11-19T08:00+00:00' };

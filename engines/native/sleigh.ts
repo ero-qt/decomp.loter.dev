@@ -1,4 +1,4 @@
-import { failed, ok, type Reply } from '../../contract/reply';
+import { failed, ok, type Reply } from '#contract/reply';
 import type { NativeModule } from './module';
 
 // Rizin's name of an architecture -> the name that a refusal gives it

@@ -1,5 +1,5 @@
-import { formatTarget } from '../../contract/document';
-import type { StringUse } from '../../contract/engine';
+import { formatTarget } from '#contract/document';
+import type { StringUse } from '#contract/engine';
 import { cutString, maxStringLength, maxStrings } from '../shared/limits';
 import type { NativeModule } from './module';
 import { type FindFunction, findUsers } from './users';

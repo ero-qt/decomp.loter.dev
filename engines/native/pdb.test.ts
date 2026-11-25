@@ -1,7 +1,7 @@
+import type { Engine } from '#contract/engine';
+import { readRows, type Row } from '#contract/rows';
+import { accessibilityOf, modifiersOf } from '#contract/symbols';
 import { expect, test } from 'bun:test';
-import type { Engine } from '../../contract/engine';
-import { readRows, type Row } from '../../contract/rows';
-import { accessibilityOf, modifiersOf } from '../../contract/symbols';
 import { loadTestModule, readFixture, useNativeEngine } from './testing';
 
 const connect = useNativeEngine();

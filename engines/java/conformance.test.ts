@@ -1,4 +1,4 @@
-import { testEngine } from '../../contract/conformance';
+import { testEngine } from '#contract/conformance';
 import { fixture } from './fixture';
 import { useJavaEngine } from './testing';
 

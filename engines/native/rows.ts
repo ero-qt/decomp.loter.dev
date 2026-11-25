@@ -1,6 +1,6 @@
-import type { MissingFile } from '../../contract/engine';
-import type { Row } from '../../contract/rows';
-import { type Accessibility, flagsOf, type Kind, type Modifier } from '../../contract/symbols';
+import type { MissingFile } from '#contract/engine';
+import type { Row } from '#contract/rows';
+import { type Accessibility, flagsOf, type Kind, type Modifier } from '#contract/symbols';
 import { maxStrings } from '../shared/limits';
 import { type AddressKeys, keyTags, readAddressKeys, tagKey } from './keys';
 import { splitName } from './names';

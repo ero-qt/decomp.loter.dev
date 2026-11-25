@@ -1,6 +1,6 @@
-import type { Engine } from '../contract/engine';
-import { type Manifest, matchesFile, readManifest, readStart } from '../contract/manifest';
-import { connectEngine } from '../contract/queue';
+import type { Engine } from '#contract/engine';
+import { type Manifest, matchesFile, readManifest, readStart } from '#contract/manifest';
+import { connectEngine } from '#contract/queue';
 
 /** An engine of the site with its manifest. */
 export interface SiteEngine {

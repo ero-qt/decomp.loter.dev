@@ -1,10 +1,10 @@
 import { afterEach, expect, test } from 'bun:test';
 import { fileURLToPath } from 'node:url';
-import { siteHeaders } from '../shell/headers';
 import { readLongCachePatterns } from '../host/htaccess-testing';
+import { siteHeaders } from '../shell/headers';
 import { findSiteFile } from '../shell/page-testing';
-import { listChecksums } from './checksums';
 import { checkSiteResponses } from './check-live';
+import { listChecksums } from './checksums';
 
 const siteFolder = fileURLToPath(new URL('../artifacts/site', import.meta.url));
 const longCachePatterns = await readLongCachePatterns();

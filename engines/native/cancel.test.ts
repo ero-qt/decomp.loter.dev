@@ -1,5 +1,5 @@
+import { readRows } from '#contract/rows';
 import { expect, test } from 'bun:test';
-import { readRows } from '../../contract/rows';
 import { mountInMemory } from './files';
 import { createNativeHandlers } from './handlers';
 import type { NativeModule } from './module';

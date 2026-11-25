@@ -1,7 +1,7 @@
+import { sampleFiles } from '#contract/fake';
+import type { WorkerRequest } from '#contract/serve';
 import { expect, test } from 'bun:test';
 import type { Page } from 'playwright';
-import { sampleFiles } from '../contract/fake';
-import type { WorkerRequest } from '../contract/serve';
 import { findWord, openCircle, readActiveTab, readReferences, readUntil, readWarnings, waitForTabs } from './editor-testing';
 import { collectErrors, startWorkbench, testTimeoutMs, waitForEngineReplies } from './page-testing';
 import { dropAndWait, dropFiles, expandRows, findRow, startWithEngines } from './tree-testing';

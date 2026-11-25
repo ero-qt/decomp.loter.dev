@@ -1,11 +1,11 @@
+import { findRow } from '#contract/checking';
+import { formatTarget } from '#contract/document';
+import { readManifest } from '#contract/manifest';
+import { readRows } from '#contract/rows';
+import { expect, test } from 'bun:test';
 import { readdirSync } from 'node:fs';
 import { brotliCompressSync, constants } from 'node:zlib';
-import { expect, test } from 'bun:test';
 import type { Page } from 'playwright';
-import { findRow } from '../../contract/checking';
-import { formatTarget } from '../../contract/document';
-import { readManifest } from '../../contract/manifest';
-import { readRows } from '../../contract/rows';
 import { findSiteFile, listOtherHostRequests, startWorkbench, testTimeoutMs } from '../../shell/page-testing';
 import manifest from './manifest.json' with { type: 'json' };
 import { compileAssembly, readFixture } from './testing';

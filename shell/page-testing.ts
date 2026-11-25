@@ -1,7 +1,7 @@
-import { existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import type { BuildArtifact } from 'bun';
 import { afterAll, afterEach, beforeAll } from 'bun:test';
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { type Browser, chromium, type Locator, type Page } from 'playwright';
 import { siteHeaders } from './headers';
 

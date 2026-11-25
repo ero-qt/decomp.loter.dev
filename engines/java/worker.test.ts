@@ -1,7 +1,7 @@
+import { readManifest } from '#contract/manifest';
+import { expect, test } from 'bun:test';
 import { readdirSync } from 'node:fs';
 import { brotliCompressSync, constants } from 'node:zlib';
-import { expect, test } from 'bun:test';
-import { readManifest } from '../../contract/manifest';
 import { findSiteFile, startWorkbench, testTimeoutMs } from '../../shell/page-testing';
 import manifest from './manifest.json' with { type: 'json' };
 

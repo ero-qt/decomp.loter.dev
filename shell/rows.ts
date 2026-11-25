@@ -1,6 +1,6 @@
+import type { Row } from '#contract/rows';
+import { accessibilityOf, type Kind, modifiersOf } from '#contract/symbols';
 import type { SymbolKind } from 'vscode';
-import type { Row } from '../contract/rows';
-import { accessibilityOf, type Kind, modifiersOf } from '../contract/symbols';
 
 // kind -> the place of the kind's rows below a row
 const places: Record<Kind, number> = {

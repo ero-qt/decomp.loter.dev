@@ -1,4 +1,4 @@
-import { serveEngine } from '../../contract/serve';
+import { serveEngine } from '#contract/serve';
 import { createDotnetHandlers } from './handlers';
 import { type DotnetRuntime, loadRuntime } from './runtime';
 

@@ -16,7 +16,7 @@ public class Circle : Shape
 		{
 			int iVar1;
 
-			iVar1 = this.shared_0();
+			iVar1 = this.Radius;
 			return iVar1 == 1;
 		}
 	}
@@ -39,6 +39,7 @@ public class Circle : Shape
 
 	public static bool operator ==(Circle left, Circle right)
 	{
+		// Shares its code with Circle.Matches.
 		return left.<Radius>k__BackingField == right.<Radius>k__BackingField;
 	}
 
@@ -64,7 +65,7 @@ public class Circle : Shape
 		void *method_00;
 
 		if (other != null) {
-			iVar1 = other.shared_0();
+			iVar1 = other.Radius;
 			this.Radius = iVar1 + 2;
 			return;
 		}
@@ -129,5 +130,32 @@ public class Circle : Shape
 			iVar1 = radius;
 		}
 		return iVar1;
+	}
+
+	public static bool Matches(Circle left, Circle right)
+	{
+		// Shares its code with Circle.op_Equality.
+		return left.<Radius>k__BackingField == right.<Radius>k__BackingField;
+	}
+
+	public static int Larger(int first, int second)
+	{
+		// Shares its code with Square.Bigger.
+		if (second < first) {
+			second = first;
+		}
+		return second;
+	}
+
+	public Circle()
+	{
+		// Shares its code with Square..ctor, Square.Clear.
+		return;
+	}
+
+	public void Wipe()
+	{
+		this.shared_0();
+		return;
 	}
 }

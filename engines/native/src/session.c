@@ -69,6 +69,7 @@ EMSCRIPTEN_KEEPALIVE void session_free(Session *session) {
 	ht_up_free(session->csharp_functions);
 	ht_up_free(session->csharp_globals);
 	ht_sp_free(session->csharp_types);
+	ht_up_free(session->csharp_sharers);
 	free(session->names_text);
 	rz_vector_fini(&session->starts);
 	ht_up_free(session->symbols);

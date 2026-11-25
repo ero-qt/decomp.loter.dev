@@ -5,6 +5,7 @@ import { isStaticField, listInstanceFields, nameStructs } from './c-types';
 import { listClassStructs } from './class-structs';
 import { type Game, type GameGlobal, globalKinds } from './game';
 import { firstKeys, indexCodeMethods, type MemberStarts, writeBinaryKey } from './rows';
+import { indexSharers, type Sharer } from './shared-code';
 
 /** A game with the lookups that the links of its bodies need. */
 export interface BodyGame {
@@ -25,9 +26,9 @@ export interface BodyLinker {
  * Returns the functions that give the tokens of the native engine's code their targets in the game. A function becomes
  * the method whose code it is, because the native engine's key of a function is the code's address relative to the
  * image. A metadata global gets the tokens of the types and members that its C# text names. A link of the C# printer
- * becomes the type or field of its struct, the property of its accessor or the class of the exception that a throw
- * raises. Any other function or global of the binary gets the key of `writeBinaryKey`, which the engine reads as the
- * binary's own C. `findCode` gives the address of a method's code.
+ * becomes the type or field of its struct, the property of its accessor, the method that a call of shared code reads
+ * as or the class of the exception that a throw raises. Any other function or global of the binary gets the key of
+ * `writeBinaryKey`, which the engine reads as the binary's own C. `findCode` gives the address of a method's code.
  */
 export function createBodyLinker(fileId: number, { game, starts, rowsByKey }: BodyGame, findCode: (rva: number) => number): BodyLinker {
     const codeMethods = indexCodeMethods(game, starts, findCode);
@@ -35,6 +36,7 @@ export function createBodyLinker(fileId: number, { game, starts, rowsByKey }: Bo
     let structs: Map<string, { typeIndex: number; isStatic: boolean }> | undefined;
     let systemClasses: Map<string, number> | undefined;
     let properties: Map<number, number> | undefined;
+    let sharers: Map<number, Sharer[]> | undefined;
     // the keys of each struct's fields by their offsets, by the type's index and whether the struct is static
     const fields = new Map<string, Map<number, number>>();
 
@@ -107,7 +109,8 @@ export function createBodyLinker(fileId: number, { game, starts, rowsByKey }: Bo
     }
 
     // resolves a link of the C# printer, `#type:<struct>`, `#field:<struct>:<offset>`, `#declaring_type:<key>`,
-    // `#property:<key>` or `#raised_type:<class>`
+    // `#property:<key>`, `#sharer:<key>:<index>`, `#sharer_type:<key>:<index>` or `#raised_type:<class>`. A sharer's
+    // accessor links to its property, whose name the call reads as.
     function linkOutside(token: Token, outside: string): Token {
         const [kind, name, offset] = outside.split(':');
         if (kind === '#raised_type') {
@@ -118,6 +121,14 @@ export function createBodyLinker(fileId: number, { game, starts, rowsByKey }: Bo
             const accessor = codeMethods.get(parseInt(name, 16));
 
             return linkRow(token, accessor ? properties.get(accessor.key) : undefined);
+        }
+        if (kind === '#sharer' || kind === '#sharer_type') {
+            sharers ??= indexSharers(game, starts, findCode);
+            properties ??= indexProperties();
+            const sharer = sharers.get(parseInt(name, 16))?.[Number(offset)];
+            const key = sharer && (kind === '#sharer_type' ? sharer.typeIndex : (properties.get(sharer.key) ?? sharer.key));
+
+            return linkRow(token, key);
         }
 
         structs ??= indexStructs();

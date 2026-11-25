@@ -120,6 +120,14 @@ static void read_lines(Session *session, char *text, RzVector /*<NamedAddress>*/
 			csharp_add_type_line(session, line);
 			continue;
 		}
+		if (*line == '%') {
+			char *end = NULL;
+			ut64 rva = strtoull(line + 1, &end, 16);
+			if (end != line + 1 && *end == '\t') {
+				csharp_add_sharer(session, baddr + (is_arm32 ? rva & ~1ULL : rva), end + 1);
+			}
+			continue;
+		}
 
 		NamedAddress named;
 		bool is_global = *line == '@';
@@ -136,7 +144,8 @@ static void read_lines(Session *session, char *text, RzVector /*<NamedAddress>*/
 /**
  * \brief Loads a names file, which has 1 line for each function, then 1 line for each global that starts with `@`,
  * and the header with the types of its signatures, or an empty path without a header. A line that starts with `!`,
- * `^` or `&` adds a helper of the game's runtime, see helpers_add_line().
+ * `^` or `&` adds a helper of the game's runtime, see helpers_add_line(). A line that starts with `%` adds a method
+ * that shares a function's code, see csharp_add_sharer().
  *
  * Sets a `names.` flag at each address in a section of code with the name as the flag's real name, which the listing
  * and the decompiler read, and drops the flags and signatures of an earlier names file. Refuses a file without such an

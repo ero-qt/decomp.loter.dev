@@ -56,6 +56,7 @@ typedef struct {
 	HtUP /*<ut64, const char *>*/ *csharp_functions; ///< what the names file's functions are in C#, by their addresses
 	HtUP /*<ut64, SessionCSharpGlobal *>*/ *csharp_globals; ///< the names file's globals by their addresses
 	HtSP /*<const char *, SessionCSharpType *>*/ *csharp_types; ///< the names file's structs by their names
+	HtUP /*<ut64, RzVector<RzGhidraCSharpSharer> *>*/ *csharp_sharers; ///< the methods that share each function's code
 } Session;
 
 void session_put_address(PJ *j, const char *key, ut64 addr);
@@ -91,6 +92,7 @@ const SessionHelper *helpers_find(Session *session, ut64 addr, bool *is_noreturn
 void csharp_clear(Session *session);
 void csharp_add_function(Session *session, ut64 addr, char *record);
 void csharp_add_global(Session *session, ut64 addr, const char *record);
+void csharp_add_sharer(Session *session, ut64 addr, char *record);
 void csharp_add_type_line(Session *session, const char *line);
 
 void decompile_put_code(PJ *j, const RzAnnotatedCode *code);

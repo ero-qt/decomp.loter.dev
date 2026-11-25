@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- A call of code that several methods share reads as one of those methods when only that one fits the call's arguments, like `this.Radius`. If an operator is among the methods that fit, the call reads as the operator, so `String.op_Equality` reads as `a == "Tutorial"`. A call of a constructor's shared code on a new object of the constructor's type reads as `new Square()`. The method's name links to its place in the stubs and shows its hover.
+
 ### Fixed
 
 - A `<`, `<=` or `<<` in C# code has the color of an operator, not the red of a bracket without its pair.

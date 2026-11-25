@@ -3,10 +3,14 @@ import type { EmbeddedLines } from '#contract/embedding';
 import type { Game } from './game';
 import { firstKeys, type MemberStarts, stripArity } from './rows';
 
-/** A method whose code other methods share, with its row's key and its name after its type's, like `Circle.Area`. */
+/**
+ * A method whose code other methods share, with its row's key, its name after its type's, like `Circle.Area`, and its
+ * type's index.
+ */
 export interface Sharer {
     key: number;
     name: string;
+    typeIndex: number;
 }
 
 // the methods that a note of shared code lists by name, because thousands of empty methods can share 1 function
@@ -27,7 +31,7 @@ export function indexSharers(game: Game, starts: MemberStarts, findCode: (rva: n
         type.methods.forEach(({ name, rva }, index) => {
             if (rva !== null) {
                 const code = findCode(rva);
-                const sharer = { key: firstKeys.method + starts.methods[typeIndex] + index, name: `${stripArity(type.name)}.${name}` };
+                const sharer = { key: firstKeys.method + starts.methods[typeIndex] + index, name: `${stripArity(type.name)}.${name}`, typeIndex };
                 byCode.set(code, [...(byCode.get(code) ?? []), sharer]);
             }
         });

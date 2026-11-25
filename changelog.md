@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- The C of a native function with many calls opens faster in a file with many symbols. A function with 5,000 calls in a file of 100,000 functions took 4 seconds to get ready and now takes a fraction of a second.
+
 ### Fixed
 
 - The host shows the first link or bad file of a release with thousands of them and removes the release. Before, the check stopped without a message and the release stayed on the host.

@@ -245,6 +245,21 @@ test('activate refuses a release with a link anywhere in it, like a link to auth
     }
 });
 
+test('activate names the first link of a release with thousands of links', () => {
+    upload('1.0.0');
+    activate('1.0.0');
+    const release = upload('1.0.1');
+    for (let index = 0; index < 3000; index++) {
+        symlinkSync(secret, join(release, `link-${index}`));
+    }
+
+    const { exitCode, error } = activate('1.0.1');
+
+    expect(exitCode).toBe(1);
+    expect(error).toStartWith('The release 1.0.1 has a link: link-');
+    expect(listReleases()).toEqual(['1.0.0']);
+});
+
 test('activate refuses a release with a file that the host could run', () => {
     upload('1.0.0');
     activate('1.0.0');

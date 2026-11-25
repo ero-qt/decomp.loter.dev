@@ -97,11 +97,13 @@ function compareAddresses(first: Member, second: Member): number {
 }
 
 // lists each function of a class's vtables as `sub_<address>` inside the class, 1 function for each address, because
-// the classes of a base and a derived class share the functions that the derived class doesn't override
-function listVirtualMethods(classes: GlueClass[]): GlueSymbol[] {
+// the classes of a base and a derived class share the functions that the derived class doesn't override. Leaves out a
+// function that the listing names, like a procedure of a PDB file, because each address has 1 row
+function listVirtualMethods(classes: GlueClass[], named: GlueSymbol[]): GlueSymbol[] {
+    const namedAddresses = new Set(named.map(symbol => BigInt(symbol.addr)));
     const symbols = new Map<string, GlueSymbol>();
     for (const { name, methods } of classes) {
-        for (const addr of methods.filter(method => !symbols.has(method))) {
+        for (const addr of methods.filter(method => !symbols.has(method) && !namedAddresses.has(BigInt(method)))) {
             symbols.set(addr, { addr, size: 0, name: `${name}::sub_${addr.slice(2)}`, global: true });
         }
     }
@@ -215,7 +217,7 @@ function writeNote(...counts: [listed: number, count: number, what: string][]): 
  * functions and globals, those with the lowest addresses.
  */
 export function groupRows(listing: GlueListing, maxMembers = defaultMaxMembers): NativeRows {
-    const functions = readMembers([...listing.functions, ...listVirtualMethods(listing.classes)], true);
+    const functions = readMembers([...listing.functions, ...listVirtualMethods(listing.classes, listing.functions)], true);
     const functionAddresses = new Set(functions.map(member => member.address));
     const data = readMembers(listing.data, false).filter(({ address, symbol }) => !functionAddresses.has(address) && !classData.test(symbol.name));
     const isClass = findClasses(listing.data, [...functions, ...data], [...listing.types, ...listing.classes.map(({ name }) => name)]);

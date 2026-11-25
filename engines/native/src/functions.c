@@ -16,7 +16,7 @@ static int compare_addresses(const void *a, const void *b, void *user) {
 static ut64 function_end(Session *session, ut64 addr) {
 	RzBinObject *object = rz_bin_cur_object(session->core->bin);
 	const RzPVector *symbols = object ? rz_bin_object_get_symbols(object) : NULL;
-	RzBinSymbol *own = object ? names_symbol_at(object, addr) : NULL;
+	RzBinSymbol *own = names_symbol_at(session, addr);
 	if (own && own->size) {
 		return UT64_ADD_OVFCHK(addr, own->size) ? UT64_MAX : addr + own->size;
 	}
@@ -81,8 +81,8 @@ static void wrap_stack_offsets(RzCore *core, RzAnalysisFunction *fcn) {
  *
  * Rizin keeps functions' names unique.
  */
-static void rename_function(RzCore *core, RzAnalysisFunction *fcn) {
-	char *name = names_for_code(core, fcn->addr);
+static void rename_function(Session *session, RzAnalysisFunction *fcn) {
+	char *name = names_for_code(session, fcn->addr);
 	if (strcmp(fcn->name, name) && !rz_analysis_function_rename(fcn, name)) {
 		char *unique = rz_str_newf("%s_%" PFMT64x, name, fcn->addr);
 		rz_analysis_function_rename(fcn, unique);
@@ -105,14 +105,14 @@ static void name_target(Session *session, ut64 addr) {
 
 	RzAnalysisFunction *fcn = rz_analysis_get_function_at(core->analysis, addr);
 	if (!fcn) {
-		char *name = names_for_code(core, addr);
+		char *name = names_for_code(session, addr);
 		fcn = rz_analysis_create_function(core->analysis, name, addr, RZ_ANALYSIS_FCN_TYPE_FCN);
 		free(name);
 	}
 	if (fcn) {
 		debug_info_apply_dwarf(core, fcn);
 		debug_info_apply_pdb(session, fcn);
-		rename_function(core, fcn);
+		rename_function(session, fcn);
 	}
 }
 
@@ -204,7 +204,7 @@ static RzAnalysisFunction *prepare(Session *session, ut64 addr) {
 	wrap_stack_offsets(core, fcn);
 	debug_info_apply_dwarf(core, fcn);
 	debug_info_apply_pdb(session, fcn);
-	rename_function(core, fcn);
+	rename_function(session, fcn);
 	name_parts(session, fcn);
 	return fcn;
 }
@@ -250,8 +250,7 @@ EMSCRIPTEN_KEEPALIVE char *session_describe(Session *session, const char *addr) 
 		return rz_analysis_function_get_signature(fcn);
 	}
 
-	RzBinObject *object = rz_bin_cur_object(core->bin);
-	RzBinSymbol *symbol = object ? names_symbol_at(object, fcn->addr) : NULL;
+	RzBinSymbol *symbol = names_symbol_at(session, fcn->addr);
 	const char *name = symbol && RZ_STR_ISNOTEMPTY(symbol->dname) ? symbol->dname : NULL;
 	const RzList *flags = name ? NULL : rz_flag_get_list(core->flags, fcn->addr);
 	RzListIter *it;

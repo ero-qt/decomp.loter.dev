@@ -220,6 +220,19 @@ test('a trap in a listing reaches the queue as fatal, so the queue restarts the 
     expect(sent.at(-1)).toEqual({ fatal: 'memory access out of bounds' });
 }, 120000);
 
+test("a virtual method that a function's symbol names gets 1 row with that name", () => {
+    const listing: GlueListing = {
+        ...listFunctions([{ addr: '0x1000', size: 8, name: 'geometry::Shape::sides(void)const', global: true }]),
+        classes: [{ name: 'geometry::Shape', methods: ['0x1000', '0x1010'] }],
+    };
+    const { rows, sizes } = groupRows(listing);
+    const methods = rows.filter(row => row.kind === 'method');
+
+    expect(methods.map(row => row.name)).toEqual(['sides', 'sub_1010']);
+    expect(new Set(rows.map(row => row.key)).size).toBe(rows.length);
+    expect(sizes.get(methods[0].key)).toBe(8);
+});
+
 test('a class of methods without a known size counts each as 1 kb', () => {
     expect(describeRows(listBigClass(Array.from({ length: 63 }, () => 0)))[1]).toBe('class big::Big document');
     expect(describeRows(listBigClass(Array.from({ length: 64 }, () => 0)))[1]).toBe('class big::Big');

@@ -1,5 +1,5 @@
 // builds for every target because it uses no part of a C library
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(HIDDEN)
 #define EXPORT extern "C" __declspec(dllexport) __attribute__((noinline))
 #define MEMBER __declspec(dllexport) __attribute__((noinline))
 #elif defined(HIDDEN)

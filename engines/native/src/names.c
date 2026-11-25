@@ -154,19 +154,25 @@ void names_add_msvc_words(PJ *j, const char *name) {
  * \brief Cuts the parameter list from a demangled name, so `geometry::Rect::area(int) const` becomes
  * `geometry::Rect::area`.
  *
- * The list is the last group of parentheses, which keeps the parentheses in a name like `operator()`.
+ * The list is the last group of parentheses when only words like `const` follow it, which keeps the parentheses of a
+ * name like `operator()`, `(anonymous namespace)::x` or Go's `main.(*T).Method`.
  */
 static void cut_parameters(char *name) {
-	char *close = strrchr(name, ')');
+	const char *close = strrchr(name, ')');
+	if (!close || close[1 + strspn(close + 1, " &abcdefghijklmnopqrstuvwxyz")]) {
+		return;
+	}
+
 	int depth = 0;
-	for (char *at = close; at && at >= name; at--) {
-		if (*at == ')') {
+	for (size_t length = close - name + 1; length > 0; length--) {
+		char character = name[length - 1];
+		if (character == ')') {
 			depth++;
-		} else if (*at == '(') {
+		} else if (character == '(') {
 			depth--;
 		}
 		if (!depth) {
-			*at = '\0';
+			name[length - 1] = '\0';
 			return;
 		}
 	}
@@ -177,13 +183,14 @@ static void cut_parameters(char *name) {
  *
  * The caller frees the result with free().
  */
-static char *name_at(RzCore *core, ut64 addr) {
+static char *name_at(Session *session, ut64 addr) {
+	RzCore *core = session->core;
 	RzBinObject *object = rz_bin_cur_object(core->bin);
 	if (!object) {
 		return NULL;
 	}
 
-	RzBinSymbol *symbol = names_symbol_at(object, addr);
+	RzBinSymbol *symbol = names_symbol_at(session, addr);
 	char *name = symbol ? names_of_symbol(object, symbol) : NULL;
 	if (name) {
 		return name;
@@ -224,22 +231,26 @@ static bool is_marker(const RzBinSymbol *symbol) {
  * \brief Returns the first symbol at an address that isn't a marker, or NULL.
  *
  * An object file has a section symbol at the start of each section, at the address of the section's first function,
- * and an ARM file has mapping symbols at the starts of its code and data.
+ * and an ARM file has mapping symbols at the starts of its code and data. Indexes the symbols by their addresses on the
+ * first call, because a function's analysis asks for the symbol of each address that the function calls.
  */
-RzBinSymbol *names_symbol_at(RzBinObject *object, ut64 addr) {
-	const RzPVector *symbols = rz_bin_object_get_symbols(object);
-	if (!symbols) {
-		return NULL;
-	}
+RzBinSymbol *names_symbol_at(Session *session, ut64 addr) {
+	if (!session->symbols) {
+		RzBinObject *object = rz_bin_cur_object(session->core->bin);
+		const RzPVector *symbols = object ? rz_bin_object_get_symbols(object) : NULL;
+		session->symbols = ht_up_new(NULL, NULL);
 
-	void **it;
-	rz_pvector_foreach (symbols, it) {
-		RzBinSymbol *symbol = *it;
-		if (symbol->vaddr == addr && !is_marker(symbol)) {
-			return symbol;
+		void **it;
+		if (symbols && session->symbols) {
+			rz_pvector_foreach (symbols, it) {
+				RzBinSymbol *symbol = *it;
+				if (!is_marker(symbol)) {
+					ht_up_insert(session->symbols, symbol->vaddr, symbol);
+				}
+			}
 		}
 	}
-	return NULL;
+	return session->symbols ? ht_up_find(session->symbols, addr, NULL) : NULL;
 }
 
 /**
@@ -248,8 +259,8 @@ RzBinSymbol *names_symbol_at(RzBinObject *object, ut64 addr) {
  *
  * The caller frees the result with free().
  */
-char *names_for_code(RzCore *core, ut64 addr) {
-	char *name = name_at(core, addr);
+char *names_for_code(Session *session, ut64 addr) {
+	char *name = name_at(session, addr);
 	if (name) {
 		cut_parameters(name);
 	}

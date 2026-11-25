@@ -1,6 +1,6 @@
-import { expect, mock, test } from 'bun:test';
 import { EngineError } from '#contract/reply';
 import { readRows } from '#contract/rows';
+import { expect, mock, test } from 'bun:test';
 import { classFile, useJavaEngine, zipFile } from './testing';
 
 const connect = useJavaEngine();

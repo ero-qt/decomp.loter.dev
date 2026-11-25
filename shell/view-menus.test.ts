@@ -1,7 +1,7 @@
-import { expect, test } from 'bun:test';
-import { ContextKeyExpr } from '@codingame/monaco-vscode-api/vscode/vs/platform/contextkey/common/contextkey';
 import { fakeManifest } from '#contract/fake';
 import type { Manifest } from '#contract/manifest';
+import { ContextKeyExpr } from '@codingame/monaco-vscode-api/vscode/vs/platform/contextkey/common/contextkey';
+import { expect, test } from 'bun:test';
 import { formatShowBesideCommand, writeViewContributions } from './view-menus';
 
 const [codeView] = fakeManifest.views;

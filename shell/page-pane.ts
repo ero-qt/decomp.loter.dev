@@ -1,6 +1,6 @@
 import { addDisposableListener, type Dimension, EventType } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/dom';
 import { StandardKeyboardEvent } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/keyboardEvent';
-import { EventType as TouchEventType, Gesture, type GestureEvent } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/touch';
+import { Gesture, type GestureEvent, EventType as TouchEventType } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/touch';
 import { DomScrollableElement } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/ui/scrollbar/scrollableElement';
 import { KeyCode } from '@codingame/monaco-vscode-api/vscode/vs/base/common/keyCodes';
 import { toDisposable } from '@codingame/monaco-vscode-api/vscode/vs/base/common/lifecycle';

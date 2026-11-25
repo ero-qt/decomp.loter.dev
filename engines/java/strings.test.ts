@@ -1,8 +1,8 @@
-import { expect, setDefaultTimeout, test } from 'bun:test';
 import { findRow } from '#contract/checking';
 import { formatTarget } from '#contract/document';
 import type { Engine, StringUse } from '#contract/engine';
 import { readRows } from '#contract/rows';
+import { expect, setDefaultTimeout, test } from 'bun:test';
 import { fixture } from './fixture';
 import { classFile, useJavaEngine } from './testing';
 

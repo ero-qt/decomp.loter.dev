@@ -1,3 +1,8 @@
+import { formatTarget, parseTarget } from '#contract/document';
+import type { View } from '#contract/manifest';
+import { CanceledError } from '#contract/reply';
+import { findDocumentRow, type Row } from '#contract/rows';
+import { kinds } from '#contract/symbols';
 import type {
     CancellationToken,
     DocumentSemanticTokensProvider,
@@ -8,11 +13,6 @@ import type {
     TextDocumentContentProvider,
     Uri,
 } from 'vscode';
-import { formatTarget, parseTarget } from '#contract/document';
-import { findDocumentRow, type Row } from '#contract/rows';
-import type { View } from '#contract/manifest';
-import { CanceledError } from '#contract/reply';
-import { kinds } from '#contract/symbols';
 import { vscode } from './api';
 import { documentScheme, symbolsViewId } from './config';
 import { formatDocumentPath, parseDocumentPath } from './document-paths';

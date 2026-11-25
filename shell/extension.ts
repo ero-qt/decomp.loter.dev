@@ -1,5 +1,5 @@
-import type { Uri } from 'vscode';
 import { formatTarget } from '#contract/document';
+import type { Uri } from 'vscode';
 import { vscode } from './api';
 import { documentScheme, symbolsViewId } from './config';
 import { parseDocumentPath } from './document-paths';

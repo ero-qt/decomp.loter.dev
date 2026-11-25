@@ -1,8 +1,8 @@
+import { sampleFiles } from '#contract/fake';
 import { expect, test } from 'bun:test';
 import type { Page } from 'playwright';
-import { sampleFiles } from '#contract/fake';
-import { aboutTab, closeTab, findTab, openCircle, readActiveTab, readTabs, readUntil, waitForTabs } from './editor-testing';
 import { readBuildVersion } from './build-version';
+import { aboutTab, closeTab, findTab, openCircle, readActiveTab, readTabs, readUntil, waitForTabs } from './editor-testing';
 import { runCommand, startWorkbench, testTimeoutMs } from './page-testing';
 
 const openWorkbench = startWorkbench();

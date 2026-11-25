@@ -1,10 +1,10 @@
+import type { Engine } from '#contract/engine';
+import { restoreWorker, useInThreadWorker } from '#contract/in-thread-worker';
+import { connectEngine, type ConnectOptions } from '#contract/queue';
+import type { EngineHandlers } from '#contract/serve';
 import { afterEach, beforeEach } from 'bun:test';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import type { Engine } from '#contract/engine';
-import { restoreWorker, useInThreadWorker } from '#contract/in-thread-worker';
-import { type ConnectOptions, connectEngine } from '#contract/queue';
-import type { EngineHandlers } from '#contract/serve';
 
 export { buildStamped, type StampedBuild } from './stamp';
 

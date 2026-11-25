@@ -1,5 +1,5 @@
-import { expect, test } from 'bun:test';
 import { readManifest } from '#contract/manifest';
+import { expect, test } from 'bun:test';
 import manifest from './manifest.json' with { type: 'json' };
 
 test("java engine's JSON manifest names its views, the files that the engine claims and a cancel limit that lets a decompile finish", () => {

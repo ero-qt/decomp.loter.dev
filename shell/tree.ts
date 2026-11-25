@@ -1,5 +1,5 @@
-import type { TreeDataProvider } from 'vscode';
 import { findDocumentRow, type Row } from '#contract/rows';
+import type { TreeDataProvider } from 'vscode';
 import { vscode } from './api';
 import { type OpenFile, type OpenFiles, readErrorText } from './files';
 import { drawIcon } from './icons';

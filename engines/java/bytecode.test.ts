@@ -1,9 +1,9 @@
-import { expect, setDefaultTimeout, test } from 'bun:test';
 import { findRow } from '#contract/checking';
 import { type Document, formatTarget, readTokens } from '#contract/document';
 import type { Engine } from '#contract/engine';
 import { findDocumentRow, readRows, type Row } from '#contract/rows';
 import { modifiersOf } from '#contract/symbols';
+import { expect, setDefaultTimeout, test } from 'bun:test';
 import { fixture } from './fixture';
 import { createJavaHandlers } from './handlers';
 import { useJavaEngine } from './testing';

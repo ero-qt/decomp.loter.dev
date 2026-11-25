@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
-import cConfigurationUrl from '@codingame/monaco-vscode-cpp-default-extension/resources/language-configuration.json?url';
 import cGrammarUrl from '@codingame/monaco-vscode-cpp-default-extension/resources/c.tmLanguage.json?url';
+import cConfigurationUrl from '@codingame/monaco-vscode-cpp-default-extension/resources/language-configuration.json?url';
 import csharpGrammarUrl from '@codingame/monaco-vscode-csharp-default-extension/resources/csharp.tmLanguage.json?url';
 import csharpConfigurationUrl from '@codingame/monaco-vscode-csharp-default-extension/resources/language-configuration.json?url';
 import javaGrammarUrl from '@codingame/monaco-vscode-java-default-extension/resources/java.tmLanguage.json?url';

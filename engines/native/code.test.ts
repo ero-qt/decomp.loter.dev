@@ -1,6 +1,6 @@
-import { expect, test } from 'bun:test';
 import { readTokens } from '#contract/document';
 import { flagsOf, modifiersOf } from '#contract/symbols';
+import { expect, test } from 'bun:test';
 import { type Annotation, type CodeRows, writeCode, writePrototype } from './code';
 
 // a word of the C to annotate in order: the word, its highlight and the annotation that gives its name or address

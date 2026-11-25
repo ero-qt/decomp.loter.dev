@@ -1,7 +1,7 @@
-import { expect, test } from 'bun:test';
-import { existsSync, readdirSync } from 'node:fs';
 import { fakeManifest } from '#contract/fake';
 import { readManifest } from '#contract/manifest';
+import { expect, test } from 'bun:test';
+import { existsSync, readdirSync } from 'node:fs';
 import { findSiteFile, startSiteServer, startWorkbench, testTimeoutMs } from '../../shell/page-testing';
 
 const openWorkbench = startWorkbench();

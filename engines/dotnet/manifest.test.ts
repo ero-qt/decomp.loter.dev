@@ -1,5 +1,5 @@
-import { expect, test } from 'bun:test';
 import { readManifest } from '#contract/manifest';
+import { expect, test } from 'bun:test';
 import manifest from './manifest.json' with { type: 'json' };
 
 test("dotnet engine's JSON manifest names the C# and IL views, PE files and limits that let a decompile finish", () => {

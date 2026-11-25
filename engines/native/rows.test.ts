@@ -1,15 +1,15 @@
-import { expect, test } from 'bun:test';
-import { join } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
 import { readRows, type Row } from '#contract/rows';
 import { serveEngine, type WorkerMessage, type WorkerPort } from '#contract/serve';
 import { accessibilityOf, modifiersOf } from '#contract/symbols';
+import { expect, test } from 'bun:test';
+import { join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { LoadError } from '../shared/loading';
 import { moduleFolder } from './build/link';
 import { mountInMemory } from './files';
 import { createNativeHandlers } from './handlers';
 import { loadModule, type NativeModule } from './module';
-import { groupRows, type GlueListing } from './rows';
+import { type GlueListing, groupRows } from './rows';
 import { loadTestModule, readFixture, useNativeEngine } from './testing';
 
 const connect = useNativeEngine();

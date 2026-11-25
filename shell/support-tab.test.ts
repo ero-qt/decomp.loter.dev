@@ -1,5 +1,5 @@
-import { expect, test } from 'bun:test';
 import { Color } from '@codingame/monaco-vscode-api/vscode/vs/base/common/color';
+import { expect, test } from 'bun:test';
 import type { Locator, Page } from 'playwright';
 import { aboutTab, findTab, readActiveTab, readTabs, readUntil, waitForTabs } from './editor-testing';
 import { collectErrors, findOpenFilesButton, findSiteFile, runCommand, startWorkbench, testTimeoutMs } from './page-testing';

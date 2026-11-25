@@ -1,7 +1,7 @@
-import { expect, test } from 'bun:test';
-import type { FileChooser, Locator, Page } from 'playwright';
 import { sampleFiles } from '#contract/fake';
 import type { WorkerRequest } from '#contract/serve';
+import { expect, test } from 'bun:test';
+import type { FileChooser, Locator, Page } from 'playwright';
 import { findWord, openCircle, readHover, readLines, readUntil, readWarnings, waitForTabs } from './editor-testing';
 import { collectErrors, startWorkbench, testTimeoutMs, waitForEngineCalls, waitForEngineReplies } from './page-testing';
 import {

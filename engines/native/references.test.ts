@@ -1,7 +1,7 @@
-import { expect, test } from 'bun:test';
 import { formatTarget } from '#contract/document';
 import type { Engine } from '#contract/engine';
 import { readRows } from '#contract/rows';
+import { expect, test } from 'bun:test';
 import { loadTestModule, readFixture, useNativeEngine } from './testing';
 
 const connect = useNativeEngine();

@@ -1,5 +1,5 @@
-import { expect, test } from 'bun:test';
 import { EngineError, failed } from '#contract/reply';
+import { expect, test } from 'bun:test';
 import { createJavaHandlers } from './handlers';
 import { classFile, useJavaEngine, zipFile } from './testing';
 

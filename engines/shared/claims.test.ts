@@ -1,8 +1,8 @@
-import { afterAll, expect, test } from 'bun:test';
-import { existsSync, readdirSync } from 'node:fs';
 import type { Fixture } from '#contract/checking';
 import { matchesFile, readManifest, readStart } from '#contract/manifest';
 import { connectEngine } from '#contract/queue';
+import { afterAll, expect, test } from 'bun:test';
+import { existsSync, readdirSync } from 'node:fs';
 import { findEngine, type SiteEngine } from '../../shell/engines';
 
 const enginesFolder = new URL('../', import.meta.url);

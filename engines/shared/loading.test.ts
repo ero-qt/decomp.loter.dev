@@ -1,10 +1,10 @@
+import { failed, ok } from '#contract/reply';
+import type { EngineHandlers } from '#contract/serve';
 import { expect, test } from 'bun:test';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { failed, ok } from '#contract/reply';
-import type { EngineHandlers } from '#contract/serve';
 import { fetchBytes, importModule, LoadError, loadOnce, refuseLoadErrors } from './loading';
 
 const signal = new AbortController().signal;

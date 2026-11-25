@@ -1,6 +1,6 @@
+import { sampleFiles } from '#contract/fake';
 import { expect, test } from 'bun:test';
 import type { Page } from 'playwright';
-import { sampleFiles } from '#contract/fake';
 import { aboutTab, readTabs, readUntil, readWarnings } from './editor-testing';
 import { findOpenFilesButton, listOtherHostRequests, startWorkbench, testTimeoutMs, waitForEngineReplies } from './page-testing';
 import {

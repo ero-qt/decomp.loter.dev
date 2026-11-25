@@ -1,5 +1,5 @@
-import { expect, test } from 'bun:test';
 import { Color } from '@codingame/monaco-vscode-api/vscode/vs/base/common/color';
+import { expect, test } from 'bun:test';
 import darkTheme from './dark.json';
 import { deriveLightTheme, minimumContrast } from './light';
 

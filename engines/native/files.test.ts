@@ -1,11 +1,11 @@
-import { expect, test } from 'bun:test';
 import { testLoadFailure } from '#contract/conformance-testing';
 import { useInThreadWorker } from '#contract/in-thread-worker';
 import { failed, ok } from '#contract/reply';
+import { expect, test } from 'bun:test';
 import { LoadError } from '../shared/loading';
 import { mountInMemory } from './files';
-import { createNativeHandlers } from './handlers';
 import { elfFixture } from './fixture';
+import { createNativeHandlers } from './handlers';
 import type { NativeModule } from './module';
 import { connectNative, loadTestModule, readFixture, useNativeEngine } from './testing';
 

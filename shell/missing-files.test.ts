@@ -1,6 +1,6 @@
-import { expect, test } from 'bun:test';
 import { URI } from '@codingame/monaco-vscode-api/vscode/vs/base/common/uri';
 import { MarkdownString } from '@codingame/monaco-vscode-api/vscode/vs/workbench/api/common/extHostTypes/markdownString';
+import { expect, test } from 'bun:test';
 import { appendLoadLink, findMissingFileExtensions, loadMissingFileCommand } from './missing-files';
 
 // reads the arguments of the link's command like the workbench, which decodes the link's query twice

@@ -1,6 +1,6 @@
-import type { TokenCollector } from '@run-slicer/vf';
 import { type Document, writeTokens } from '#contract/document';
 import { failed, ok, type Reply } from '#contract/reply';
+import type { TokenCollector } from '@run-slicer/vf';
 import { loadOnce } from '../shared/loading';
 import type { OpenFiles } from './describe';
 import { findTop } from './files';

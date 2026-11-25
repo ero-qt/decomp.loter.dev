@@ -1,9 +1,9 @@
-import { expect, setDefaultTimeout, test } from 'bun:test';
 import { findRow } from '#contract/checking';
 import { formatTarget } from '#contract/document';
 import { unwrap } from '#contract/reply';
 import { readRows } from '#contract/rows';
 import type { EngineHandlers } from '#contract/serve';
+import { expect, setDefaultTimeout, test } from 'bun:test';
 import { createDotnetHandlers } from './handlers';
 import type { DotnetExports, DotnetRuntime } from './runtime';
 import { compileAssembly, loadTestRuntime, readFixture } from './testing';

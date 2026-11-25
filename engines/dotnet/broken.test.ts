@@ -1,6 +1,6 @@
-import { expect, test } from 'bun:test';
 import type { Engine } from '#contract/engine';
 import { readRows } from '#contract/rows';
+import { expect, test } from 'bun:test';
 import { compileAssembly, findMetadataStream, loadTestRuntime, patchBytes, readFixture, useDotnetEngine } from './testing';
 
 const connect = useDotnetEngine();

@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { accessibilities, accessibilityOf, flagsOf, kinds, modifiers, modifiersOf } from './symbols';
+import { accessibilities, accessibilityOf, flagsOf, hasModifier, kinds, modifiers, modifiersOf } from './symbols';
 
 test('each kind, modifier and accessibility has its own name', () => {
     for (const names of [kinds, modifiers, accessibilities]) {
@@ -81,4 +81,11 @@ test('flags give back their accessibility and their modifiers', () => {
 
 test('flags of every modifier leave the accessibility empty', () => {
     expect(accessibilityOf(flagsOf('', ...modifiers))).toBe('');
+});
+
+test('hasModifier finds each modifier of the flags and no other', () => {
+    const flags = flagsOf('public', 'document', 'default');
+
+    expect(modifiers.filter(modifier => hasModifier(flags, modifier))).toEqual(['document', 'default']);
+    expect(hasModifier(flagsOf('public'), 'declaration')).toBe(false);
 });

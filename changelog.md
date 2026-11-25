@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 - The C of a native function with many calls opens faster in a file with many symbols. A function with 5,000 calls in a file of 100,000 functions took 4 seconds to get ready and now takes a fraction of a second.
 - The .NET engine keeps the symbols of an open assembly when another assembly opens or closes that it doesn't reference. Before, each open and close made the engine read the symbols of every open assembly again.
+- Go to Symbol in Workspace answers each key faster in files with many symbols, because it keeps the list of names between the keys.
 
 ### Fixed
 

@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-25
+
 ### Added
 
 - Unity games built with IL2CPP open from their `global-metadata.dat`. The Symbols view lists every assembly's types and members by name. The search lists the strings of the game's metadata too. Pick the game's `GameAssembly.dll` or `libil2cpp.so` on the missing file's row to get each type as a C# stub with the types of its members. Until then, the stubs show `object` in place of each type, with a note on top about the missing file. The .NET engine's decompiler writes the stubs, so they look, color and link like the C# of a .NET assembly. Go to definition on a type in a stub opens that type, even in another assembly of the game. Games from the Unity 6000.5 alpha and the 6000.6 beta don't open. The site tells you that the engine can't read their metadata.
@@ -161,7 +163,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 - A native engine that opens ELF, PE and Mach-O programs and libraries with Rizin and Ghidra's decompiler and shows their functions and classes as C. It also reads a PE file's PDB file for names and types and finds the classes of stripped files through their RTTI.
 - A privacy notice about what stays in your browser and what the server keeps.
 
-[Unreleased]: https://github.com/ero-qt/decomp.loter.dev/compare/1.3.0...HEAD
+[Unreleased]: https://github.com/ero-qt/decomp.loter.dev/compare/1.4.0...HEAD
+[1.4.0]: https://github.com/ero-qt/decomp.loter.dev/compare/1.3.0...1.4.0
 [1.3.0]: https://github.com/ero-qt/decomp.loter.dev/compare/1.2.2...1.3.0
 [1.2.2]: https://github.com/ero-qt/decomp.loter.dev/compare/1.2.1...1.2.2
 [1.2.1]: https://github.com/ero-qt/decomp.loter.dev/compare/1.2.0...1.2.1

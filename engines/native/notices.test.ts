@@ -20,6 +20,16 @@ test('notices name every subproject of versions.json, link the commit of each su
     expect(notices).toContain('GNU GENERAL PUBLIC LICENSE');
 });
 
+test('notices name the same commit beside each link to a commit', async () => {
+    const notices = await Bun.file(new URL('../../third-party-notices.md', import.meta.url)).text();
+    const named = [...notices.matchAll(/\/tree\/([0-9a-f]{40})\) at commit `([0-9a-f]{40})`/g)];
+
+    expect(named.length).toBeGreaterThan(2);
+    for (const [, linked, written] of named) {
+        expect(written).toBe(linked!);
+    }
+});
+
 test("notices list rizin's files under other licenses, tree-sitter's unicode headers and llvm's libunwind", async () => {
     const notices = await Bun.file(new URL('../../third-party-notices.md', import.meta.url)).text();
     const files = [

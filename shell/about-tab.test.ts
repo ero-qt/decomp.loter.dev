@@ -163,6 +163,22 @@ test("page fits the About tab's width in an 800 by 600 window and scrolls under 
     expect(await readPageWidthFit(page)).toEqual({ insidePaneWidth: true, scrollsSideways: false });
 }, testTimeoutMs);
 
+test("About tab shows no shadow at its top once the page scrolls in a 300 pixel high window", async () => {
+    const { page } = await openWorkbench();
+
+    await page.setViewportSize({ width: 800, height: 300 });
+    await page.waitForFunction(() => document.querySelector('.part.editor')!.getBoundingClientRect().height < 300);
+    await findAboutPage(page).locator('..').hover();
+    const scrollAndRead = async () => {
+        await page.mouse.wheel(0, 100);
+
+        return readLastRowShown(page);
+    };
+
+    expect(await readUntil(scrollAndRead, true)).toBe(true);
+    expect(await findAboutPage(page).locator('xpath=ancestor::*[contains(@class, "monaco-scrollable-element")][1]/*[contains(@class, "shadow")]').count()).toBe(0);
+}, testTimeoutMs);
+
 test("a swipe up on a touch screen scrolls the About tab's last row above the pinned source line in a 300 pixel high window", async () => {
     const { page } = await openWorkbench('dark', { hasTouch: true });
     await page.setViewportSize({ width: 800, height: 300 });

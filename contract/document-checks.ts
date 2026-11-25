@@ -71,9 +71,18 @@ async function readDocuments(
     return documents;
 }
 
+// checks whether a row is a method below a property, an indexer or an event that the document declares, like a getter,
+// whose `get` is a keyword of its property's declaration
+function isAccessorOfDeclared(fileId: number, rows: Row[], index: number, tokens: Token[]): boolean {
+    const parent = rows[rows[index].parent];
+    const isAccessor = rows[index].kind === 'method' && parent !== undefined && ['property', 'indexer', 'event'].includes(parent.kind);
+
+    return isAccessor && hasDeclaration(tokens, formatTarget({ fileId, key: parent.key }));
+}
+
 /**
  * Checks that the document of each row's document row declares the row in a view exactly when the view doesn't hide the
- * row and that each document declares each of its locals.
+ * row and that each document declares each of its locals. An accessor's row may leave its declaration to its property.
  */
 function requireDeclarations(fileId: number, rows: Row[], indexes: number[], documents: Map<number, Token[]>, view: string, viewIndex: number) {
     for (const index of indexes) {
@@ -85,6 +94,9 @@ function requireDeclarations(fileId: number, rows: Row[], indexes: number[], doc
 
         const target = formatTarget({ fileId, key: rows[index].key });
         const subject = describeDocument(rows, documentIndex, view);
+        if (isAccessorOfDeclared(fileId, rows, index, tokens)) {
+            continue;
+        }
         if (!isHiddenIn(rows[index], viewIndex)) {
             requireDeclaration(tokens, target, subject);
         } else if (hasDeclaration(tokens, target)) {

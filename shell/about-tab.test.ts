@@ -30,6 +30,7 @@ const formatRows = [
     ['.NET assemblies', '.dll, .exe, .winmd', 'C#, IL'],
     ['Java classes and archives', '.class, .jar, .war', 'Java, Bytecode'],
     ['Native programs and libraries', '.exe, .dll, .sys, .efi, .so, .dylib, .elf and files without an extension', 'C, Assembly'],
+    ['Unity IL2CPP games', '.dat files like global-metadata.dat plus GameAssembly.dll or libil2cpp.so', 'C#'],
 ];
 const shortcutRows = [
     ['Go to definition', 'F12 or Ctrl+click'],
@@ -132,7 +133,7 @@ test("Supported files table shows each file's views on one line in an 800 by 600
         }),
     );
 
-    expect(lineCounts).toEqual([1, 1, 1]);
+    expect(lineCounts).toEqual([1, 1, 1, 1]);
 }, testTimeoutMs);
 
 test("page fits the About tab's width in an 800 by 600 window and scrolls under the pinned source line in a 300 pixel high window", async () => {

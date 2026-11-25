@@ -54,6 +54,7 @@ internal sealed record DocumentReply(
 [JsonSerializable(typeof(Reply<bool>))]
 [JsonSerializable(typeof(Reply<ListingReply>))]
 [JsonSerializable(typeof(Reply<DocumentReply>))]
+[JsonSerializable(typeof(Reply<Il2Cpp.StubDocumentReply>))]
 [JsonSerializable(typeof(Reply<Description>))]
 [JsonSerializable(typeof(Reply<string>))]
 [JsonSerializable(typeof(Reply<List<string>>))]

@@ -4,8 +4,10 @@ import { modifiersOf } from '#contract/symbols';
 
 /** Returns the refusals that every engine gives, as failed replies whose texts have the engine's name, like `Java`. */
 export function createRefusals(engineName: string) {
+    const file = (fileId: number) => failed(`The ${engineName} engine doesn't have an open file with the id ${fileId}.`);
+
     return {
-        file: (fileId: number) => failed(`The ${engineName} engine doesn't have an open file with the id ${fileId}.`),
+        file,
         view: (view: string) => failed(`The ${engineName} engine doesn't have the view ${view}.`),
         /** Refuses a key that the file's rows don't have, which an engine can write in its own form, like hex. */
         key: (fileName: string, key: number | string) => failed(`${fileName} doesn't have a symbol with the key ${key}.`),

@@ -21,7 +21,7 @@ internal sealed record Document(
 /// <param name="targets">Finds the targets of the document's symbols.</param>
 /// <param name="view">The bit of the document's view in the views that hide a row.</param>
 internal sealed class DocumentTokens(
-    Targets targets,
+    ISymbolTargets targets,
     int view)
 {
     private const int ValuesPerToken = 5;
@@ -40,7 +40,7 @@ internal sealed class DocumentTokens(
 
     public int Count => _values.Count / ValuesPerToken;
 
-    public Targets Targets => targets;
+    public ISymbolTargets Targets => targets;
 
     /// <summary>
     ///     Adds a token with the flags of its symbol, plus the declaration modifier for the token that declares the

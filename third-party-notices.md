@@ -26,9 +26,21 @@ The .NET engine decompiles assemblies with [ICSharpCode.Decompiler](https://gith
 
 ICSharpCode.Decompiler includes the code of [Humanizer](https://github.com/Humanizr/Humanizer) that turns words into their plural and singular forms. Its copyright line is "Copyright (c) .NET Foundation and Contributors". It's under the MIT License, whose text is at the end of this file.
 
+## LibCpp2IL
+
+The IL2CPP engine reads a game's metadata and binary with [LibCpp2IL](https://github.com/SamboyCoding/Cpp2IL) 2022.1.0-pre-release.21, the library part of Cpp2IL. Its copyright line is "Copyright © Samboy063 2019-2023". It's under the MIT License, whose text is at the end of this file.
+
+## WasmDisassembler
+
+LibCpp2IL uses [WasmDisassembler](https://github.com/SamboyCoding/Cpp2IL) 2022.1.0-pre-release.21 from the same repository. It's under the MIT License, whose text is at the end of this file.
+
+## AssetRipper.Primitives
+
+LibCpp2IL reads Unity versions with [AssetRipper.Primitives](https://github.com/AssetRipper/AssetRipper.Primitives) 3.2.0. Its copyright line is "Copyright (c) 2022-2025 ds5678". It's under the MIT License, whose text is at the end of this file.
+
 ## .NET runtime
 
-The .NET engine runs in the .NET runtime 11.0.0 for WebAssembly, with the parts of the .NET libraries that the build keeps. It's under the MIT License with this copyright line, "Copyright (c) .NET Foundation and Contributors". The runtime ships code of other projects too. Their notices are in `engines/dotnet/THIRD-PARTY-NOTICES.TXT` on the site, which the build copies from the runtime's package.
+The .NET and IL2CPP engines run in the .NET runtime 11.0.0 for WebAssembly, with the parts of the .NET libraries that their build keeps. It's under the MIT License with this copyright line, "Copyright (c) .NET Foundation and Contributors". The runtime ships code of other projects too. Their notices are in `engines/dotnet/THIRD-PARTY-NOTICES.TXT` on the site, which the build copies from the runtime's package.
 
 ## Rizin
 

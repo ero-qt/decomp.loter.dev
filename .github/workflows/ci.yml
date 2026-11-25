@@ -137,8 +137,9 @@ jobs:
             printf '%s\n' host release shell
           } | sort | jq -Rcs '"folders=" + (split("\n")[:-1] | tojson)' -r >> "$GITHUB_OUTPUT"
 
-  # sets up the JDK for a folder with Java fixture sources, the .NET SDK for a folder with a C# project and runs the
-  # folder's own ci-setup.sh, so an engine only adds files to its own folder
+  # sets up the JDK for a folder with Java fixture sources, the .NET SDK for a folder with a C# project and for the IL2CPP
+  # engine, which runs in the .NET engine's project, and runs the folder's own ci-setup.sh, so an engine only adds files to
+  # its own folder
   test:
     name: test ${{ matrix.folder }}
     needs: [list, build]
@@ -162,7 +163,7 @@ jobs:
           distribution: temurin
           java-version: 21
       - name: set up .NET SDK
-        if: hashFiles(format('{0}/**/*.csproj', matrix.folder)) != ''
+        if: hashFiles(format('{0}/**/*.csproj', matrix.folder)) != '' || matrix.folder == 'engines/il2cpp'
         uses: ./.github/actions/dotnet
       - name: run the folder's setup
         if: hashFiles(format('{0}/ci-setup.sh', matrix.folder)) != ''
@@ -171,6 +172,13 @@ jobs:
         run: '"$FOLDER/ci-setup.sh"'
       - name: set up the page tests
         uses: ./.github/actions/page-tests
+      # keeps the real Unity builds that the IL2CPP tests download, keyed on the hashes in real-builds.ts
+      - name: cache the real Unity builds
+        if: matrix.folder == 'engines/il2cpp'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: artifacts/il2cpp-real
+          key: il2cpp-real-${{ hashFiles('engines/il2cpp/real-builds.ts') }}
       - name: run the tests
         env:
           FOLDER: ${{ matrix.folder }}

@@ -131,12 +131,12 @@ test("dotnet engine's worker in the page stops a search for users once the page 
     expect(replies).toEqual([3000, 'The call was canceled.']);
 }, testTimeoutMs * 4);
 
-test("dotnet engine's folder holds a small worker, the runtime and its notices", async () => {
+test("dotnet engine's folder holds a small worker, the runtime with LibCpp2IL for the IL2CPP engine and its notices", async () => {
     const paths = readdirSync(siteFolder, { recursive: true, encoding: 'utf8' }).filter(path => !path.endsWith('_framework'));
     const sizes = await Promise.all(paths.map(path => measureBrotli(path)));
 
     expect(paths).toEqual(expect.arrayContaining(['manifest.json', 'worker.js', 'THIRD-PARTY-NOTICES.TXT', '_framework/dotnet.js']));
-    expect(paths.length).toBeLessThanOrEqual(34);
+    expect(paths.length).toBeLessThanOrEqual(36);
     expect(await measureBrotli('worker.js')).toBeLessThanOrEqual(20_000);
-    expect(sizes.reduce((total, size) => total + size, 0)).toBeLessThanOrEqual(3_650_000);
+    expect(sizes.reduce((total, size) => total + size, 0)).toBeLessThanOrEqual(3_850_000);
 });

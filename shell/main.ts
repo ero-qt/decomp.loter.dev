@@ -1,4 +1,4 @@
-import 'vscode/localExtensionHost';
+import '@codingame/monaco-vscode-extension-api/localExtensionHost';
 import { initialize } from '@codingame/monaco-vscode-api';
 import editorWorkerUrl from '@codingame/monaco-vscode-api/workers/editor.worker?worker&url';
 import configurationOverride from '@codingame/monaco-vscode-configuration-service-override';

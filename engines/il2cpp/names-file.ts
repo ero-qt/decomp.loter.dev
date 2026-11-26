@@ -106,7 +106,8 @@ function writeGlobals(game: Game, structs: ClassStructs): Omit<ScriptNames, 'Scr
         const CSharp = writeGlobalRecord(game, global);
         switch (global.kind) {
             case globalKinds.typeInfo: {
-                const signature = structs.pointerTypes.get(global.definition) ?? `struct ${plainClassStruct} *`;
+                const definitionType = structs.pointerTypes.get(global.definition) ?? `struct ${plainClassStruct} *`;
+                const signature = structs.classPointerTypes.get(global.class) ?? definitionType;
                 metadata.push({ Address: global.rva, Name: name(), Signature: signature, CSharp });
                 break;
             }
@@ -116,7 +117,8 @@ function writeGlobals(game: Game, structs: ClassStructs): Omit<ScriptNames, 'Scr
                 break;
             case globalKinds.methodDef:
             case globalKinds.methodRef:
-                methods.push({ Address: global.rva, Name: name(), Signature: `struct ${methodStruct} *`, CSharp });
+                const signature = structs.methodPointerTypes.get(global.class) ?? `struct ${methodStruct} *`;
+                methods.push({ Address: global.rva, Name: name(), Signature: signature, CSharp });
                 break;
             case globalKinds.stringLiteral:
                 strings.push({ Address: global.rva, Value: game.strings[global.definition] ?? '', CSharp });
@@ -142,10 +144,14 @@ function listPointedStructs(cType: string): string[] {
     return [...cType.matchAll(eachStructPointer)].map(match => match[1]);
 }
 
-/** The writers of a struct of the header and of the struct's lines for the C# printer. */
+/**
+ * The writers of a struct of the header and of the struct's lines for the C# printer, with whether the struct is the
+ * runtime's metadata of a class or a method.
+ */
 interface StructWriter {
     write(): string;
     writeLines(): string;
+    isMetadata?: boolean;
 }
 
 /** Finds the writers of a struct by the struct's name. */
@@ -157,7 +163,7 @@ function listStructWriters(types: CTypes, classStructs: ClassStructs): FindStruc
     const { game } = types;
     const writers = new Map<string, StructWriter>();
     for (const [name, write] of classStructs.structs) {
-        writers.set(name, { write, writeLines: () => '' });
+        writers.set(name, { write, writeLines: () => '', isMetadata: classStructs.metadataStructs.has(name) });
     }
     for (const [name, write] of listStructs(types)) {
         writers.set(name, { write, writeLines: () => '' });
@@ -170,6 +176,10 @@ function listStructWriters(types: CTypes, classStructs: ClassStructs): FindStruc
         const byOffset = (first: GameField, second: GameField) => first.offset! - second.offset!;
         const listFields = () => game.types[typeIndex].fields.filter(isStaticField).sort(byOffset);
         const writeLines = () => writeStructLines(name, game.types[typeIndex], 's', listFields());
+        writers.set(name, { write: writers.get(name)!.write, writeLines });
+    }
+    for (const [name, { typeIndex, csharpName, fields }] of classStructs.instanceStatics) {
+        const writeLines = () => writeStructLines(name, game.types[typeIndex], 's', fields(), csharpName);
         writers.set(name, { write: writers.get(name)!.write, writeLines });
     }
 
@@ -243,7 +253,9 @@ function indexGlobalLines({ ScriptMetadata, ScriptMetadataMethod, ScriptString }
 }
 
 // returns the function that writes the structs that the C types at addresses point to, with `structLevels` levels of
-// the structs that their members point to, and leaves out the structs that an earlier call wrote
+// the structs that their members point to, and leaves out the structs that an earlier call wrote. The structs of the
+// runtime's metadata don't take a level, because the code reaches a class's static fields through a method's
+// `MethodInfo`, its class and the class's runtime generic context.
 function createStructWriter(cTypes: Map<number, string>, findWriter: FindStructWriter): (rvas: number[]) => { header: string; lines: string } {
     // the most levels below each struct that the writes reached
     const reached = new Map<string, number>();
@@ -266,8 +278,9 @@ function createStructWriter(cTypes: Map<number, string>, findWriter: FindStructW
             }
 
             reached.set(name, levels);
-            if (levels > 0) {
-                queue.push(...listPointedStructs(text).map(pointed => ({ name: pointed, levels: levels - 1 })));
+            if (levels > 0 || writer.isMetadata) {
+                const below = writer.isMetadata ? levels : levels - 1;
+                queue.push(...listPointedStructs(text).map(pointed => ({ name: pointed, levels: below })));
             }
         }
 

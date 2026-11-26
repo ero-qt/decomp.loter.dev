@@ -1,5 +1,5 @@
 import { failed, ok, type Reply } from '#contract/reply';
-import type { Game, GameField, GameMethod, GameProperty, GameType, TypeReference } from './game';
+import type { Game, GameClass, GameField, GameMethod, GameProperty, GameType, TypeReference } from './game';
 
 const decoder = new TextDecoder();
 
@@ -77,9 +77,20 @@ class GameReader {
                 definition: this.readNumber() - 1,
                 isMember: this.readNumber() === 1,
             })),
+            class: this.readNumber() - 1,
         }));
+        const classes = this.readList(() => this.readClass());
 
-        return { fileVersion, layout, isLayoutGuessed, unityVersion, pointerSize, images, types, strings, globals };
+        return { fileVersion, layout, isLayoutGuessed, unityVersion, pointerSize, images, types, strings, globals, classes };
+    }
+
+    readClass(): GameClass {
+        const text = this.readString();
+        const definition = this.readNumber() - 1;
+        const typeArguments = this.readList(() => this.readReference()!);
+        const rgctx = this.readList(() => ({ kind: this.readNumber(), class: this.readNumber() - 1 }));
+
+        return { text, definition, typeArguments, rgctx };
     }
 
     readType(): GameType {

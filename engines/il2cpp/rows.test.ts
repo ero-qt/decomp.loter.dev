@@ -22,6 +22,7 @@ function gameOf(types: GameType[]): Game {
         types,
         strings: [],
         globals: [],
+        classes: [],
     };
 }
 

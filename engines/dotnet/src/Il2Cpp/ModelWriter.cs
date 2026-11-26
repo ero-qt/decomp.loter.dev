@@ -56,9 +56,20 @@ internal sealed class ModelWriter(Il2CppMetadata metadata, TypeNames? names)
         string layout = metadata.MetadataVersion.ToString(CultureInfo.InvariantCulture);
 
         int pointerSize = names is null ? 0 : LibCpp2IlMain.Binary!.is32Bit ? 4 : 8;
-        List<GlobalModel> globals = names is null ? [] : Globals.Read(metadata, names, typeIndexes);
+        GenericClasses? classes = names is null ? null : new(names, typeIndexes);
+        List<GlobalModel> globals = classes is null ? [] : Globals.Read(metadata, names!, typeIndexes, classes);
 
-        return new(fileVersion, layout, isLayoutGuessed, unityVersion.ToString(), pointerSize, images, types, strings, globals);
+        return new(
+            fileVersion,
+            layout,
+            isLayoutGuessed,
+            unityVersion.ToString(),
+            pointerSize,
+            images,
+            types,
+            strings,
+            globals,
+            classes?.Classes ?? []);
     }
 
     private TypeModel WriteType(Il2CppTypeDefinition type, int declaringType)

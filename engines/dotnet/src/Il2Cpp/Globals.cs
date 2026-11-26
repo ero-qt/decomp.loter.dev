@@ -16,7 +16,8 @@ namespace Decomp.Il2Cpp;
 ///     method's name, with the index of the type definition that it belongs to, or -1. A string literal's global has
 ///     the literal's index as its definition. The text is the global's C# form, like <c>typeof(Circle)</c> or
 ///     <c>List&lt;int&gt;.Add</c>, in which the type's name starts at <c>TypeStart</c>. A global of a method or a
-///     field has the member's index in its type, or -1.
+///     field has the member's index in its type, or -1. A TypeInfo global of a generic type's instance and the global
+///     of a generic type's method have the index of their class among the game's classes, or -1.
 /// </summary>
 internal sealed record GlobalModel(
     ulong Rva,
@@ -27,7 +28,8 @@ internal sealed record GlobalModel(
     string Text,
     int TypeStart,
     int TypeLength,
-    List<TextPart> Parts);
+    List<TextPart> Parts,
+    int Class = -1);
 
 /// <summary>
 ///     Reads the globals of the metadata's usages, through the metadata's usage lists before version 27 and through
@@ -35,13 +37,17 @@ internal sealed record GlobalModel(
 /// </summary>
 internal static class Globals
 {
-    public static List<GlobalModel> Read(Il2CppMetadata metadata, TypeNames names, Dictionary<Il2CppTypeDefinition, int> typeIndexes)
+    public static List<GlobalModel> Read(
+        Il2CppMetadata metadata,
+        TypeNames names,
+        Dictionary<Il2CppTypeDefinition, int> typeIndexes,
+        GenericClasses classes)
     {
         IEnumerable<MetadataUsage> usages = metadata.metadataUsageDic is null ? ListFoundUsages() : ListUsages(metadata);
         List<GlobalModel> globals = [];
         foreach (MetadataUsage usage in usages)
         {
-            GlobalModel? global = TryWrite(usage, metadata, names, typeIndexes);
+            GlobalModel? global = TryWrite(usage, metadata, names, typeIndexes, classes);
             if (global is not null)
             {
                 globals.Add(global);
@@ -99,7 +105,8 @@ internal static class Globals
         MetadataUsage usage,
         Il2CppMetadata metadata,
         TypeNames names,
-        Dictionary<Il2CppTypeDefinition, int> typeIndexes)
+        Dictionary<Il2CppTypeDefinition, int> typeIndexes,
+        GenericClasses classes)
     {
         Il2CppBinary binary = LibCpp2IlMain.Binary!;
 
@@ -117,12 +124,15 @@ internal static class Globals
 
             return usage.Type switch
             {
-                MetadataUsageType.TypeInfo => WriteType(rva, usage, names, text, ""),
-                MetadataUsageType.Type => WriteType(rva, usage, names, text, ".TypeHandle"),
+                MetadataUsageType.TypeInfo => WriteType(rva, usage, names, text, "", classes),
+                MetadataUsageType.Type => WriteType(rva, usage, names, text, ".TypeHandle", null),
                 MetadataUsageType.MethodDef => WriteMethod(rva, usage, usage.AsMethod(), [], [], text, typeIndexes),
                 MetadataUsageType.FieldInfo => WriteField(rva, metadata.fieldRefs[usage.RawValue], text, typeIndexes),
                 MetadataUsageType.StringLiteral => WriteLiteral(rva, usage, metadata, text),
-                MetadataUsageType.MethodRef => WriteMethodReference(rva, usage, usage.AsGenericMethodRef(), text, typeIndexes),
+                MetadataUsageType.MethodRef => WriteMethodReference(rva, usage, usage.AsGenericMethodRef(), text, typeIndexes) with
+                {
+                    Class = classes.AddMethodClass(binary.GetMethodSpec((int)usage.RawValue)),
+                },
                 _ => null,
             };
         }
@@ -132,7 +142,8 @@ internal static class Globals
         }
     }
 
-    private static GlobalModel WriteType(ulong rva, MetadataUsage usage, TypeNames names, GlobalText text, string after)
+    // gives a TypeInfo global of a generic type's instance its class, whose static fields depend on the arguments
+    private static GlobalModel WriteType(ulong rva, MetadataUsage usage, TypeNames names, GlobalText text, string after, GenericClasses? classes)
     {
         Il2CppType type = LibCpp2IlMain.Binary!.GetType(Il2CppVariableWidthIndex<Il2CppType>.MakeTemporaryForFixedWidthUsage((int)usage.RawValue));
         TypeReference reference = names.Write(type);
@@ -144,7 +155,9 @@ internal static class Globals
         text.Add(")");
         text.Add(after);
 
-        return new(rva, (int)usage.Type, reference.Name, reference.Definition, -1, text.ToString(), typeStart, typeLength, text.Parts);
+        int instance = classes?.AddInstance(type) ?? -1;
+
+        return new(rva, (int)usage.Type, reference.Name, reference.Definition, -1, text.ToString(), typeStart, typeLength, text.Parts, instance);
     }
 
     // writes a method's global as `Type.Method`, with the type arguments of a generic type's or method's instance

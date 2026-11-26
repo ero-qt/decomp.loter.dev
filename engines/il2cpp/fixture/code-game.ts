@@ -1,4 +1,5 @@
 import { fieldAttributes, type FixtureImage, type FixtureMethod, type FixtureType, images, methodAttributes, typeAttributes } from './model';
+import { singletonGame } from './singleton';
 
 const instance = methodAttributes.public | methodAttributes.hideBySig;
 const special = instance | methodAttributes.specialName;
@@ -300,14 +301,15 @@ const square = 'Shapes.Square';
  * with a backing field, an operator, a constructor, 2 getters that share their code, `Circle.Radius` and
  * `Square.Side`, a static method that shares the operator's code, 2 static methods with the same parameters that share
  * their code, 2 empty constructors and an empty method that share their code, a constructor's call through code that
- * isn't a method's, a local function with the compiler's name and the class of the exception that the runtime's helper
- * raises.
+ * isn't a method's, a local function with the compiler's name, the class of the exception that the runtime's helper
+ * raises and a static property that reads a generic singleton's instance through a runtime generic context.
  */
 export const codeImages: FixtureImage[] = [
     { ...images[0], types: [...images[0].types, type('System.NullReferenceException', 'System.Object', {})] },
     {
         name: 'Assembly-CSharp.dll',
-        code: runtime + methods,
+        code: runtime + methods + singletonGame.code,
+        methodSpecs: singletonGame.methodSpecs,
         types: [
             type(shape, 'System.Object', {
                 flags: typeAttributes.public | typeAttributes.abstract,
@@ -392,6 +394,7 @@ export const codeImages: FixtureImage[] = [
                 ],
                 properties: [{ name: 'Side', getter: 'get_Side', setter: null }],
             }),
+            ...singletonGame.types,
         ],
     },
 ];

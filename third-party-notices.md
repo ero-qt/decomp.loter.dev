@@ -108,7 +108,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 ## Source of the native engine
 
-The LGPL lets you change the LGPL parts of the native engine's module and build the module again. The site serves what you need in `engines/native/source`: the file `build/versions.json` with the pinned commit or tarball hash of each Meson subproject of Rizin, the file `submodules.txt` with links to the commits of the forks of Rizin and rz-ghidra and of Ghidra and pugixml, the engine's own C code, the build scripts, the texts of the GPL and the LGPL, and a readme that tells how to build the module. Each entry below links its pinned commit or tarball. The forks are at https://github.com/ero-qt/rizin/tree/93221df081094d83b65b6e907684cb787190efbf and https://github.com/ero-qt/rz-ghidra/tree/b8f3785b1818944c9899b4d7f1383c0d86b021cf, where each change for the browser is a commit of its own.
+The LGPL lets you change the LGPL parts of the native engine's module and build the module again. The site serves what you need in `engines/native/source`: the file `build/versions.json` with the pinned commit or tarball hash of each Meson subproject of Rizin, the file `submodules.txt` with links to the commits of the forks of Rizin and rz-ghidra and of Ghidra and pugixml, the engine's own C code, the build scripts, the texts of the GPL and the LGPL, and a readme that tells how to build the module. Each entry below links its pinned commit or tarball. The forks are at https://github.com/ero-qt/rizin/tree/93221df081094d83b65b6e907684cb787190efbf and https://github.com/ero-qt/rz-ghidra/tree/b13ab57dccbcd009a5ef546f34f2247b661c6fda, where each change for the browser is a commit of its own.
 
 ## rzwasi
 
@@ -116,7 +116,7 @@ Three commits of the Rizin fork port the changes that [rzwasi](https://github.co
 
 ## rz-ghidra
 
-The native engine decompiles functions with [rz-ghidra](https://github.com/rizinorg/rz-ghidra) from its `dev` branch at commit `20da9f1f2dc9eb8b476b92a6711b5f6e2ca5d476`. It takes rz-ghidra from the fork [ero-qt/rz-ghidra](https://github.com/ero-qt/rz-ghidra/tree/b8f3785b1818944c9899b4d7f1383c0d86b021cf) at commit `b8f3785b1818944c9899b4d7f1383c0d86b021cf`, which adds changes to that commit. Its files have copyright lines like "Copyright 2019-2021 Florian Märkl <info@florianmaerkl.de>". It's under the GNU Lesser General Public License 3.0 or later, whose text is at the end of this file.
+The native engine decompiles functions with [rz-ghidra](https://github.com/rizinorg/rz-ghidra) from its `dev` branch at commit `20da9f1f2dc9eb8b476b92a6711b5f6e2ca5d476`. It takes rz-ghidra from the fork [ero-qt/rz-ghidra](https://github.com/ero-qt/rz-ghidra/tree/b13ab57dccbcd009a5ef546f34f2247b661c6fda) at commit `b13ab57dccbcd009a5ef546f34f2247b661c6fda`, which adds changes to that commit. Its files have copyright lines like "Copyright 2019-2021 Florian Märkl <info@florianmaerkl.de>". It's under the GNU Lesser General Public License 3.0 or later, whose text is at the end of this file.
 
 ## Ghidra
 

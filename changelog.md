@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- A static field that a method reads through a generic class, like `Singleton<Circle>.Instance`, reads as `Class.field` in the C# body. IL2CPP finds that class at run time in a table of the method's class. The engine now reads that table from the game. Both names link to their rows, the class to its generic type.
+
 ## [1.4.1] - 2026-11-26
 
 ### Changed

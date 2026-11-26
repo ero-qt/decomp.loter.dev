@@ -57,6 +57,19 @@ export interface FixtureType {
     methods: FixtureMethod[];
     properties: FixtureProperty[];
     primitive?: number;
+    /** The names of a generic type's parameters. A member's type gives a parameter as `Shapes.Singleton`1!0`. */
+    genericParameters?: string[];
+    /** The entries of a generic type's runtime generic context, which the code that its instances share reads. */
+    rgctx?: FixtureRgctx[];
+}
+
+/** The kinds of a runtime generic context's entries, by the numbers of IL2CPP's `Il2CppRGCTXDataType`. */
+export const rgctxKinds = { type: 1, class: 2 };
+
+/** An entry of a runtime generic context, like the class of `Shapes.Singleton`1<Shapes.Singleton`1!0>`. */
+export interface FixtureRgctx {
+    kind: number;
+    type: string;
 }
 
 export interface FixtureImage {
@@ -69,6 +82,11 @@ export interface FixtureImage {
      * `METHOD_Shapes_Circle__Area`.
      */
     code?: string;
+    /**
+     * The instances of generic types' methods that the image's code uses by their indexes among the instances of
+     * all images, like `Shapes.Singleton`1.get_Instance` with the class argument `Shapes.Circle`.
+     */
+    methodSpecs?: { method: string; classArguments: string[] }[];
 }
 
 const instance = methodAttributes.public | methodAttributes.hideBySig;

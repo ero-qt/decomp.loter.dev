@@ -96,6 +96,7 @@ test('listRows lists a game with 100,000 types, each in its own namespace, in le
         types,
         strings: [],
         globals: [],
+        classes: [],
     };
 
     const started = performance.now();

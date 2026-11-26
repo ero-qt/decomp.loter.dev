@@ -138,5 +138,5 @@ test("dotnet engine's folder holds a small worker, the runtime with LibCpp2IL fo
     expect(paths).toEqual(expect.arrayContaining(['manifest.json', 'worker.js', 'THIRD-PARTY-NOTICES.TXT', '_framework/dotnet.js']));
     expect(paths.length).toBeLessThanOrEqual(36);
     expect(await measureBrotli('worker.js')).toBeLessThanOrEqual(20_000);
-    expect(sizes.reduce((total, size) => total + size, 0)).toBeLessThanOrEqual(3_850_000);
+    expect(sizes.reduce((total, size) => total + size, 0)).toBeLessThanOrEqual(3_900_000);
 });

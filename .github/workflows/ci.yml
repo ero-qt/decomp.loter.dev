@@ -127,24 +127,23 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # lists each engine's folder with a manifest and the folders of the host, the release scripts and the shell, but
-      # not the native engine's and the shared helpers', whose tests run in their own jobs
+      # leaves out engines/shared, whose tests run in the test-shared job
       - name: list the test folders
         id: folders
         run: |
           {
-            dirname engines/*/manifest.json | grep -vx engines/native
+            dirname engines/*/manifest.json
             printf '%s\n' host release shell
           } | sort | jq -Rcs '"folders=" + (split("\n")[:-1] | tojson)' -r >> "$GITHUB_OUTPUT"
 
-  # sets up the JDK for a folder with Java fixture sources, the .NET SDK for a folder with a C# project and for the IL2CPP
-  # engine, which runs in the .NET engine's project, and runs the folder's own ci-setup.sh, so an engine only adds files to
-  # its own folder
+  # sets up each folder's tools from marker files and its own ci-setup.sh, so an engine only adds files to its own
+  # folder. The IL2CPP engine gets .NET because it runs in the .NET engine's project. The native engine's tests get the
+  # submodules and Emscripten because they check the module's stamp against them.
   test:
     name: test ${{ matrix.folder }}
     needs: [list, build]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: ${{ matrix.folder == 'engines/native' && 60 || 30 }}
     strategy:
       fail-fast: false
       matrix:
@@ -154,6 +153,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          submodules: ${{ matrix.folder == 'engines/native' && 'recursive' || 'false' }}
       - name: set up Bun and packages
         uses: ./.github/actions/bun
       - name: set up JDK 21
@@ -165,6 +165,9 @@ jobs:
       - name: set up .NET SDK
         if: hashFiles(format('{0}/**/*.csproj', matrix.folder)) != '' || matrix.folder == 'engines/il2cpp'
         uses: ./.github/actions/dotnet
+      - name: set up the native tools
+        if: matrix.folder == 'engines/native'
+        uses: ./.github/actions/native-tools
       - name: run the folder's setup
         if: hashFiles(format('{0}/ci-setup.sh', matrix.folder)) != ''
         env:
@@ -172,16 +175,16 @@ jobs:
         run: '"$FOLDER/ci-setup.sh"'
       - name: set up the page tests
         uses: ./.github/actions/page-tests
-      # keeps the real Unity builds that the IL2CPP tests download, keyed on the hashes in real-builds.ts
       - name: cache the real Unity builds
         if: matrix.folder == 'engines/il2cpp'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: artifacts/il2cpp-real
           key: il2cpp-real-${{ hashFiles('engines/il2cpp/real-builds.ts') }}
-      # takes the module that the native job built, because the IL2CPP engine's method bodies come from the native engine
+      # takes the module that the native job built, with its stamp, which matches the same commit and tools, so the
+      # native engine's tests don't build it again and the IL2CPP engine's method bodies come from it
       - name: download the native module
-        if: matrix.folder == 'engines/il2cpp'
+        if: matrix.folder == 'engines/native' || matrix.folder == 'engines/il2cpp'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: native
@@ -229,48 +232,5 @@ jobs:
         run: |
           shopt -s globstar
           for file in engines/shared/**/*.test.ts; do
-            bun test "./$file"
-          done
-
-  test-native:
-    name: test engines/native
-    needs: [native, build]
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - name: check out
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          submodules: recursive
-      - name: set up Bun and packages
-        uses: ./.github/actions/bun
-      # installs the clang and LLVM's tools that build the fixture, because Emscripten's LLVM only builds WebAssembly
-      - name: set up the native tools
-        uses: ./.github/actions/native-tools
-        with:
-          packages: clang lld llvm
-      # takes the newest LLVM folder with the fixture's tools, because the runner has more than one
-      - name: find LLVM's folder
-        run: |
-          for folder in $(ls -d /usr/lib/llvm-*/bin | sort -rV); do
-            if [ -x "$folder/clang++" ] && [ -x "$folder/ld.lld" ] && [ -x "$folder/llvm-lipo" ]; then
-              echo "NATIVE_LLVM=$folder" >> "$GITHUB_ENV"
-              exit 0
-            fi
-          done
-          echo "No folder in /usr/lib has clang++, ld.lld and llvm-lipo." >&2
-          exit 1
-      - name: set up the page tests
-        uses: ./.github/actions/page-tests
-      # takes the module with its stamp, which matches the same commit and tools, so the tests don't build it again
-      - name: download the native module
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: native
-          path: artifacts/native/out
-      - name: run the tests
-        run: |
-          for file in engines/native/*.test.ts; do
             bun test "./$file"
           done

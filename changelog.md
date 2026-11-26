@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-11-26
+
 ### Fixed
 
 - A static field that a method reads through a generic class, like `Singleton<Circle>.Instance`, reads as `Class.field` in the C# body. IL2CPP finds that class at run time in a table of the method's class. The engine now reads that table from the game. Both names link to their rows, the class to its generic type. The steps that find the class and run its static constructor don't show in the body.
@@ -178,7 +180,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 - A native engine that opens ELF, PE and Mach-O programs and libraries with Rizin and Ghidra's decompiler and shows their functions and classes as C. It also reads a PE file's PDB file for names and types and finds the classes of stripped files through their RTTI.
 - A privacy notice about what stays in your browser and what the server keeps.
 
-[Unreleased]: https://github.com/ero-qt/decomp.loter.dev/compare/1.4.1...HEAD
+[Unreleased]: https://github.com/ero-qt/decomp.loter.dev/compare/1.4.2...HEAD
+[1.4.2]: https://github.com/ero-qt/decomp.loter.dev/compare/1.4.1...1.4.2
 [1.4.1]: https://github.com/ero-qt/decomp.loter.dev/compare/1.4.0...1.4.1
 [1.4.0]: https://github.com/ero-qt/decomp.loter.dev/compare/1.3.0...1.4.0
 [1.3.0]: https://github.com/ero-qt/decomp.loter.dev/compare/1.2.2...1.3.0

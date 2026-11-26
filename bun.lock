@@ -8,6 +8,7 @@
         "@codingame/monaco-vscode-configuration-service-override": "40.0.0",
         "@codingame/monaco-vscode-cpp-default-extension": "40.0.0",
         "@codingame/monaco-vscode-csharp-default-extension": "40.0.0",
+        "@codingame/monaco-vscode-extension-api": "40.0.0",
         "@codingame/monaco-vscode-files-service-override": "40.0.0",
         "@codingame/monaco-vscode-java-default-extension": "40.0.0",
         "@codingame/monaco-vscode-languages-service-override": "40.0.0",
@@ -20,7 +21,6 @@
         "@codingame/monaco-vscode-workbench-service-override": "40.0.0",
         "@katana-project/asm": "0.25.4",
         "@run-slicer/vf": "0.6.4-1.12.0",
-        "vscode": "npm:@codingame/monaco-vscode-extension-api@40.0.0",
       },
       "devDependencies": {
         "@types/bun": "1.4.5",
@@ -48,6 +48,8 @@
     "@codingame/monaco-vscode-csharp-default-extension": ["@codingame/monaco-vscode-csharp-default-extension@40.0.0", "", { "dependencies": { "@codingame/monaco-vscode-api": "40.0.0" } }, "sha512-lMyw81ZsLXPD9hrhHyoq9u7Dqk0UEgCVoPyJEsomh1G5DrtmVm69nvQyWg3I0odkJHWEPp8j+m0cvuD73fWfXA=="],
 
     "@codingame/monaco-vscode-environment-service-override": ["@codingame/monaco-vscode-environment-service-override@40.0.0", "", { "dependencies": { "@codingame/monaco-vscode-api": "40.0.0" } }, "sha512-/dtm621l+HLmA4Q3daMOG7fTcEpfxsESbogYAoPV1XHsQ9Ghmmc8UqB1a0tRVxR91QbB4zUkbTYViFYGBHZIBQ=="],
+
+    "@codingame/monaco-vscode-extension-api": ["@codingame/monaco-vscode-extension-api@40.0.0", "", { "dependencies": { "@codingame/monaco-vscode-api": "40.0.0", "@codingame/monaco-vscode-extensions-service-override": "40.0.0" } }, "sha512-L0c3tpz21YqVwEPEJrgMIGH/LNJzqQD3j50hexTu85VrCyqhfNLbXOw3KyPpofE0+Csv/7MQIfobgdPIKW0rJA=="],
 
     "@codingame/monaco-vscode-extensions-service-override": ["@codingame/monaco-vscode-extensions-service-override@40.0.0", "", { "dependencies": { "@codingame/monaco-vscode-api": "40.0.0", "@codingame/monaco-vscode-files-service-override": "40.0.0" } }, "sha512-GhDOh8cwqVvowwVgyCcznGhbW6yl4NGFyQhPDsPJpBcJGrAPpA1YB9SZEVLS36isYhtflpXSINlfzJ7FpP1yLA=="],
 
@@ -262,7 +264,5 @@
     "uqr": ["uqr@0.1.3", "", {}, "sha512-0rjE8iEJe4YmT9TOhwsZtqCMRLc5DXZUI2UEYUUg63ikBkqqE5EYWaI0etFe/5KUcmcYwLih2RND1kq+hrUJXA=="],
 
     "vite": ["vite@8.3.8", "", { "dependencies": { "lightningcss": "^1.33.0", "picomatch": "^4.0.7", "postcss": "^8.5.32", "rolldown": "~1.2.18", "tinyglobby": "^0.2.17" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "peerDependencies": { "@types/node": "^20.19.0 || >=22.12.0", "@vitejs/devtools": "^0.7.1 || ^0.8.0", "esbuild": "^0.27.0 || ^0.28.0", "jiti": ">=1.21.0", "less": "^4.0.0", "sass": "^1.70.0", "sass-embedded": "^1.70.0", "stylus": ">=0.54.8", "sugarss": "^5.0.0", "terser": "^5.16.0", "tsx": "^4.8.1", "yaml": "^2.4.2" }, "optionalPeers": ["@types/node", "@vitejs/devtools", "esbuild", "jiti", "less", "sass", "sass-embedded", "stylus", "sugarss", "terser", "tsx", "yaml"], "bin": { "vite": "bin/vite.js" } }, "sha512-LzOn3h9rG/0vhLdXrV4yJ4QFA9eEoqCl+Yx+kGJd7aB9w6nfNgVHKSYwLPZUHrz4ZGa+t+kXjV9itvcHDLQouA=="],
-
-    "vscode": ["@codingame/monaco-vscode-extension-api@40.0.0", "", { "dependencies": { "@codingame/monaco-vscode-api": "40.0.0", "@codingame/monaco-vscode-extensions-service-override": "40.0.0" } }, "sha512-L0c3tpz21YqVwEPEJrgMIGH/LNJzqQD3j50hexTu85VrCyqhfNLbXOw3KyPpofE0+Csv/7MQIfobgdPIKW0rJA=="],
   }
 }

@@ -4,7 +4,7 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "lib": ["es2024", "dom", "dom.iterable"],
-    "types": ["bun", "trusted-types"],
+    "types": ["@codingame/monaco-vscode-extension-api", "bun", "trusted-types"],
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,

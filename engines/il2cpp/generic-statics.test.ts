@@ -41,3 +41,15 @@ test("the static field of a generic class's instance links to the field and the 
     expect(findTarget(board, 'Singleton<Circle>.instance', 'instance')).toBe(rowTarget('Shapes.Singleton<T>.instance'));
     expect(findTarget(board, 'Singleton<Circle>.instance', 'Singleton<Circle>')).toBe(rowTarget('Shapes.Singleton<T>'));
 }, 120000);
+
+test("a body doesn't show the checks that run a generic class's static constructor or the lookups of the class", async () => {
+    const { largest } = await readLargest();
+
+    expect(largest).toContain('Singleton<Circle>.instance');
+    expect(largest).toContain('.<Radius>k__BackingField;');
+    expect(largest).not.toContain('bitflags1');
+    expect(largest).not.toContain('rgctx_data');
+    expect(largest).not.toContain('klass');
+    expect(largest).not.toContain('_c ');
+    expect(largest).not.toContain('sub_');
+}, 120000);

@@ -24,6 +24,7 @@ import {
     formatRecord,
     nameType,
     writeArrayLines,
+    writeMetadataLines,
     writeSharedRecord,
     writeSharerRecord,
     writeStructLines,
@@ -163,7 +164,8 @@ function listStructWriters(types: CTypes, classStructs: ClassStructs): FindStruc
     const { game } = types;
     const writers = new Map<string, StructWriter>();
     for (const [name, write] of classStructs.structs) {
-        writers.set(name, { write, writeLines: () => '', isMetadata: classStructs.metadataStructs.has(name) });
+        const isMetadata = classStructs.metadataStructs.has(name);
+        writers.set(name, { write, writeLines: () => (isMetadata ? writeMetadataLines(name) : ''), isMetadata });
     }
     for (const [name, write] of listStructs(types)) {
         writers.set(name, { write, writeLines: () => '' });

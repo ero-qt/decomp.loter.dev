@@ -134,6 +134,14 @@ export function writeStructLines(structName: string, type: GameType, kind: 'o' |
 }
 
 /**
+ * Writes the line of a struct of the runtime's metadata for the native engine's C# printer, with `m`, because C#
+ * doesn't have a form for a class's or a method's metadata. The struct keeps its C name.
+ */
+export function writeMetadataLines(structName: string): string {
+    return `#${structName}\t${structName}\tm\n`;
+}
+
+/**
  * Writes the lines of an array's struct for the native engine's C# printer, the array's C# name with `a` for the
  * struct of an array's objects, and the C# name of its length.
  */

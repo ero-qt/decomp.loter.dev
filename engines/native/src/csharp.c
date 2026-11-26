@@ -139,7 +139,7 @@ void csharp_add_global(Session *session, ut64 addr, const char *record) {
 /**
  * \brief Reads a line of a names file about a struct. A line with `#` has the struct's name, the C# name of its type
  * and `o` for the struct of a class's objects, `a` for the struct of an array's objects, `s` for the struct of a
- * class's static fields or `-`. A line with `.` has
+ * class's static fields, `m` for the runtime's metadata of a class or a method or `-`. A line with `.` has
  * the struct's name, a member's C name and the member's C# name, which the member of the type database gets,
  * because C doesn't take every name that C# has, like `<Radius>k__BackingField`.
  */
@@ -159,6 +159,7 @@ void csharp_add_type_line(Session *session, const char *line) {
 			type->type.is_array = second[1] == 'a';
 			type->type.is_object = second[1] == 'o' || type->type.is_array;
 			type->type.is_static = second[1] == 's';
+			type->type.is_metadata = second[1] == 'm';
 			ht_sp_update(session->csharp_types, struct_name, type);
 		}
 		free(struct_name);

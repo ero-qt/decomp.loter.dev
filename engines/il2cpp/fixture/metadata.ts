@@ -187,8 +187,27 @@ function writeMembers(layout: Layout, strings: StringTable, metadataLayout: Fixt
     };
 }
 
+// writes the generic container of each generic type with its parameters, and returns the containers' indexes by the
+// types' indexes
+function writeGenericContainers(layout: Layout, strings: StringTable) {
+    const genericContainers = new Records();
+    const genericParameters = new Records();
+    const containerIndexes = new Map<number, number>();
+
+    for (const [typeIndex, start] of layout.parameterStarts) {
+        const names = layout.types[typeIndex].type.genericParameters!;
+        containerIndexes.set(typeIndex, containerIndexes.size);
+        genericContainers.int32(typeIndex, names.length, 0, start);
+        names.forEach((name, number) => {
+            genericParameters.int32(containerIndexes.get(typeIndex)!, strings.index(name)).uint16(0, 0, number, 0);
+        });
+    }
+
+    return { genericContainers: genericContainers.toBytes(), genericParameters: genericParameters.toBytes(), containerIndexes };
+}
+
 // writes the type definition records with the nested type and interface lists that they point into
-function writeTypes(layout: Layout, strings: StringTable) {
+function writeTypes(layout: Layout, strings: StringTable, containerIndexes: Map<number, number>) {
     const typeDefinitions = new Records();
     const nestedTypes = new Records();
     const interfaces = new Records();
@@ -207,7 +226,8 @@ function writeTypes(layout: Layout, strings: StringTable) {
         const isValueType = type.kind === 'struct' || type.kind === 'enum';
         const bitfield = (isValueType ? 1 : 0) | (type.kind === 'enum' ? 2 : 0);
 
-        typeDefinitions.int32(strings.index(type.name), strings.index(namespace), index, declaring, parent, element, -1, type.flags);
+        const container = containerIndexes.get(index) ?? -1;
+        typeDefinitions.int32(strings.index(type.name), strings.index(namespace), index, declaring, parent, element, container, type.flags);
         typeDefinitions.int32(counts.field, counts.method, 0, counts.property, counts.nested, counts.interface, 0, 0);
         typeDefinitions.uint16(type.methods.length, type.properties.length, type.fields.length, 0);
         typeDefinitions.uint16(nested.length, 0, type.interfaces.length, 0);
@@ -256,10 +276,12 @@ function writeStringLiterals(literals: string[]) {
 /** Writes the fixture's `global-metadata.dat` in a layout, 31.1 when the caller doesn't give one. */
 export function writeMetadata(layout: Layout, literals: string[], metadataLayout: FixtureLayout = fixtureLayouts['31.1']): Uint8Array {
     const strings = new StringTable();
+    const { containerIndexes, ...generics } = writeGenericContainers(layout, strings);
     const sections: Partial<Record<SectionName, Uint8Array>> = {
         ...writeStringLiterals(literals),
         ...writeMembers(layout, strings, metadataLayout),
-        ...writeTypes(layout, strings),
+        ...generics,
+        ...writeTypes(layout, strings, containerIndexes),
         ...writeImages(layout, strings),
     };
     sections.string = strings.toBytes();

@@ -1,12 +1,18 @@
 import { expect, test } from 'bun:test';
-import type { Game } from './game';
+import { nameStructs } from './c-types';
+import { listClassStructs, plainClassStruct } from './class-structs';
+import { type Game, globalKinds } from './game';
 import { writeNativeNames } from './names-file';
-import { loadTestRuntime, readFixture, readGame } from './testing';
+import { loadTestRuntime, readCodeGame, readFixture, readGame, readOlderLayout } from './testing';
 
 const runtime = await loadTestRuntime();
 
 async function readFixtureGame(): Promise<Game> {
     return readGame(runtime, await (await readFixture('global-metadata.dat')).bytes(), await (await readFixture('GameAssembly.dll')).bytes());
+}
+
+async function readBuild(read: (name: string) => Promise<File>): Promise<Game> {
+    return readGame(runtime, await (await read('global-metadata.dat')).bytes(), await (await read('GameAssembly.dll')).bytes());
 }
 
 // writes the lines of a game's methods and the header with the structs of every method's signature
@@ -102,4 +108,37 @@ test('il2cpp engine finds the metadata globals of a libil2cpp.so without section
 
     expect(globals.length).toBeGreaterThan(0);
     expect(readGlobals(stripped)).toEqual(globals);
+});
+
+test("the header types a method's global as IL2CPP's MethodInfo, with the class after the method's 3 pointers", async () => {
+    const game = await readBuild(readCodeGame);
+    const global = game.globals.find(found => found.kind === globalKinds.methodDef)!;
+
+    const { header, globals } = writeNativeNames(game).writeTypes([global.rva]);
+
+    expect(globals).toContain(`@${global.rva.toString(16)} Method$Shapes.Square..ctor()\tstruct MethodInfo *\t`);
+    const pointers = '    void *methodPointer;\n    void *virtualMethodPointer;\n    void *invoker_method;\n    void *name;\n';
+    expect(header).toContain(`struct MethodInfo {\n${pointers}    struct Il2CppClass *klass;\n`);
+});
+
+test("the header has the bit fields of a version 31 class after the class's sizes, counts and alignments", async () => {
+    const game = await readBuild(readCodeGame);
+    const global = game.globals.find(found => found.kind === globalKinds.typeInfo)!;
+
+    const { header } = writeNativeNames(game).writeTypes([global.rva]);
+
+    // the bit fields start at 0x135, where a 2022.3 build tests the bit of `initialized_and_no_error`
+    const sizes = '    uint32_t instance_size;\n    uint32_t stack_slot_size;\n    uint32_t actualSize;\n';
+    const alignments = '    uint8_t minimumAlignment;\n    uint8_t packingSize;\n    uint8_t bitflags1;\n';
+    expect(header).toContain(`    uint64_t cctor_thread;\n    void *genericContainerHandle;\n${sizes}`);
+    expect(header).toContain(`    uint8_t rank;\n${alignments}`);
+});
+
+test("the header has the natural alignment of a version 29 class, which version 31 trades for the stack slot's size", async () => {
+    const game = await readBuild(readOlderLayout);
+
+    const header = listClassStructs(nameStructs(game, game.pointerSize)).structs.get(plainClassStruct)!();
+
+    expect(header).toContain('    uint8_t minimumAlignment;\n    uint8_t naturalAligment;\n    uint8_t packingSize;\n    uint8_t bitflags1;\n');
+    expect(header).toContain('    uint32_t instance_size;\n    uint32_t actualSize;\n');
 });

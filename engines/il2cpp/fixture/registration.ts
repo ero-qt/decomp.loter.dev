@@ -1,4 +1,4 @@
-import { functionName, type LaidOutType, type Layout } from './layout';
+import { type BinaryType, functionName, type LaidOutType, type Layout } from './layout';
 import { type FixtureLayout, fixtureLayouts } from './metadata';
 import { fieldAttributes, type FixtureField, fullName } from './model';
 
@@ -20,6 +20,29 @@ typedef struct Il2CppType {
 	const void *data;
 	unsigned int bits;
 } Il2CppType;
+
+struct GenericInst {
+	usize type_argc;
+	const Il2CppType *const *type_argv;
+};
+
+struct GenericClass {
+	const Il2CppType *type;
+	const struct GenericInst *class_inst;
+	const struct GenericInst *method_inst;
+	void *cached_class;
+};
+
+struct TokenRange {
+	unsigned int token;
+	int start;
+	int length;
+};
+
+struct RgctxDefinition {
+	int type;
+	const int *data;
+};
 
 struct Il2CppCodeGenModule {
 	const char *moduleName;
@@ -170,20 +193,70 @@ function writeFunctions(layout: Layout): string[] {
     return [...lines, ...writeImageCode(layout)];
 }
 
+function writeTypeData(data: BinaryType['data']): string {
+    if ('element' in data) {
+        return `&type${data.element}`;
+    }
+
+    return 'genericClass' in data ? `&genericClass${data.genericClass}` : `(const void *)${'definition' in data ? data.definition : data.parameter}`;
+}
+
+// writes the lists of generic arguments and the generic classes, which point to the types that the type table defines
+// after them
+function writeGenerics(layout: Layout): string[] {
+    const declarations = layout.binaryTypes.map((_, index) => `static const Il2CppType type${index};`);
+    const insts = layout.genericInsts.flatMap((types, index) => [
+        `static const Il2CppType *const instTypes${index}[] = { ${types.map(type => `&type${type}`).join(', ')} };`,
+        `static const struct GenericInst inst${index} = { ${types.length}, instTypes${index} };`,
+    ]);
+    const classes = layout.genericClasses.map(({ definition, inst }, index) => {
+        return `static const struct GenericClass genericClass${index} = { &type${definition}, &inst${inst}, 0, 0 };`;
+    });
+
+    return [...declarations, ...insts, ...classes];
+}
+
 function writeTypeTable(layout: Layout): string[] {
     const lines = layout.binaryTypes.map(({ type, attributes, isValueType, isByReference, data }, index) => {
         // packs attrs, type, num_mods, byref, pinned and valuetype like the 5-bit num_mods layout since metadata 27.2
         const bits = (attributes | (type << 16) | ((isByReference ? 1 : 0) << 29) | ((isValueType ? 1 : 0) << 31)) >>> 0;
-        const pointer = 'definition' in data ? `(const void *)${data.definition}` : `&type${data.element}`;
 
-        return `static const Il2CppType type${index} = { ${pointer}, 0x${bits.toString(16)}u };`;
+        return `static const Il2CppType type${index} = { ${writeTypeData(data)}, 0x${bits.toString(16)}u };`;
     });
     const entries = layout.binaryTypes.map((_, index) => `&type${index}`).join(', ');
 
     return [...lines, `static const Il2CppType *const types[] = { ${entries} };`];
 }
 
-function writeTypeData(layout: Layout, pointerSize: number): string[] {
+// writes a list as a C array, or uses the empty table for an empty list, because C doesn't have empty arrays
+function writeList(name: string, type: string, items: string[]): { lines: string[]; pointer: string } {
+    if (items.length === 0) {
+        return { lines: [], pointer: 'emptyTable' };
+    }
+
+    return { lines: [`static ${type} ${name}[] = { ${items.join(', ')} };`], pointer: name };
+}
+
+// writes the token ranges and the definitions of the runtime generic contexts of an image's types
+function writeRgctxs(layout: Layout, imageIndex: number): { lines: string[]; fields: string } {
+    const owners = layout.types.filter(({ type, imageIndex: index }) => index === imageIndex && type.rgctx !== undefined);
+    const entries = owners.flatMap(({ type }) => type.rgctx!);
+    const data = entries.map((entry, index) => `static const int rgctxData${imageIndex}_${index} = ${layout.typeIndex(entry.type)};`);
+    let start = 0;
+    const ranges = writeList(`rgctxRanges${imageIndex}`, 'const struct TokenRange', owners.map(({ type, token }) => {
+        start += type.rgctx!.length;
+
+        return `{ 0x${token.toString(16)}u, ${start - type.rgctx!.length}, ${type.rgctx!.length} }`;
+    }));
+    const definitions = writeList(`rgctxs${imageIndex}`, 'const struct RgctxDefinition', entries.map((entry, index) => {
+        return `{ ${entry.kind}, &rgctxData${imageIndex}_${index} }`;
+    }));
+    const fields = `${owners.length}, ${ranges.pointer}, ${entries.length}, ${definitions.pointer}`;
+
+    return { lines: [...data, ...ranges.lines, ...definitions.lines], fields };
+}
+
+function writeTypeSizes(layout: Layout, pointerSize: number): string[] {
     const lines: string[] = [];
     for (const owner of layout.types) {
         const { offsets, instanceSize, staticSize } = placeFields(layout, owner, pointerSize);
@@ -204,18 +277,25 @@ function writeModules(layout: Layout, metadataLayout: FixtureLayout): string[] {
     layout.images.forEach((image, imageIndex) => {
         const methods = layout.methods.filter(({ owner }) => owner.imageIndex === imageIndex);
         const pointers = methods.map(({ method, owner }) => (method.hasBody ? `(void *)${method.code ?? functionName(owner.type, method)}` : '0'));
-        lines.push(`static void *const methodPointers${imageIndex}[] = { ${pointers.join(', ')} };`);
+        const rgctxs = writeRgctxs(layout, imageIndex);
+        lines.push(`static void *const methodPointers${imageIndex}[] = { ${pointers.join(', ')} };`, ...rgctxs.lines);
         lines.push(`static const struct Il2CppCodeGenModule module${imageIndex} = {`);
-        lines.push(`\t"${image.name}", ${methods.length}, methodPointers${imageIndex}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,`);
+        lines.push(`\t"${image.name}", ${methods.length}, methodPointers${imageIndex}, 0, 0, 0, 0, 0, ${rgctxs.fields}, 0, 0, 0,`);
         lines.push('\t&g_MetadataRegistration, &g_CodeRegistration', '};');
     });
 
     const modules = layout.images.map((_, index) => `&module${index}`).join(', ');
     const count = layout.images.length;
     const typeCount = layout.types.length;
+    const classes = writeList('genericClasses', 'const struct GenericClass *const', layout.genericClasses.map((_, index) => `&genericClass${index}`));
+    const insts = writeList('genericInsts', 'const struct GenericInst *const', layout.genericInsts.map((_, index) => `&inst${index}`));
+    const specs = writeList('methodSpecs', 'const int', layout.methodSpecs.map(({ method, classInst }) => `${method}, ${classInst}, -1`));
 
     return [
         ...lines,
+        ...classes.lines,
+        ...insts.lines,
+        ...specs.lines,
         `static const struct Il2CppCodeGenModule *const codeGenModules[${count + moduleListPadding}] = { ${modules} };`,
         '',
         'const struct Il2CppCodeRegistration g_CodeRegistration = {',
@@ -223,7 +303,8 @@ function writeModules(layout: Layout, metadataLayout: FixtureLayout): string[] {
         '};',
         '',
         'const struct Il2CppMetadataRegistration g_MetadataRegistration = {',
-        `\t0, 0, 0, emptyTable, 0, emptyTable, ${layout.binaryTypes.length}, types, 0, emptyTable,`,
+        `\t${layout.genericClasses.length}, ${classes.pointer}, ${layout.genericInsts.length}, ${insts.pointer}, 0, emptyTable,`,
+        `\t${layout.binaryTypes.length}, types, ${layout.methodSpecs.length}, ${specs.pointer},`,
         `\t${typeCount}, fieldOffsets, ${typeCount}, typeSizes, 0, 0`,
         '};',
         '',
@@ -238,7 +319,13 @@ function writeModules(layout: Layout, metadataLayout: FixtureLayout): string[] {
  * of 8 bytes or of another size. The runtime finds the registration structs by their contents.
  */
 export function writeRegistration(layout: Layout, metadataLayout: FixtureLayout = fixtureLayouts['31.1'], pointerSize = 8): string {
-    const parts = [writeFunctions(layout), writeTypeTable(layout), writeTypeData(layout, pointerSize), writeModules(layout, metadataLayout)];
+    const parts = [
+        writeFunctions(layout),
+        writeGenerics(layout),
+        writeTypeTable(layout),
+        writeTypeSizes(layout, pointerSize),
+        writeModules(layout, metadataLayout),
+    ];
 
     return [prelude, ...parts.flatMap(lines => [...lines, ''])].join('\n');
 }

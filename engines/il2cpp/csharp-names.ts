@@ -119,10 +119,11 @@ export function writeSharedRecord(methods: GameMethod[], records: MethodRecord[]
 /**
  * Writes the lines of a class's struct for the native engine's C# printer, the class's C# name with `o`
  * for the struct of the class's objects or `s` for the struct of its static fields, and the C# name of each member
- * whose C name differs, like `<Radius>k__BackingField` for `_Radius_k__BackingField`.
+ * whose C name differs, like `<Radius>k__BackingField` for `_Radius_k__BackingField`. The class's name is the type's
+ * name, or a generic type's instance's name like `Singleton<Circle>`.
  */
-export function writeStructLines(structName: string, type: GameType, kind: 'o' | 's', fields: GameField[]): string {
-    const lines = [`#${structName}\t${nameType(type)}\t${kind}\n`];
+export function writeStructLines(structName: string, type: GameType, kind: 'o' | 's', fields: GameField[], csharpName = nameType(type)): string {
+    const lines = [`#${structName}\t${csharpName}\t${kind}\n`];
     for (const [cName, field] of nameMembers(fields)) {
         if (cName !== field.name && !controlCharacters.test(field.name)) {
             lines.push(`.${structName}\t${cName}\t${field.name}\n`);
@@ -130,6 +131,14 @@ export function writeStructLines(structName: string, type: GameType, kind: 'o' |
     }
 
     return lines.join('');
+}
+
+/**
+ * Writes the line of a struct of the runtime's metadata for the native engine's C# printer, with `m`, because C#
+ * doesn't have a form for a class's or a method's metadata. The struct keeps its C name.
+ */
+export function writeMetadataLines(structName: string): string {
+    return `#${structName}\t${structName}\tm\n`;
 }
 
 /**

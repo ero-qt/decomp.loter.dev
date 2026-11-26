@@ -6,7 +6,7 @@ namespace Decomp.Il2Cpp;
 ///     Represents the metadata's layout, images, types and string literals that the engine read from a game, with the
 ///     binary's metadata globals. Without the binary, the members' types and addresses are <see langword="null" />,
 ///     the pointer size is 0 and the globals are empty. The Unity version is the version that picked the layout among
-///     the candidates.
+///     the candidates. The classes are those that the globals reach, see <see cref="ClassModel" />.
 /// </summary>
 internal sealed record GameModel(
     int FileVersion,
@@ -17,7 +17,8 @@ internal sealed record GameModel(
     List<ImageModel> Images,
     List<TypeModel> Types,
     List<string> Strings,
-    List<GlobalModel> Globals);
+    List<GlobalModel> Globals,
+    List<ClassModel> Classes);
 
 /// <summary>
 ///     Represents an assembly's image, whose types are the run of <see cref="TypeCount" /> types from

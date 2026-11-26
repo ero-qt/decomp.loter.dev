@@ -101,6 +101,6 @@ test("il2cpp engine's folder holds a small worker and the native engine's code f
 
     expect(paths).toEqual(expect.arrayContaining(['manifest.json', 'worker.js']));
     expect(paths.filter(path => path.startsWith('_framework') || path === 'THIRD-PARTY-NOTICES.TXT')).toEqual([]);
-    expect(await measureBrotli('worker.js')).toBeLessThanOrEqual(14_500);
+    expect(await measureBrotli('worker.js')).toBeLessThanOrEqual(15_500);
     expect(sizes.reduce((total, size) => total + size, 0)).toBeLessThanOrEqual(30_000);
 });

@@ -17,6 +17,26 @@ export interface Game {
     strings: string[];
     /** The binary's metadata globals, which are empty without the binary. */
     globals: GameGlobal[];
+    /** The classes that the globals reach, which are empty without the binary. */
+    classes: GameClass[];
+}
+
+/** The kinds of the entries of a runtime generic context, by the numbers of IL2CPP's `Il2CppRGCTXDataType`. */
+export const rgctxKinds = { type: 1, class: 2, method: 3, array: 4 } as const;
+
+/**
+ * A class that code reaches through a metadata global, like the class of a generic type's instance
+ * `Singleton<Circle>`, with its type definition's index and its type arguments. The code that the instances of a
+ * generic type share finds the classes of its own instance in the entries of the class's runtime generic context, by
+ * their kinds in `rgctxKinds`, with the index of a class entry's class among the game's classes, or -1. The class of an
+ * entry doesn't list its own entries.
+ */
+export interface GameClass {
+    /** The class's C# name, like `Singleton<Circle>`. */
+    text: string;
+    definition: number;
+    typeArguments: TypeReference[];
+    rgctx: { kind: number; class: number }[];
 }
 
 /** The kinds of IL2CPP's metadata usages, by the numbers of `Il2CppMetadataUsage`. */
@@ -42,6 +62,11 @@ export interface GameGlobal {
     typeLength: number;
     /** The parts of the text that name a type definition by its index, or the global's own method or field. */
     parts: { start: number; length: number; definition: number; isMember: boolean }[];
+    /**
+     * The index of the class of a TypeInfo global of a generic type's instance or of a generic type's method's global
+     * among the game's classes, or -1.
+     */
+    class: number;
 }
 
 /** An assembly's image, whose types are the run of `typeCount` types from `firstType`. */

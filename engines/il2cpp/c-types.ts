@@ -163,6 +163,11 @@ function writeCType(types: CTypes, reference: TypeReference | null): [cType: str
     return [structName ? `struct ${structName} *` : 'void *', types.pointerSize];
 }
 
+/** Returns the size of a type in a signature or a field, or `undefined` for a value type of unknown size. */
+export function measureCType(types: CTypes, reference: TypeReference | null): number | undefined {
+    return writeCType(types, reference)?.[1];
+}
+
 function isInstanceField(field: GameField): boolean {
     return field.offset !== null && field.offset >= 0 && ((field.flags ?? 0) & (fieldFlags.static | fieldFlags.literal)) === 0;
 }

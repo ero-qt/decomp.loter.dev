@@ -1,7 +1,7 @@
 import { type FixtureImage, type FixtureMethod, type FixtureType, fullName, images } from './model';
 
 // the `Il2CppTypeEnum` values of il2cpp-runtime-metadata.h that the fixture uses besides the built-in types
-export const typeEnum = { valueType: 0x11, class: 0x12, szArray: 0x1d };
+export const typeEnum = { valueType: 0x11, class: 0x12, genericParameter: 0x13, genericInstance: 0x15, szArray: 0x1d };
 // the token tables of ECMA-335 II.22, in a token's top byte
 const tables = { typeDefinition: 0x02, field: 0x04, method: 0x06, parameter: 0x08, property: 0x17 };
 
@@ -12,7 +12,13 @@ export interface BinaryType {
     isValueType: boolean;
     /** Whether a parameter takes the type by reference, like `ref bool`. */
     isByReference: boolean;
-    data: { definition: number } | { element: number };
+    data: { definition: number } | { element: number } | { parameter: number } | { genericClass: number };
+}
+
+/** A generic type's instance, by its definition's index and the index of its arguments' list in `genericInsts`. */
+export interface GenericClass {
+    definition: number;
+    inst: number;
 }
 
 /** A type definition with its index and its image's index. */
@@ -83,39 +89,86 @@ export function layOut(fixtureImages: FixtureImage[] = images) {
         return { type: type.primitive ?? kindType, attributes: 0, isValueType, isByReference: false, data: { definition: index } };
     });
 
+    // gives each generic type's parameters their indexes in the metadata's table of generic parameters
+    const parameterStarts = new Map<number, number>();
+    let parameterCount = 0;
+    for (const { type, index } of types) {
+        if (type.genericParameters) {
+            parameterStarts.set(index, parameterCount);
+            parameterCount += type.genericParameters.length;
+        }
+    }
+
+    const genericInsts: number[][] = [];
+    const genericClasses: GenericClass[] = [];
+
+    function addOnce<Item>(list: Item[], item: Item): number {
+        const found = list.findIndex(entry => JSON.stringify(entry) === JSON.stringify(item));
+
+        return found >= 0 ? found : list.push(item) - 1;
+    }
+
+    // splits the arguments of a generic type's instance, like `A, B<C, D>`, at the commas outside of brackets
+    function splitArguments(text: string): string[] {
+        const parts: string[] = [];
+        let depth = 0;
+        let start = 0;
+        [...text].forEach((character, index) => {
+            depth += character === '<' ? 1 : character === '>' ? -1 : 0;
+            if (character === ',' && depth === 0) {
+                parts.push(text.slice(start, index).trim());
+                start = index + 1;
+            }
+        });
+
+        return [...parts, text.slice(start).trim()];
+    }
+
+    // returns a type's entry without its attributes, for an array like `System.Single[]`, a generic type's parameter
+    // like `Shapes.Singleton`1!0`, a generic type's instance like `Shapes.Singleton`1<Shapes.Circle>` or a definition
+    function describe(name: string): Omit<BinaryType, 'attributes' | 'isByReference'> {
+        const parameter = /^(.+)!(\d+)$/.exec(name);
+        const generic = /^([^<]+)<(.+)>$/.exec(name);
+        if (name.endsWith('[]')) {
+            return { type: typeEnum.szArray, isValueType: false, data: { element: typeIndex(name.slice(0, -2)) } };
+        }
+        if (parameter) {
+            const start = parameterStarts.get(findType(parameter[1]).index)!;
+
+            return { type: typeEnum.genericParameter, isValueType: false, data: { parameter: start + Number(parameter[2]) } };
+        }
+        if (generic) {
+            const inst = addOnce(genericInsts, splitArguments(generic[2]).map(argument => typeIndex(argument)));
+            const genericClass = addOnce(genericClasses, { definition: findType(generic[1]).index, inst });
+
+            return { type: typeEnum.genericInstance, isValueType: false, data: { genericClass } };
+        }
+
+        const { type, isValueType } = binaryTypes[findType(name).index];
+
+        return { type, isValueType, data: { definition: findType(name).index } };
+    }
+
     /**
      * Returns the binary type index of a type name like `System.Single[]` or `ref System.Boolean` with attributes,
      * adding the entry once.
      */
     function typeIndex(fullName: string, attributes = 0): number {
         const isByReference = fullName.startsWith('ref ');
-        const name = isByReference ? fullName.slice(4) : fullName;
-        const element = name.endsWith('[]') ? typeIndex(name.slice(0, -2)) : undefined;
-        const definition = element === undefined ? findType(name).index : undefined;
+        const { type, isValueType, data } = describe(isByReference ? fullName.slice(4) : fullName);
         const found = binaryTypes.findIndex(entry => {
-            const data = entry.data as { definition?: number; element?: number };
             const isSame = entry.attributes === attributes && entry.isByReference === isByReference;
 
-            return isSame && data.definition === definition && data.element === element;
-        });
-        if (found >= 0) {
-            return found;
-        }
-
-        const base = element === undefined ? binaryTypes[definition as number] : undefined;
-        binaryTypes.push({
-            type: base?.type ?? typeEnum.szArray,
-            attributes,
-            isValueType: base?.isValueType ?? false,
-            isByReference,
-            data: element === undefined ? { definition: definition as number } : { element },
+            return isSame && JSON.stringify(entry.data) === JSON.stringify(data);
         });
 
-        return binaryTypes.length - 1;
+        return found >= 0 ? found : binaryTypes.push({ type, attributes, isValueType, isByReference, data }) - 1;
     }
 
-    // adds every entry that the metadata uses before the writers run, so the binary's table is whole for both
+    // adds every entry that the metadata and the binary's tables use before the writers run, so the binary's table is
+    // whole for both
     for (const { type } of types) {
+        type.rgctx?.forEach(entry => typeIndex(entry.type));
         for (const field of type.fields) {
             typeIndex(field.type, field.flags & 0xffff);
         }
@@ -125,7 +178,27 @@ export function layOut(fixtureImages: FixtureImage[] = images) {
         }
     }
 
-    return { images: fixtureImages, types, methods, findType, typeIndex, binaryTypes, nextToken, tables };
+    const methodSpecs = fixtureImages.flatMap(image => image.methodSpecs ?? []).map(({ method, classArguments }) => {
+        const dot = method.lastIndexOf('.');
+        const found = methods.find(laidOut => fullName(laidOut.owner.type) === method.slice(0, dot) && laidOut.method.name === method.slice(dot + 1));
+
+        return { method: found!.index, classInst: addOnce(genericInsts, classArguments.map(argument => typeIndex(argument))) };
+    });
+
+    return {
+        images: fixtureImages,
+        types,
+        methods,
+        findType,
+        typeIndex,
+        binaryTypes,
+        parameterStarts,
+        genericInsts,
+        genericClasses,
+        methodSpecs,
+        nextToken,
+        tables,
+    };
 }
 
 export type Layout = ReturnType<typeof layOut>;

@@ -92,6 +92,27 @@ internal sealed class GameWriter
                 WriteNumber((ulong)(part.Definition + 1));
                 WriteNumber(part.IsMember ? 1UL : 0UL);
             }
+
+            WriteNumber((ulong)(global.Class + 1));
+        }
+
+        WriteNumber((ulong)game.Classes.Count);
+        foreach (ClassModel model in game.Classes)
+        {
+            WriteString(model.Text);
+            WriteNumber((ulong)(model.Definition + 1));
+            WriteNumber((ulong)model.Arguments.Count);
+            foreach (TypeReference argument in model.Arguments)
+            {
+                WriteReference(argument);
+            }
+
+            WriteNumber((ulong)model.Rgctx.Count);
+            foreach (RgctxModel entry in model.Rgctx)
+            {
+                WriteNumber((ulong)entry.Kind);
+                WriteNumber((ulong)(entry.Class + 1));
+            }
         }
     }
 

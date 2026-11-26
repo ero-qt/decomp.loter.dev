@@ -3,7 +3,7 @@ import type { EmbeddedLines } from '#contract/embedding';
 import type { Row } from '#contract/rows';
 import { isStaticField, listInstanceFields, nameStructs } from './c-types';
 import { listClassStructs } from './class-structs';
-import { type Game, type GameGlobal, globalKinds } from './game';
+import { type Game, type GameField, type GameGlobal, globalKinds } from './game';
 import { firstKeys, indexCodeMethods, type MemberStarts, writeBinaryKey } from './rows';
 import { indexSharers, type Sharer } from './shared-code';
 
@@ -12,6 +12,17 @@ export interface BodyGame {
     game: Game;
     starts: MemberStarts;
     rowsByKey: Map<number, Row>;
+}
+
+/**
+ * A struct that the C# printer links by its name, of a type's objects or of its static fields, with the fields at the
+ * struct's own offsets for the static fields of a generic type's instance.
+ */
+interface LinkedStruct {
+    typeIndex: number;
+    isStatic: boolean;
+    name?: string;
+    fields?: () => GameField[];
 }
 
 /** The functions that give the tokens of the native engine's code their targets in the game. */
@@ -33,7 +44,7 @@ export interface BodyLinker {
 export function createBodyLinker(fileId: number, { game, starts, rowsByKey }: BodyGame, findCode: (rva: number) => number): BodyLinker {
     const codeMethods = indexCodeMethods(game, starts, findCode);
     let globals: Map<number, GameGlobal> | undefined;
-    let structs: Map<string, { typeIndex: number; isStatic: boolean }> | undefined;
+    let structs: Map<string, LinkedStruct> | undefined;
     let systemClasses: Map<string, number> | undefined;
     let properties: Map<number, number> | undefined;
     let sharers: Map<number, Sharer[]> | undefined;
@@ -41,18 +52,28 @@ export function createBodyLinker(fileId: number, { game, starts, rowsByKey }: Bo
     const fields = new Map<string, Map<number, number>>();
 
     // indexes the structs of the classes' objects and of their static fields by their names, like `Circle_o`
-    function indexStructs(): Map<string, { typeIndex: number; isStatic: boolean }> {
+    function indexStructs(): Map<string, LinkedStruct> {
         const types = nameStructs(game, game.pointerSize);
-        const indexed = new Map([...types.structNames].map(([typeIndex, name]) => [name, { typeIndex, isStatic: false }]));
-        for (const [typeIndex, name] of listClassStructs(types).staticStructs) {
+        const classStructs = listClassStructs(types);
+        const indexed = new Map<string, LinkedStruct>([...types.structNames].map(([typeIndex, name]) => [name, { typeIndex, isStatic: false }]));
+        for (const [typeIndex, name] of classStructs.staticStructs) {
             indexed.set(name, { typeIndex, isStatic: true });
+        }
+        for (const [name, { typeIndex, fields }] of classStructs.instanceStatics) {
+            indexed.set(name, { typeIndex, isStatic: true, name, fields });
         }
 
         return indexed;
     }
 
-    function useFields(typeIndex: number, isStatic: boolean): Map<number, number> {
-        const id = `${typeIndex}:${isStatic}`;
+    // keys the fields of a struct by their offsets, those of a generic type's instance by the struct's own offsets
+    function useFields({ typeIndex, isStatic, name, fields: listFields }: LinkedStruct): Map<number, number> {
+        const id = name ?? `${typeIndex}:${isStatic}`;
+        if (listFields && !fields.has(id)) {
+            const owned = game.types[typeIndex].fields;
+            const keyOf = (field: GameField) => firstKeys.field + starts.fields[typeIndex] + owned.findIndex(own => own.name === field.name);
+            fields.set(id, new Map(listFields().map(field => [field.offset!, keyOf(field)])));
+        }
         if (!fields.has(id)) {
             const keys = new Map<number, number>();
             const listed = isStatic ? game.types[typeIndex].fields.filter(isStaticField) : listInstanceFields(game, typeIndex);
@@ -137,7 +158,7 @@ export function createBodyLinker(fileId: number, { game, starts, rowsByKey }: Bo
             return linkRow(token, struct?.typeIndex);
         }
         if (kind === '#field') {
-            return linkRow(token, struct && useFields(struct.typeIndex, struct.isStatic).get(parseInt(offset, 16)));
+            return linkRow(token, struct && useFields(struct).get(parseInt(offset, 16)));
         }
 
         return linkRow(token, codeMethods.get(parseInt(name, 16))?.typeIndex);

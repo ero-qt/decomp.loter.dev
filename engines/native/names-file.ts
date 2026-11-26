@@ -118,7 +118,7 @@ export function writeNamesLines(names: ScriptNames): string[] {
     return [
         ...names.ScriptMethod.filter(({ Name }) => !controlCharacters.test(Name)).map(writeLine),
         ...names.ScriptMetadata.map(writeMetadataLine),
-        ...names.ScriptMetadataMethod.map(({ Address, Name = '', CSharp }) => (Name === '' ? '' : writeGlobalLine(Address, Name, 'void *', CSharp))),
+        ...names.ScriptMetadataMethod.map(writeMetadataLine),
         ...names.ScriptString.map(({ Address, CSharp }, index) => writeGlobalLine(Address, `StringLiteral_${index}`, stringType, CSharp)),
     ];
 }

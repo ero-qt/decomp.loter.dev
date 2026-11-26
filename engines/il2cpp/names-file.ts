@@ -18,7 +18,7 @@ import {
     writeSharedSignature,
     writeSignature,
 } from './c-types';
-import { type ClassStructs, listClassStructs, plainClassStruct } from './class-structs';
+import { type ClassStructs, listClassStructs, methodStruct, plainClassStruct } from './class-structs';
 import {
     createRecordWriter,
     formatRecord,
@@ -94,7 +94,7 @@ function writeGlobalRecord(game: Game, global: GameGlobal): string {
 
 /**
  * Writes the binary's metadata globals in Il2CppDumper's shape, a TypeInfo global with its class's `_c` struct, a
- * method's global and each string literal's global with its text.
+ * method's global with IL2CPP's `MethodInfo` and each string literal's global with its text.
  */
 function writeGlobals(game: Game, structs: ClassStructs): Omit<ScriptNames, 'ScriptMethod'> {
     const metadata: ScriptGlobal[] = [];
@@ -116,7 +116,7 @@ function writeGlobals(game: Game, structs: ClassStructs): Omit<ScriptNames, 'Scr
                 break;
             case globalKinds.methodDef:
             case globalKinds.methodRef:
-                methods.push({ Address: global.rva, Name: name(), CSharp });
+                methods.push({ Address: global.rva, Name: name(), Signature: `struct ${methodStruct} *`, CSharp });
                 break;
             case globalKinds.stringLiteral:
                 strings.push({ Address: global.rva, Value: game.strings[global.definition] ?? '', CSharp });
@@ -287,7 +287,7 @@ export function writeNativeNames(game: Game, findCode: (rva: number) => number =
     for (const { Address, Signature = '' } of names.ScriptMethod) {
         cTypes.set(findCode(Address), Signature);
     }
-    for (const { Address, Signature = '' } of names.ScriptMetadata) {
+    for (const { Address, Signature = '' } of [...names.ScriptMetadata, ...names.ScriptMetadataMethod]) {
         cTypes.set(Address, Signature);
     }
     for (const { Address } of names.ScriptString) {

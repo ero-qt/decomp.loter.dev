@@ -1,6 +1,8 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
-import ts from 'typescript';
+// uses TypeScript 6's language service, because TypeScript 7's only runs as a server and sorts a re-export from a
+// relative path before one from a package
+import ts from 'typescript-6';
 
 // checks the folder with the tsconfig.json, which a test passes, else the repo
 const args = Bun.argv.slice(2);

@@ -16,6 +16,10 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # keeps typescript-6 on TypeScript 6, because the import check needs its language service
+    ignore:
+      - dependency-name: typescript-6
+        update-types: ['version-update:semver-major']
     groups:
       packages:
         patterns: ['*']

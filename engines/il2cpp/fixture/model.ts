@@ -64,8 +64,9 @@ export interface FixtureImage {
     types: FixtureType[];
     /**
      * The C source of the functions that the image's methods name in `code`, compiled the way IL2CPP compiles C#, with
-     * `USAGE(kind, index)` for a metadata global's value and a `TYPE_` macro with each type's index, like
-     * `TYPE_Shapes_Circle`.
+     * `USAGE(kind, index)` for a metadata global's value, a `TYPE_` macro with each type's index, like
+     * `TYPE_Shapes_Circle`, and a `METHOD_` macro with the index of the first method of each C name, like
+     * `METHOD_Shapes_Circle__Area`.
      */
     code?: string;
 }

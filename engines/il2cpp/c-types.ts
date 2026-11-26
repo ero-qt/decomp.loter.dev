@@ -298,6 +298,16 @@ function readSignature(types: CTypes, typeIndex: number, method: GameMethod): Si
     return { returnType, parameters: [...(isStatic ? [] : [self]), ...parameters, { cType: 'void *', name: 'method' }] };
 }
 
+/**
+ * Lists the structs that a method's C parameters point to, `__this` first for an instance method and without the
+ * method's `MethodInfo` pointer, with an empty name for a parameter of another type.
+ */
+export function listParameterStructs(types: CTypes, typeIndex: number, method: GameMethod): string[] {
+    const { parameters } = readSignature(types, typeIndex, method);
+
+    return parameters.slice(0, -1).map(({ cType }) => /^struct (\w+) \*$/.exec(cType)?.[1] ?? '');
+}
+
 function formatSignature({ returnType, parameters }: Signature, name: string): string {
     return `${declare(returnType, cleanName(name))}(${parameters.map(({ cType, name }) => declare(cType, name)).join(', ')})`;
 }

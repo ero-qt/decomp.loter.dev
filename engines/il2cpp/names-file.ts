@@ -11,6 +11,7 @@ import {
     type CTypes,
     isStaticField,
     listInstanceFields,
+    listParameterStructs,
     listStructs,
     nameStructs,
     writeArrayStruct,
@@ -18,7 +19,15 @@ import {
     writeSignature,
 } from './c-types';
 import { type ClassStructs, listClassStructs, plainClassStruct } from './class-structs';
-import { createRecordWriter, formatRecord, nameType, writeArrayLines, writeSharedRecord, writeStructLines } from './csharp-names';
+import {
+    createRecordWriter,
+    formatRecord,
+    nameType,
+    writeArrayLines,
+    writeSharedRecord,
+    writeSharerRecord,
+    writeStructLines,
+} from './csharp-names';
 import { type Game, type GameField, type GameGlobal, globalKinds } from './game';
 import { formatFullName, listOuterTypes } from './rows';
 import { writeHelperLines } from './runtime-helpers';
@@ -187,8 +196,13 @@ function writeNames(game: Game): { names: ScriptNames; structs: FindStructWriter
         if (sharers.length > 1) {
             const Name = nameSharedCode(rva);
             const CSharp = writeSharedRecord(sharers.map(sharer => sharer.method), sharers.map(sharer => sharer.record), Name);
+            const Sharers = sharers.map((sharer, index) => {
+                const structs = listParameterStructs(types, sharer.typeIndex, sharer.method);
 
-            return { Address: rva, Name, Signature: writeSharedSignature(types, sharers, Name), CSharp };
+                return writeSharerRecord(index, sharer.record, nameType(game.types[sharer.typeIndex]), structs);
+            });
+
+            return { Address: rva, Name, Signature: writeSharedSignature(types, sharers, Name), CSharp, Sharers };
         }
 
         const Name = nameMethod(formatFullName(game, typeIndex), method.name);

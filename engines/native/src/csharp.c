@@ -18,6 +18,10 @@ static void type_free(void *value) {
 	}
 }
 
+static void sharers_free(void *value) {
+	rz_vector_free(value);
+}
+
 /**
  * \brief Drops the C# records of the session's names file.
  */
@@ -25,9 +29,11 @@ void csharp_clear(Session *session) {
 	ht_up_free(session->csharp_functions);
 	ht_up_free(session->csharp_globals);
 	ht_sp_free(session->csharp_types);
+	ht_up_free(session->csharp_sharers);
 	session->csharp_functions = ht_up_new(NULL, NULL);
 	session->csharp_globals = ht_up_new(NULL, global_free);
 	session->csharp_types = ht_sp_new(HT_STR_DUP, NULL, type_free);
+	session->csharp_sharers = ht_up_new(NULL, sharers_free);
 }
 
 /**
@@ -47,6 +53,51 @@ void csharp_add_function(Session *session, ut64 addr, char *record) {
 	*type = '\0';
 	*name = '\0';
 	ht_up_update(session->csharp_functions, addr, record);
+}
+
+/**
+ * \brief Keeps what a method that shares the code of the function at an address is in C#, from a line of a names file
+ * that starts with `%`: the method's index among the methods that share the code, its kind, `s` or `i` and count of
+ * parameters like in a function's line, the C# name of its type, its name and the structs that its C parameters point
+ * to with a comma between them, each after a tab.
+ *
+ * Splits the text at the tabs and keeps it, so the names file's text has to stay.
+ */
+void csharp_add_sharer(Session *session, ut64 addr, char *record) {
+	char *fields[5] = { record };
+	for (size_t i = 1; i < RZ_ARRAY_SIZE(fields); i++) {
+		char *tab = strchr(fields[i - 1], '\t');
+		if (!tab) {
+			return;
+		}
+		*tab = '\0';
+		fields[i] = tab + 1;
+	}
+	const char *head = fields[1];
+	if (!head[0] || !head[1]) {
+		return;
+	}
+
+	RzVector *sharers = ht_up_find(session->csharp_sharers, addr, NULL);
+	if (!sharers) {
+		sharers = rz_vector_new(sizeof(RzGhidraCSharpSharer), NULL, NULL);
+		if (!sharers || !ht_up_insert(session->csharp_sharers, addr, sharers)) {
+			rz_vector_free(sharers);
+			return;
+		}
+	}
+
+	RzGhidraCSharpSharer *sharer = rz_vector_push(sharers, NULL);
+	if (!sharer) {
+		return;
+	}
+	sharer->index = (ut32)strtoul(fields[0], NULL, 10);
+	sharer->function.kind = (RzGhidraCSharpKind)(head[0] - '0');
+	sharer->function.is_static = head[1] == 's';
+	sharer->function.parameters = (ut32)strtoul(head + 2, NULL, 10);
+	sharer->function.type = fields[2];
+	sharer->function.name = fields[3];
+	sharer->parameter_structs = fields[4];
 }
 
 /**
@@ -163,6 +214,11 @@ static const RzGhidraCSharpGlobal *find_global(void *user, ut64 addr) {
 	return global ? &global->global : NULL;
 }
 
+static const RzGhidraCSharpSharer *find_sharer(void *user, ut64 addr, ut32 index) {
+	RzVector *sharers = ht_up_find(((Session *)user)->csharp_sharers, addr, NULL);
+	return sharers && index < rz_vector_len(sharers) ? rz_vector_index_ptr(sharers, index) : NULL;
+}
+
 static const RzGhidraCSharpType *find_type(void *user, const char *name) {
 	SessionCSharpType *type = ht_sp_find(((Session *)user)->csharp_types, name, NULL);
 	return type ? &type->type : NULL;
@@ -183,7 +239,8 @@ static void link_fini(void *item, void *user) {
 /**
  * \brief Decompiles the function at an address into C# with the names of the session's names file and returns the
  * code with its annotations like session_decompile(), and the parts that name types and fields in `links`. The link
- * of the class of a raised exception has the type `raised_type` and the class's name.
+ * of the class of a raised exception has the type `raised_type` and the class's name. The link of a method that a call
+ * of shared code reads as, or of its type, has the method's index among the methods that share the code in `sharer`.
  *
  * The caller frees the result with free().
  */
@@ -193,8 +250,16 @@ EMSCRIPTEN_KEEPALIVE char *session_decompile_csharp(Session *session, const char
 		[RZ_GHIDRA_CSHARP_LINK_FIELD] = "field",
 		[RZ_GHIDRA_CSHARP_LINK_DECLARING_TYPE] = "declaring_type",
 		[RZ_GHIDRA_CSHARP_LINK_PROPERTY] = "property",
+		[RZ_GHIDRA_CSHARP_LINK_SHARER] = "sharer",
+		[RZ_GHIDRA_CSHARP_LINK_SHARER_TYPE] = "sharer_type",
 	};
-	RzGhidraCSharpNames names = { .user = session, .function = find_function, .global = find_global, .type = find_type };
+	RzGhidraCSharpNames names = {
+		.user = session,
+		.function = find_function,
+		.global = find_global,
+		.type = find_type,
+		.sharer = find_sharer,
+	};
 	RzVector links;
 	rz_vector_init(&links, sizeof(RzGhidraCSharpLink), link_fini, NULL);
 	RzAnnotatedCode *code = rz_ghidra_decompile_csharp(session->core, strtoull(addr, NULL, 16), &names, &links);
@@ -216,6 +281,9 @@ EMSCRIPTEN_KEEPALIVE char *session_decompile_csharp(Session *session, const char
 		pj_ks(j, "type", raised ? "raised_type" : kinds[link->kind]);
 		if (raised || link->name) {
 			pj_ks(j, "name", raised ? raised : link->name);
+		}
+		if (link->kind == RZ_GHIDRA_CSHARP_LINK_SHARER || link->kind == RZ_GHIDRA_CSHARP_LINK_SHARER_TYPE) {
+			pj_kn(j, "sharer", link->sharer);
 		}
 		session_put_address(j, "offset", link->offset);
 		pj_end(j);

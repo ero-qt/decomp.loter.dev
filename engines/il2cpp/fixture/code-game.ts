@@ -125,6 +125,8 @@ struct IntArray { struct Class *klass; void *monitor; void *bounds; int length; 
 struct CircleStatics { struct Circle *unit; struct IntArray *sizes; int count; };
 
 struct Class *Circle_TypeInfo = (struct Class *)USAGE(1, TYPE_Shapes_Circle);
+struct Class *Square_TypeInfo = (struct Class *)USAGE(1, TYPE_Shapes_Square);
+const void *Square_ctor_Method = (const void *)USAGE(3, METHOD_Shapes_Square___ctor);
 struct String *Literal_0 = (struct String *)USAGE(5, 0);
 static unsigned char Unit_initialized;
 
@@ -246,6 +248,47 @@ METHOD int Shapes_Square__Twice(struct Circle *this, const void *method)
 {
 	return Shapes_Circle__get_Radius(this, 0) * 2;
 }
+
+METHOD int Shapes_Circle__Larger(int first, int second, const void *method)
+{
+	return first > second ? first : second;
+}
+
+METHOD int Shapes_Square__Widest(struct Circle *this, int other, const void *method)
+{
+	return Shapes_Circle__Larger(other, 3, 0);
+}
+
+// reads its arguments in an empty asm, so the compiler keeps the calls and their arguments like a build's empty method
+METHOD void Shapes_Square___ctor(struct Circle *this, const void *method)
+{
+	__asm__ volatile("" : : "r"(this), "r"(method));
+}
+
+METHOD struct Circle *Shapes_Square__Make(const void *method)
+{
+	struct Circle *square = codegen_object_new(Square_TypeInfo);
+	Shapes_Square___ctor(square, 0);
+	return square;
+}
+
+// runs a constructor through code that isn't a method's, like code that the instances of a generic type share
+__attribute__((noinline)) void codegen_construct(struct Circle *object, const void *method)
+{
+	__asm__ volatile("" : : "r"(object), "r"(method));
+}
+
+METHOD struct Circle *Shapes_Square__Build(const void *method)
+{
+	struct Circle *square = codegen_object_new(Square_TypeInfo);
+	codegen_construct(square, Square_ctor_Method);
+	return square;
+}
+
+METHOD void Shapes_Circle__Wipe(struct Circle *this, const void *method)
+{
+	Shapes_Square___ctor(this, 0);
+}
 `;
 
 const shape = 'Shapes.Shape';
@@ -255,7 +298,9 @@ const square = 'Shapes.Square';
 /**
  * The images of a game whose methods have code like IL2CPP's, with the runtime's helpers, metadata globals, a property
  * with a backing field, an operator, a constructor, 2 getters that share their code, `Circle.Radius` and
- * `Square.Side`, a local function with the compiler's name and the class of the exception that the runtime's helper
+ * `Square.Side`, a static method that shares the operator's code, 2 static methods with the same parameters that share
+ * their code, 2 empty constructors and an empty method that share their code, a constructor's call through code that
+ * isn't a method's, a local function with the compiler's name and the class of the exception that the runtime's helper
  * raises.
  */
 export const codeImages: FixtureImage[] = [
@@ -300,6 +345,23 @@ export const codeImages: FixtureImage[] = [
                         ['found', 'ref System.Boolean'],
                     ]),
                     method(circle, 'Find', 'System.Int32', instance | methodAttributes.static, [['radius', 'System.Int32']]),
+                    method(
+                        circle,
+                        'Matches',
+                        'System.Boolean',
+                        instance | methodAttributes.static,
+                        [
+                            ['left', circle],
+                            ['right', circle],
+                        ],
+                        'Shapes_Circle__op_Equality',
+                    ),
+                    method(circle, 'Larger', 'System.Int32', instance | methodAttributes.static, [
+                        ['first', 'System.Int32'],
+                        ['second', 'System.Int32'],
+                    ]),
+                    method(circle, '.ctor', 'System.Void', constructor, [], 'Shapes_Square___ctor'),
+                    method(circle, 'Wipe', 'System.Void', instance),
                 ],
                 properties: [
                     { name: 'Radius', getter: 'get_Radius', setter: 'set_Radius' },
@@ -311,6 +373,22 @@ export const codeImages: FixtureImage[] = [
                 methods: [
                     method(square, 'get_Side', 'System.Int32', special, [], 'Shapes_Circle__get_Radius'),
                     method(square, 'Twice', 'System.Int32', instance),
+                    method(
+                        square,
+                        'Bigger',
+                        'System.Int32',
+                        instance | methodAttributes.static,
+                        [
+                            ['first', 'System.Int32'],
+                            ['second', 'System.Int32'],
+                        ],
+                        'Shapes_Circle__Larger',
+                    ),
+                    method(square, 'Widest', 'System.Int32', instance, [['other', 'System.Int32']]),
+                    method(square, '.ctor', 'System.Void', constructor),
+                    method(square, 'Clear', 'System.Void', instance, [], 'Shapes_Square___ctor'),
+                    method(square, 'Make', square, instance | methodAttributes.static),
+                    method(square, 'Build', square, instance | methodAttributes.static),
                 ],
                 properties: [{ name: 'Side', getter: 'get_Side', setter: null }],
             }),

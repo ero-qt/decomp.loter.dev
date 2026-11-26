@@ -89,7 +89,9 @@ export function registerViews(manifests: Manifest[]) {
 
     const known = [...new Set(views.map(view => view.language))].filter(language => grammars[language]);
     const grammarContributions = known.map(language => {
-        return { language, scopeName: grammars[language].scopeName, path: `./grammars/${language}.tmLanguage.json` };
+        const { scopeName, unbalancedBracketScopes } = grammars[language];
+
+        return { language, scopeName, path: `./grammars/${language}.tmLanguage.json`, unbalancedBracketScopes };
     });
 
     const contributes = { languages, grammars: grammarContributions, ...writeViewContributions(manifests) };

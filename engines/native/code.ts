@@ -12,6 +12,8 @@ export interface Annotation {
     syntax_highlight?: string;
     name?: string;
     offset?: string;
+    /** The index of the method that a call of shared code reads as, among the methods that share the code. */
+    sharer?: number;
 }
 
 /**
@@ -29,20 +31,25 @@ export interface Decompiled {
 /**
  * Writes the target of a link of C# code, which only the engine that gave the names of the code can resolve, as a
  * symbol outside the open files, `|#type:<struct>`, `|#field:<struct>:<offset in hex>`,
- * `|#declaring_type:<key of the function's row in hex>`, `|#property:<key of the accessor's row in hex>` or
+ * `|#declaring_type:<key of the function's row in hex>`, `|#property:<key of the accessor's row in hex>`,
+ * `|#sharer:<key of the function's row in hex>:<index of the method>`, `|#sharer_type:` with the same places or
  * `|#raised_type:<name of the exception's class>`.
  */
-function formatLinkTarget({ type, name, offset }: Annotation, rows: CodeRows): string {
+function formatLinkTarget({ type, name, offset, sharer }: Annotation, rows: CodeRows): string {
     const address = BigInt(offset ?? 0);
     const writePlace = () => {
+        const key = (rows.findRow(address)?.key ?? 0).toString(16);
         switch (type) {
             case 'type':
             case 'raised_type':
                 return name;
             case 'field':
                 return `${name}:${address.toString(16)}`;
+            case 'sharer':
+            case 'sharer_type':
+                return `${key}:${sharer ?? 0}`;
             default:
-                return (rows.findRow(address)?.key ?? 0).toString(16);
+                return key;
         }
     };
 
@@ -196,7 +203,8 @@ export function writeCode(code: string, annotations: Annotation[], rows: CodeRow
     for (const part of parts) {
         const length = part.end - part.start;
         if (part.link) {
-            const kind = part.link.type === 'field' || part.link.type === 'property' ? part.link.type : 'class';
+            const kinds: Record<string, Kind> = { field: 'field', property: 'property', sharer: 'method' };
+            const kind = kinds[part.link.type] ?? 'class';
             tokens.push({ start: part.start, length, kind, flags: 0, target: formatLinkTarget(part.link, rows) });
         } else if (part.highlight === 'function_name') {
             addRowToken(part, 'method');

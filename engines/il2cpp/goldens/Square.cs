@@ -17,7 +17,52 @@ public class Square : Shape
 	{
 		int iVar1;
 
-		iVar1 = this.shared_0();
+		iVar1 = this.Side;
 		return iVar1 * 2;
+	}
+
+	public static int Bigger(int first, int second)
+	{
+		// Shares its code with Circle.Larger.
+		if (second < first) {
+			second = first;
+		}
+		return second;
+	}
+
+	public int Widest(int other)
+	{
+		int iVar1;
+
+		iVar1 = shared_0(other, 3);
+		return iVar1;
+	}
+
+	public Square()
+	{
+		// Shares its code with Circle.Circle, Square.Clear.
+		return;
+	}
+
+	public void Clear()
+	{
+		// Shares its code with Circle.Circle, Square.Square.
+		return;
+	}
+
+	public static Square Make()
+	{
+		Square __this;
+
+		__this = new Square();
+		return __this;
+	}
+
+	public static Square Build()
+	{
+		Square pSVar1;
+
+		pSVar1 = new Square();
+		return pSVar1;
 	}
 }

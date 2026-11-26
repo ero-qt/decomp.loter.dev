@@ -89,6 +89,15 @@ export function formatRecord({ head, name }: MethodRecord, typeName: string): st
 }
 
 /**
+ * Writes what a method that shares its code with other methods is in C#, for the C# printer to pick the method that a
+ * call of the code fits: the method's index among the methods that share the code, its record and the structs that
+ * its C parameters point to, like `Circle_o`, with a comma between them.
+ */
+export function writeSharerRecord(index: number, record: MethodRecord, typeName: string, structs: string[]): string {
+    return `${index}\t${formatRecord(record, typeName)}\t${structs.join(',')}`;
+}
+
+/**
  * Writes what the code that several methods share is in C#. Instance methods share a method without a class, and
  * constructors a constructor without one, whose class the allocation gives. Any other methods share a function that
  * takes an object like any other argument. Returns `undefined` for methods that differ in the count of their

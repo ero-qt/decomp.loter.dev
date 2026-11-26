@@ -1,9 +1,10 @@
 import { findRow } from '#contract/checking';
 import { type Document, formatTarget, readTokens } from '#contract/document';
 import { afterAll, expect, test } from 'bun:test';
+import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadTestModule } from '../native/testing';
-import { loadTestRuntime, openCodeGame } from './testing';
+import { cutMember, loadTestRuntime, openCodeGame } from './testing';
 
 await Promise.all([loadTestRuntime(), loadTestModule()]);
 
@@ -39,7 +40,7 @@ test.each(['Shape', 'Circle', 'Square'])("the bodies of %s's methods read like C
 test('a body writes calls, properties, operators, constructors and throws the way C# does', async () => {
     const circle = await readText('Circle');
 
-    expect(circle).toContain('\t\tbase..ctor("shapes fixture");\n');
+    expect(circle).toContain('\t\tbase("shapes fixture");\n');
     expect(circle).toContain('\t\tpSVar1 = base.Describe();\n');
     expect(circle).toContain('\t\tbVar1 = this == other;\n');
     expect(circle).toContain('\t\t\tthis.Radius = iVar1 + 2;\n');
@@ -47,6 +48,19 @@ test('a body writes calls, properties, operators, constructors and throws the wa
     expect(circle).toContain('\t\t__this = new Circle(1);\n');
     expect(circle).toContain('\t\tthis.<Radius>k__BackingField = radius;\n');
 }, 120000);
+
+test("a constructor's call through code that isn't a method's, with the constructor's method global, reads as new", async () => {
+    const build = cutMember(await readText('Square'), 'public static Square Build()');
+
+    expect(build).toContain(' = new Square();');
+    expect(build).not.toContain('..ctor');
+}, 120000);
+
+test("the goldens don't call a constructor by its metadata name", async () => {
+    for (const name of readdirSync(join(import.meta.dir, 'goldens'))) {
+        expect(await readGolden(name)).not.toContain('..ctor');
+    }
+});
 
 test("a body doesn't have the runtime's checks, its write barrier and the hidden argument of a call", async () => {
     const circle = await readText('Circle');

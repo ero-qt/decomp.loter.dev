@@ -25,6 +25,8 @@ export interface ScriptMethod {
     Signature?: string;
     /** What the function is in C#, in the text that the glue's `csharp_add_function` reads. */
     CSharp?: string;
+    /** What each method that shares the function's code is in C#, in the texts that `csharp_add_sharer` reads. */
+    Sharers?: string[];
 }
 
 /**
@@ -82,13 +84,16 @@ function isScriptMethod(value: unknown): value is ScriptMethod {
     return Number.isSafeInteger(method?.Address) && typeof method?.Name === 'string' && hasSignature;
 }
 
-// writes a function's line, with its signature after a tab when the signature doesn't have a control character either
-function writeLine({ Address, Name, Signature, CSharp }: ScriptMethod): string {
+// writes a function's line, with its signature after a tab when the signature doesn't have a control character either,
+// and a line that starts with `%` for each method that shares the function's code
+function writeLine({ Address, Name, Signature, CSharp, Sharers = [] }: ScriptMethod): string {
+    const address = Address.toString(16);
     const hasSignature = Signature !== undefined && Signature !== '' && !controlCharacters.test(Signature);
     const hasCSharp = CSharp !== undefined && !controlCharacters.test(CSharp.replaceAll('\t', ''));
     const signature = hasSignature ? `\t${Signature}` : hasCSharp ? '\t' : '';
+    const sharerLines = Sharers.filter(sharer => !controlCharacters.test(sharer.replaceAll('\t', ''))).map(sharer => `%${address}\t${sharer}\n`);
 
-    return `${Address.toString(16)} ${Name}${signature}${hasCSharp ? `\t${CSharp}` : ''}\n`;
+    return `${address} ${Name}${signature}${hasCSharp ? `\t${CSharp}` : ''}\n${sharerLines.join('')}`;
 }
 
 /** The functions and metadata globals of a names file, in the fields of Il2CppDumper's `script.json`. */
